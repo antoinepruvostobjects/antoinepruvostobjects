@@ -1,0 +1,1259 @@
+<!doctype html><html lang="fr"><head><meta charset=utf8><title>Antoinepruvostobjects</title><meta name="description" content="Objets dessinés par Antoine Pruvost, designer : ANI, tabouret en bois massif, et Hypar, cale-porte en fibre de verre."><meta property="og:title" content="Antoinepruvostobjects"><meta property="og:description" content="Objets dessinés par Antoine Pruvost : ANI, tabouret, et Hypar, cale-porte."><meta property="og:image" content="ani-1.jpg"><meta property="og:type" content="website"><link rel="preconnect" href="https://tally.so"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
+<style>
+/* Concept : fond blanc, le nom en haut, une grande photo d'ouverture, puis les projets par année en petits carrés.
+   Une fiche projet raconte le projet : le texte avance, les photos qui l'illustrent sont placées à côté, les photos du projet viennent à la fin. */
+:root {
+  --bg: #FFFFFF;
+  --fg: #111111;
+  --muted: #7A7A7A;
+  --line: #E4E4E4;
+  --ph: #F0F0F0;
+  --bar: rgba(255, 255, 255, 0.72);
+  --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+:root { --gut: clamp(20px, 5vw, 120px); --fs: clamp(14px, 0.35vw + 12.6px, 18px); --brand: clamp(17px, .85vw + 9.5px, 28px); }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs);
+  line-height: 1.45;
+  margin: 0;
+  padding-inline: var(--gut);
+  padding-block: 0 56px;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.wrap { max-width: 1800px; margin-inline: auto; }
+
+/* Bandeau du haut : reste visible au défilement, légèrement translucide */
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+  margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut);
+  background: var(--bar);
+  -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px);
+}
+header.top .bar {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 4px 24px; flex-wrap: wrap;
+  padding-block: clamp(18px, 2.6vw, 56px) clamp(16px, 2.4vw, 48px);
+}
+.wrap.main { padding-top: 0; }
+header.top .name { font-weight: 700; font-size: var(--brand); letter-spacing: .07em; line-height: 1.1; }
+header.top .meta { display: flex; gap: clamp(16px, 1.8vw, 36px); font-size: clamp(14px, .6vw + 9px, 23px); color: var(--muted); }
+header.top .meta a:hover { color: var(--fg); }
+
+/* Grande photo d'ouverture */
+.hero { display: block; }
+.hero .frame { aspect-ratio: 16 / 9; background: var(--ph); overflow: hidden; max-width: 100%; display: flex; }
+.hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 67%; display: block; }
+.cap { display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; }
+.cap .t { font-weight: 400; }
+.cap .k { color: var(--muted); }
+.hero:hover .cap .t, .tile:hover .cap .t { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Années et petites photos */
+.year { display: flex; align-items: baseline; gap: 16px; margin-top: 80px; padding-bottom: 14px; }
+.year h2 { margin: 0; font-size: 1.07em; font-weight: 500; letter-spacing: .01em; }
+.year .rule { flex: 1; height: 1px; background: var(--line); }
+.year .count { color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 16px; }
+/* Accueil : années en deux colonnes, vignettes petites */
+.years { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 64px clamp(32px, 6vw, 96px); margin-top: 72px; align-items: start; }
+.yblock { border-top: 1px solid var(--line); padding-top: 24px; min-width: 0; }
+.yblock h2 { margin: 0 0 22px; font-size: 1.07em; font-weight: 600; letter-spacing: .01em; }
+.yblock .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 12px; }
+.yblock .cap { display: block; padding-top: 8px; font-size: .9em; line-height: 1.3; }
+.yblock .cap .k { display: none; }
+.tile { display: block; min-width: 0; }
+.sq { aspect-ratio: 1 / 1; background: var(--ph); overflow: hidden; display: flex; align-items: center; justify-content: center; max-width: 100%; color: var(--muted); font-size: .93em; }
+.sq img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+/* Fiche projet */
+.two { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px clamp(24px, 4vw, 64px); align-items: start; }
+.head { padding-top: 32px; }
+.info .back { display: inline-block; color: var(--muted); margin-bottom: 28px; }
+.info .back:hover { color: var(--fg); }
+.info h1 { margin: 0 0 4px; font-size: 22px; font-weight: 400; line-height: 1.2; letter-spacing: -.005em; }
+.info .kind { margin: 0 0 22px; color: var(--muted); }
+.info .tag { margin: 0 0 8px; font-size: 1.07em; line-height: 1.35; max-width: 24em; }
+.specs { margin: 28px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); border-top: 1px solid var(--line); }
+.specs dt, .specs dd { margin: 0; padding-block: 8px; border-bottom: 1px solid var(--line); }
+.specs dt { color: var(--muted); padding-right: 24px; }
+.lead { min-width: 0; }
+.lead img { display: block; width: auto; max-width: 100%; max-height: 88vh; height: auto; }
+.lead .slot { aspect-ratio: 4 / 3; }
+
+.row { margin-top: 96px; }
+@media (min-width: 801px) { .row .txt { position: sticky; top: clamp(88px, 8vw, 150px); } }
+.txt { max-width: 27em; }
+.txt p, .txt li, .about p { text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; }
+.txt h2 { margin: 0 0 6px; font-size: .93em; font-weight: 500; color: var(--muted); }
+.txt p { margin: 0 0 8px; }
+.txt ul { margin: 0; padding-left: 18px; }
+.txt li { margin-bottom: 2px; }
+
+/* Photos placées à côté du texte, à une taille adaptée */
+.side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; min-width: 0; }
+.media { min-width: 0; }
+.media .items { display: grid; gap: 10px; }
+.media.mgrid .items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.media.mgrid { max-width: 100%; }
+.media.single { max-width: 100%; }
+.media.single.sq { max-width: 76%; }
+.media.single.port { max-width: 56%; }
+.media.mgrid.cols2 .items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.media .cell { background: var(--ph); overflow: hidden; }
+.media.mgrid .cell { aspect-ratio: 4 / 5; }
+.media.mgrid .cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media.plans .cell { display: flex; align-items: center; justify-content: center; padding: 10%; }
+.media.plans .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.media.single img, .media.single video { width: 100%; height: auto; display: block; background: var(--ph); }
+.media .mcap { padding-top: 7px; color: #b0b0b0; font-size: .72em; line-height: 1.35; }
+
+/* Mise en page « défilement » : texte centré, photos centrées, apparition en fondu */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 1s ease, transform 1s cubic-bezier(.2,.6,.2,1); will-change: opacity, transform; }
+.reveal.in { opacity: 1; transform: none; will-change: auto; }
+.story .reveal { transform: translateY(72px); transition: opacity 1.1s ease, transform 1.3s cubic-bezier(.16,.7,.2,1); }
+.story .reveal.in { transform: none; }
+.reveal.d1 { transition-delay: .12s; }
+.reveal.d2 { transition-delay: .24s; }
+@media (prefers-reduced-motion: reduce) { .reveal, .story .reveal { opacity: 1; transform: none; transition: none; } }
+.flowsec { margin-top: clamp(96px, 12vw, 200px); display: flex; flex-direction: column; align-items: center; gap: clamp(88px, 10vw, 170px); }
+.flowsec .txt { max-width: 30em; text-align: left; margin-inline: auto; position: static; }
+.flowsec .txt h2 { margin-bottom: 12px; }
+.flowsec .txt p, .flowsec .txt li { text-align: justify; text-justify: inter-word; hyphens: auto; -webkit-hyphens: auto; }
+.flowsec .txt ul { padding-left: 18px; }
+.flowsec .txt li { margin-bottom: 8px; }
+.flowsec .mw { width: min(100%, 78%); }
+.flowsec .mw.sq { width: min(100%, 56%); }
+.flowsec .mw.port { width: min(100%, 42%); }
+.flowsec .mw .media.single, .flowsec .mw .media.single.sq, .flowsec .mw .media.single.port { max-width: 100%; }
+.flowsec .mw .media.mgrid { max-width: 100%; }
+.flowsec .mw .mcap { text-align: left; margin-top: 0; }
+.flowsec .mw { margin-bottom: 0; }
+.flowgal { margin-top: clamp(96px, 12vw, 200px); }
+
+/* En-tête de projet : nom et date, fiche, photo */
+.phead { padding-top: 32px; }
+.phead .back { display: inline-block; color: var(--muted); margin-bottom: 28px; }
+.phead .back:hover { color: var(--fg); }
+.ptitle { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: 20px; }
+.ptitle h1 { margin: 0; font-size: clamp(22px, 1.6vw + 12px, 38px); font-weight: 400; line-height: 1.1; letter-spacing: -.005em; }
+.ptitle .kind { margin: 0; color: var(--muted); }
+.phead .tag { margin: 0 0 24px; font-size: 1.07em; line-height: 1.35; max-width: 34em; }
+.phead .specs { margin: 0; border-top: 1px solid var(--line); grid-template-columns: minmax(8em, 1fr) 3fr; }
+.phead .specs dt, .phead .specs dd { padding-block: 11px; }
+.phead .lead { margin-top: clamp(48px, 6vw, 96px); text-align: center; }
+.phead .lead img { margin-inline: auto; }
+@media (max-width: 800px) { .phead .specs { grid-template-columns: minmax(6.5em, 1fr) 2fr; } }
+
+/* Plusieurs photos au même endroit : composition libre, tailles et décalages variés */
+.flowsec .mw.wide { width: 100%; }
+.flowsec .mw.pair { width: min(100%, 88%); }
+.spin { height: 280vh; position: relative; margin-top: clamp(24px, 4vw, 80px); }
+.spin-stick { position: sticky; top: 0; height: 100vh; display: flex; align-items: center; justify-content: center; }
+.spin canvas { width: min(88vw, 80vh, 880px); height: auto; aspect-ratio: 1; display: block; }
+@media (max-width: 560px) { .spin { height: 220vh; } .spin canvas { width: min(100%, 70vh); } }
+/* Fiche produit : vue 3D à gauche ; titre, teinte, caractéristiques et rubriques à droite */
+.fiche { margin-top: clamp(24px, 3vw, 48px); --fm: #5c5c5c; }
+.fichepage header.top { margin-bottom: calc(-1 * var(--hh, 0px)); }
+.fichepage .fiche { margin-top: 0; }
+.fpanel { display: flow-root; background: #eceef1; margin-inline: calc(-1 * var(--gut)); padding: 0; }
+.ftitle-m { display: none; }
+.fcard { background: #fff; padding: clamp(24px, 2.8vw, 48px); min-width: 0; }
+.fgrid { --cw: clamp(380px, 38vw, 580px); --ph: clamp(640px, calc(100vh - 160px), 900px); position: relative; display: flex; justify-content: flex-end; align-items: center; padding-top: var(--hh, 0px); min-height: calc(var(--ph) + var(--hh, 0px)); }
+.fgrid > .fcard { width: var(--cw); flex: 0 0 var(--cw); position: relative; z-index: 2; margin: clamp(24px, 3vw, 48px) var(--gut) clamp(24px, 3vw, 48px) 0; border-radius: 4px; box-shadow: 0 1px 2px rgba(20,24,30,.05), 0 12px 40px rgba(20,24,30,.08); }
+.ftitle { margin: 0; font-size: clamp(30px, 3.1vw, 58px); font-weight: 500; letter-spacing: .01em; line-height: 1.1; color: #000; }
+.fvw { position: absolute; top: var(--hh, 0px); left: 0; right: 0; height: var(--ph); z-index: 1; min-width: 0; }
+.fv { position: absolute; inset: 0; background: transparent; overflow: hidden; }
+.fv canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
+.fv canvas:active { cursor: grabbing; }
+.fv .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; right: calc(var(--cw) + var(--gut)); width: calc(100% - var(--cw) - var(--gut)); mix-blend-mode: multiply; transition: opacity .7s ease; pointer-events: none; }
+.fv.ready .poster { opacity: 0; }
+.fnote { position: absolute; left: 0; right: calc(var(--cw) + var(--gut)); bottom: 22px; margin: 0; text-align: center; color: var(--fm); font-size: .9em; letter-spacing: .04em; pointer-events: none; }
+.fcol { margin-top: clamp(22px, 2.2vw, 38px); }
+.fcol .lab { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; font-size: 1.05em; letter-spacing: .03em; }
+.fcol .lab .k { color: var(--fm); }
+.fcol .lab .cur { color: #000; }
+.swatches { display: flex; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+.swatch { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 4px; cursor: pointer; border-radius: 50%; }
+.swatch i { display: block; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); box-shadow: 0 0 0 0 #000; transition: box-shadow .25s ease; }
+.swatch[aria-pressed="true"] i { box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px #000; }
+.swatch:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+.fspec { margin-top: clamp(28px, 3vw, 56px); border-bottom: 1px solid var(--line); }
+.fspec .prow { font-size: 1.02em; padding-block: clamp(13px, 1.3vw, 20px); }
+.fspec .pl { color: var(--fm); }
+.fspec .pv { color: #000; }
+.fextra { margin-bottom: calc(-1 * clamp(10px, 1.2vw, 18px)); }
+.facc[open] .fbody { animation: fin .35s ease; }
+@keyframes fin { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.facc { border-top: 0; }
+.facc + .facc { border-top: 1px solid var(--line); }
+.facc summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-block: clamp(14px, 1.4vw, 22px); font-size: 1.02em; letter-spacing: .03em; color: #000; }
+.facc summary::-webkit-details-marker { display: none; }
+.facc summary::after { content: "+"; font-size: 1.3em; line-height: 1; color: var(--fm); }
+.facc[open] summary::after { content: "–"; }
+.facc summary:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+.fbody { padding: 0 0 clamp(16px, 1.6vw, 26px); color: #333; font-size: .98em; line-height: 1.6; max-width: 44ch; }
+.fbody p { margin: 0; }
+.fbody ul { margin: 0; padding: 0; list-style: none; }
+.fbody li { padding-left: 1.1em; position: relative; }
+.fbody li::before { content: "–"; position: absolute; left: 0; color: var(--fm); }
+.fplans { margin-top: clamp(56px, 7vw, 120px); }
+.fplans img { display: block; width: min(100%, 980px); height: auto; margin: clamp(16px, 2vw, 40px) auto 0; }
+.fplans .note { text-align: center; color: var(--muted); font-size: .85em; margin-top: 14px; letter-spacing: .03em; }
+/* Sous la fiche : texte, trois photos, designer */
+.story { margin-top: 0; --tsp: clamp(110px, 13vw, 240px); }
+.story img { display: block; width: 100%; height: auto; }
+.trow { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: clamp(32px, 7vw, 140px); align-items: start; }
+.trow h2 { margin: 0; font-size: clamp(24px, 2.4vw, 40px); font-weight: 500; line-height: 1.15; color: #000; letter-spacing: .005em; }
+.trow p { margin: 0; max-width: 46ch; font-size: 1.04em; line-height: 1.7; color: #333; }
+.spair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(10px, 1.2vw, 20px); margin-top: 0; }
+.sph { aspect-ratio: 4 / 5; overflow: hidden; }
+.sph img { width: 100%; height: 100%; object-fit: cover; }
+.swide { margin-top: clamp(10px, 1.2vw, 20px); aspect-ratio: 16 / 9; overflow: hidden; }
+.swide img { width: 100%; height: 100%; object-fit: cover; }
+.trow.detail { margin-top: 0; }
+/* Même espace blanc au-dessus et au-dessous de chaque bloc de texte */
+.story .trow { padding-block: var(--tsp); row-gap: 0; }
+.trow .snote { grid-column: 2; margin-top: clamp(28px, 3vw, 48px); }
+@media (max-width: 800px) { .story { --tsp: 88px; } .trow { grid-template-columns: minmax(0, 1fr); row-gap: 20px; } .trow .snote { grid-column: 1; } }
+.snote { margin: clamp(40px, 5vw, 80px) 0 0; font-size: .9em; color: #5c5c5c; letter-spacing: .02em; }
+.sband { margin: 0 calc(-1 * var(--gut)) 0; padding: clamp(48px, 5.5vw, 96px) var(--gut); background: #0f0f10; color: #fff; }
+.sbin { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: clamp(32px, 6vw, 110px); align-items: center; max-width: 1100px; margin-inline: auto; }
+.sbph { aspect-ratio: 3 / 2; overflow: hidden; background: #1b1b1d; }
+.sbph img { width: 100%; height: 100%; object-fit: cover; }
+.sbtx { max-width: 40ch; }
+.slab { margin: 0 0 8px; font-size: .92em; color: rgba(255,255,255,.72); letter-spacing: .04em; }
+.sname { margin: 0 0 clamp(18px, 2vw, 32px); font-size: clamp(28px, 3vw, 48px); font-weight: 400; line-height: 1.1; color: #fff; }
+.sbio p { margin: 0 0 .9em; font-size: .95em; line-height: 1.7; color: rgba(255,255,255,.88); }
+.sbio p:last-child { margin-bottom: 0; }
+.slink { display: inline-block; margin-top: clamp(22px, 2.4vw, 36px); padding: 12px 32px; color: #fff; border-top: 1px solid rgba(255,255,255,.7); border-bottom: 1px solid rgba(255,255,255,.7); letter-spacing: .03em; }
+.slink:hover { opacity: .65; }
+@media (max-width: 800px) {
+  .sband { padding-block: 48px; }
+  .gpair + .sband { margin-top: 56px; }
+  .sbin { grid-template-columns: minmax(0, 1fr); row-gap: 28px; }
+  .sbtx { max-width: none; }
+}
+@media (max-width: 800px) {
+  .fgrid { display: block; min-height: 0; padding-top: 0; }
+  .fgrid > .fcard { width: auto; margin: 0 12px 12px; }
+  .fvw { position: relative; top: auto; height: auto; }
+  .fv { position: relative; inset: auto; height: auto; aspect-ratio: 1 / 1.05; }
+  .fv .poster { right: 0; width: 100%; }
+  .fnote { right: 0; }
+  .fnote { position: static; margin: 0; padding-bottom: 14px; }
+  .ftitle { display: none; }
+  .ftitle-m { display: block; font-size: 30px; font-weight: 500; line-height: 1.1; color: #000; padding: 22px var(--gut) 0; }
+  .fpanel { padding: var(--hh, 0px) 0 0; }
+  .fcard { padding: 22px 18px !important; }
+  .swatches { gap: 6px; }
+}
+.mpair .items { display: flex; align-items: center; justify-content: center; gap: clamp(12px, 2.5vw, 48px); }
+.mpair .items img { flex: 1 1 0; min-width: 0; width: 100%; height: auto; }
+@media (max-width: 560px) {
+  .flowsec .mw.pair { width: 100%; }
+  .mpair .items { flex-direction: column; gap: 32px; }
+  .mpair .items img { flex: none !important; width: min(100%, calc(var(--ar, 1) * 85vw)); }
+}
+.media.collage .items { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(40px, 6vw, 120px) clamp(12px, 2vw, 40px); align-items: start; }
+.media.collage .cell { aspect-ratio: auto; background: none; }
+.media.collage .cell img { width: 100%; height: auto; object-fit: initial; background: var(--ph); }
+.media.collage .cell:nth-child(5n+1) { grid-column: 1 / span 4; }
+.media.collage .cell:nth-child(5n+2) { grid-column: 6 / span 4; align-self: end; }
+.media.collage .cell:nth-child(5n+3) { grid-column: 10 / span 3; }
+.media.collage .cell:nth-child(5n+4) { grid-column: 3 / span 4; }
+.media.collage .cell:nth-child(5n+5) { grid-column: 8 / span 5; align-self: end; }
+.gallery.collage-g { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(48px, 7vw, 130px) clamp(12px, 2vw, 40px); align-items: start; }
+/* Photos produit : grille propre de deux colonnes, même format */
+.gallery.collage-g { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(32px, 4vw, 72px) clamp(12px, 2vw, 32px); }
+.gallery.collage-g img { aspect-ratio: 2 / 3; object-fit: cover; }
+.gallery.collage-g { grid-auto-flow: row dense; }
+.gallery.collage-g figure.wide { grid-column: 1 / -1; }
+.gallery.collage-g figure.wide img { aspect-ratio: auto; }
+
+/* Légendes des photos masquées (texte conservé dans les données) */
+.mcap, .gallery figcaption { display: none !important; }
+
+/* En-tête façon fiche : titre et année, lignes de la carte d'identité, grande photo */
+.phead2 { padding-top: 24px; }
+.phead2 .back { display: inline-block; color: var(--muted); margin-bottom: clamp(20px, 3vw, 44px); }
+.phead2 .back:hover { color: var(--fg); }
+.prow { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-top: 1px solid var(--line); padding-block: clamp(16px, 1.9vw, 34px); font-size: 1.2em; letter-spacing: .03em; line-height: 1.3; }
+.prow .pl { flex: 0 0 auto; }
+.prow .pv { text-align: right; min-width: 0; }
+.ptitle2 h1 { margin: 0; font-size: clamp(24px, 1.6vw + 14px, 44px); font-weight: 400; letter-spacing: .03em; line-height: 1.1; }
+.ptitle2 h1 .kind { margin-left: .6em; color: var(--muted); font-size: .55em; letter-spacing: .03em; }
+.ptitle2 .yr { font-size: clamp(18px, 1vw + 12px, 32px); }
+.lead2 { margin-top: clamp(32px, 4vw, 72px); }
+.lead2 .frame { aspect-ratio: 16 / 9; overflow: hidden; background: var(--ph); }
+.lead2 .frame img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: var(--hp, 50% 60%); }
+@media (max-width: 800px) { .lead2 .frame { aspect-ratio: 4 / 5; } .lead2 .frame img { object-position: var(--hpm, 50% 60%); } .prow { font-size: 1.05em; } }
+.flowsec .txt { font-size: 1.2em; letter-spacing: .025em; line-height: 1.55; max-width: 27em; }
+.flowsec .txt p { margin: 0 0 14px; }
+.flowsec .txt p, .flowsec .txt li { text-align: left; hyphens: none; -webkit-hyphens: none; }
+.flowsec .txt h2 { display: none; }
+
+/* Fiche à gauche, photo à droite */
+.psplit { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 5vw, 96px); align-items: start; }
+.pinfo .prow:first-child { border-top: 1px solid var(--line); }
+.psplit .lead2 { margin-top: 0; }
+.psplit .lead2 img { display: block; width: auto; max-width: 100%; max-height: 88vh; height: auto; margin-inline: auto; }
+.psplit .prow { font-size: 1.1em; }
+@media (max-width: 800px) { .psplit { grid-template-columns: minmax(0, 1fr); gap: 32px; } .psplit .lead2 img { width: 100%; max-height: none; } }
+
+/* Téléphone : en-tête sur une ligne, textes à l'échelle des images */
+@media (max-width: 560px) {
+  header.top .bar { flex-wrap: nowrap; align-items: baseline; gap: 12px; }
+  header.top .name { font-size: 15px; letter-spacing: .04em; white-space: nowrap; }
+  header.top .meta { gap: 14px; font-size: 13px; white-space: nowrap; }
+  .flowsec .txt { font-size: 1em; letter-spacing: .015em; line-height: 1.55; width: 80%; max-width: 21em; }
+  .prow { font-size: .95em; letter-spacing: .02em; }
+  .ptitle2 h1 { font-size: 22px; }
+  .ptitle2 .yr { font-size: 16px; }
+}
+
+@media (max-width: 360px) {
+  header.top .name { font-size: 12.5px; letter-spacing: .02em; }
+  header.top .meta { gap: 10px; font-size: 12px; }
+  header.top .bar { gap: 8px; }
+}
+
+/* Photos du projet, à la fin */
+.gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.gallery figure { margin: 0; min-width: 0; }
+.gallery img { width: 100%; height: auto; display: block; background: var(--ph); }
+.gallery figcaption { padding-top: 7px; color: #b0b0b0; font-size: .72em; line-height: 1.35; }
+.slot { background: var(--ph); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .93em; max-width: 100%; }
+
+.next { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; }
+.next a { color: var(--muted); }
+.next a:hover { color: var(--fg); }
+
+/* À propos */
+.about { padding-top: 40px; max-width: 32em; }
+.about p { margin: 0 0 12px; font-size: 14px; line-height: 1.5; }
+.about .portraits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 36px; }
+.about .portraits img { width: 100%; height: auto; display: block; background: var(--ph); }
+.about .back { display: inline-block; color: var(--muted); margin-bottom: 28px; }
+.about .back:hover { color: var(--fg); }
+.about .contact + .contact { margin-top: 6px; }
+.about .contact { margin-top: 32px; color: var(--muted); }
+.about .contact a { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+
+footer { margin-top: 80px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .years { grid-template-columns: minmax(0, 1fr); gap: 48px; margin-top: 56px; }
+  .yblock .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+  .two { grid-template-columns: minmax(0, 1fr); }
+  .head { padding-top: 20px; }
+  .info .back { margin-bottom: 20px; }
+  .row { margin-top: 96px; }
+@media (min-width: 801px) { .row .txt { position: sticky; top: clamp(88px, 8vw, 150px); } }
+  .media.single, .media.mgrid { max-width: 100% !important; }
+  .media.mgrid .items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .year { margin-top: 56px; }
+  .row { margin-top: 56px; }
+}
+@media (max-width: 560px) {
+  .yblock .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; }
+}
+
+
+/* Accueil boutique : grande photo de la gamme, le tabouret en vedette, trois engagements, le designer */
+.shero { display: block; margin-top: clamp(4px, 1vw, 16px); }
+.shero .frame { aspect-ratio: 16 / 9; overflow: hidden; background: var(--ph); max-width: 100%; }
+.shero img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 1.6s cubic-bezier(.2,.6,.2,1); }
+.shero:hover img { transform: scale(1.015); }
+.shero .cap { padding-top: 14px; font-size: 1.05em; letter-spacing: .02em; }
+.slead { margin: clamp(72px, 9vw, 150px) 0 0; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: clamp(32px, 7vw, 140px); align-items: start; }
+.slead h1 { margin: 0; font-size: clamp(26px, 2.6vw, 44px); font-weight: 500; line-height: 1.12; letter-spacing: .005em; text-wrap: balance; }
+.slead p { margin: 0; max-width: 46ch; font-size: 1.04em; line-height: 1.7; color: #333; }
+.secttl { display: flex; align-items: baseline; gap: 16px; margin-top: clamp(80px, 10vw, 170px); padding-bottom: clamp(20px, 2vw, 32px); }
+.secttl h2 { margin: 0; font-size: 1.07em; font-weight: 500; letter-spacing: .02em; }
+.secttl .rule { flex: 1; height: 1px; background: var(--line); }
+.secttl .k { color: var(--muted); }
+.feat { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 96px); align-items: end; }
+.feat .ph { display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--ph); max-width: 100%; }
+.feat .ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; display: block; transition: transform 1.6s cubic-bezier(.2,.6,.2,1); }
+.feat .ph:hover img { transform: scale(1.02); }
+.feat .side { min-width: 0; padding-bottom: clamp(4px, 1vw, 16px); }
+.feat .nm { margin: 0; font-size: clamp(30px, 3.1vw, 58px); font-weight: 500; letter-spacing: .01em; line-height: 1.1; }
+.feat .kd { margin: 6px 0 0; color: var(--muted); font-size: 1.05em; letter-spacing: .02em; }
+.feat .tg { margin: clamp(22px, 2.4vw, 40px) 0 0; max-width: 34ch; font-size: 1.04em; line-height: 1.6; color: #333; }
+.feat .dots { display: flex; gap: 10px; margin-top: clamp(22px, 2.4vw, 36px); align-items: center; }
+.feat .dots i { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: block; }
+.feat .dots span { margin-left: 8px; color: var(--muted); font-size: .92em; letter-spacing: .03em; }
+.feat .fspec { margin-top: clamp(22px, 2.4vw, 36px); border-top: 1px solid var(--line); }
+.cta { display: inline-block; margin-top: clamp(26px, 2.8vw, 44px); padding: 14px 34px; background: #111; color: #fff; letter-spacing: .04em; transition: opacity .25s ease; }
+.cta:hover { opacity: .78; }
+.cta:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+.vals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 3vw, 56px); }
+.val { border-top: 1px solid var(--fg); padding-top: 18px; min-width: 0; }
+.val h3 { margin: 0 0 10px; font-size: 1.05em; font-weight: 500; letter-spacing: .02em; }
+.val p { margin: 0; color: #333; line-height: 1.6; max-width: 34ch; }
+.gpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(10px, 1.2vw, 20px); margin-top: clamp(80px, 10vw, 170px); }
+.gpair a { display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--ph); max-width: 100%; }
+.gpair + .sband { margin-top: clamp(64px, 7vw, 120px); }
+.gpair img { width: 100%; height: 100%; object-fit: cover; display: block; }
+header.top .meta a.on { color: var(--fg); }
+@media (max-width: 800px) {
+  .slead, .feat { grid-template-columns: minmax(0, 1fr); row-gap: 20px; }
+  .shero .frame { aspect-ratio: 4 / 3; }
+  .vals { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+}
+
+/* Écran de chargement : le logo se dessine sur fond blanc, à la vitesse du chargement */
+#logo-ov { position: fixed; inset: 0; z-index: 1000; background: #fff; display: flex; align-items: center; justify-content: center; opacity: 1; transition: opacity .45s ease; }
+#logo-ov.off { opacity: 0; pointer-events: none; }
+#logo-ov.in { transition: opacity .18s ease; }
+#logo-ov video { width: clamp(72px, 10vmin, 104px); height: auto; display: block; pointer-events: none; }
+
+/* Menu « Objects » : catégories, et les objets en dessous */
+.objbtn { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; letter-spacing: inherit; }
+.objbtn:hover, .objbtn[aria-expanded="true"], .objbtn.on { color: var(--fg); }
+.objbtn:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.objmenu { position: absolute; left: 0; right: 0; top: 100%; background: rgba(255,255,255,.97); padding-inline: var(--gut); box-shadow: 0 18px 30px -24px rgba(0,0,0,.25); animation: omin .3s ease; }
+@keyframes omin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.omin { display: flex; flex-direction: column; align-items: flex-end; gap: clamp(18px, 1.8vw, 30px); padding-block: clamp(4px, .6vw, 10px) clamp(26px, 2.8vw, 48px); font-size: clamp(14px, .6vw + 9px, 23px); }
+.ogrp { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.ocat { margin: 0; color: var(--fg); font-size: 1em; letter-spacing: .03em; line-height: 1.2; }
+.ogrp a { font-size: .82em; color: var(--muted); letter-spacing: .03em; line-height: 1.3; }
+.ogrp a:hover, .ogrp a.on { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+@media (max-width: 560px) { .omin { font-size: 13px; } }
+/* Fiche Hypar : vidéo de rotation à la place de la 3D */
+.fv video.poster { object-fit: contain; }
+.fdesc { margin: clamp(18px, 2vw, 30px) 0 0; color: #333; line-height: 1.6; max-width: 40ch; }
+@media (max-width: 800px) { .fv video.poster { position: absolute; } }
+
+/* Bandeau qui défile : photos à leur format, même hauteur, boucle continue */
+.reel { margin: clamp(4px, 1vw, 16px) calc(-1 * var(--gut)) 0; overflow: hidden; }
+.track { display: flex; gap: clamp(10px, 1.2vw, 20px); width: max-content; will-change: transform; }
+.reel { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.reel.drag { cursor: grabbing; }
+.reel img { -webkit-user-drag: none; pointer-events: none; }
+.shot { display: block; flex: 0 0 auto; }
+.shot .sf { display: block; height: clamp(300px, 64vh, 760px); background: var(--ph); overflow: hidden; }
+.shot img { height: 100%; width: auto; max-width: none; display: block; transition: transform 1.2s cubic-bezier(.2,.6,.2,1); }
+.shot:hover img { transform: scale(1.025); }
+.shot .sc { display: flex; gap: 10px; padding-top: 10px; font-size: .95em; letter-spacing: .02em; }
+.shot .sc .k { color: var(--muted); }
+.shot:hover .sc .t { text-decoration: underline; text-underline-offset: 3px; }
+.shot:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+@media (max-width: 560px) { .shot .sf { height: 58vh; } }
+
+/* Statut de l'objet et demande d'information */
+.fstat { display: flex; align-items: center; gap: 10px; margin: clamp(12px, 1.2vw, 18px) 0 0; font-size: .92em; letter-spacing: .03em; flex-wrap: wrap; }
+.fstat i { width: 8px; height: 8px; border-radius: 50%; background: #c98a1b; display: block; flex: none; }
+.fstat .sl { color: var(--fg); }
+.fstat .sn { color: var(--muted); }
+.fstat .sn::before { content: "·"; margin-right: 10px; color: var(--muted); }
+.feat .fstat { margin-top: clamp(14px, 1.4vw, 22px); }
+.ask { margin-top: clamp(20px, 2vw, 32px); }
+.askbtn { appearance: none; -webkit-appearance: none; width: 100%; border: 0; background: #111; color: #fff; font: inherit; letter-spacing: .04em; padding: 15px 20px; cursor: pointer; transition: opacity .25s ease; }
+.askbtn:hover { opacity: .8; }
+.askbtn:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+.askbox { padding: 18px 0 4px; color: #333; line-height: 1.6; animation: fin .35s ease; }
+.askbox p { margin: 0 0 14px; max-width: 44ch; }
+.askrow { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-block: 12px; }
+.askrow .addr { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; color: var(--fg); user-select: all; -webkit-user-select: all; }
+.askrow .copy { appearance: none; -webkit-appearance: none; border: 1px solid var(--fg); background: none; color: var(--fg); font: inherit; font-size: .9em; padding: 7px 14px; cursor: pointer; }
+.askrow .copy:hover { background: var(--fg); color: #fff; }
+.askbox .mail { display: inline-block; margin-top: 12px; color: var(--muted); font-size: .92em; }
+.askbox .mail:hover { color: var(--fg); }
+.coll { display: grid; gap: clamp(80px, 9vw, 160px); }
+.feat.flip { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.feat.flip .ph { order: 2; }
+@media (max-width: 800px) { .feat.flip { grid-template-columns: minmax(0, 1fr); } .feat.flip .ph { order: 0; } }
+
+/* Rubriques repliables sous le bouton : un filet au-dessus, le descriptif en lignes compactes */
+.fcard .fextra { margin-top: clamp(22px, 2.4vw, 36px); border-top: 1px solid var(--line); }
+.fbody .fspec { margin-top: 0; border-bottom: 0; max-width: none; }
+.fbody .fspec .prow { font-size: 1em; padding-block: 9px; border-top: 0; border-bottom: 1px solid var(--line); }
+.fbody .fspec .prow:last-child { border-bottom: 0; }
+.facc .fbody:has(.fspec) { max-width: none; }
+
+/* Fenêtre d'inscription */
+.modal { position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(20, 20, 18, 0); transition: background .35s ease; }
+.modal.on { background: rgba(20, 20, 18, .42); }
+.mbox { background: #fff; width: min(820px, 100%); max-height: 100%; overflow: auto; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); opacity: 0; transform: translateY(14px) scale(.985); transition: opacity .35s ease, transform .45s cubic-bezier(.2,.7,.2,1); box-shadow: 0 30px 80px -30px rgba(0,0,0,.35); }
+.modal.on .mbox { opacity: 1; transform: none; }
+.mph { background: var(--ph); min-height: 100%; }
+.mph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; display: block; }
+.mtx { position: relative; padding: clamp(28px, 3.4vw, 52px); min-width: 0; display: flex; flex-direction: column; }
+.mx { position: absolute; top: 10px; right: 12px; appearance: none; border: 0; background: none; font: inherit; font-size: 28px; line-height: 1; color: var(--muted); cursor: pointer; padding: 6px 10px; }
+.mx:hover { color: var(--fg); }
+.mx:focus-visible, .mgo:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.mtx .mk { margin: 0; color: var(--muted); font-size: .9em; letter-spacing: .04em; }
+.mtx h2 { margin: 10px 0 16px; font-size: clamp(24px, 2.2vw, 34px); font-weight: 500; line-height: 1.12; text-wrap: balance; }
+.mtx .mp { margin: 0; color: #333; line-height: 1.6; max-width: 38ch; }
+.mgo { display: block; margin-top: clamp(24px, 2.6vw, 36px); background: #111; color: #fff; text-align: center; padding: 15px 20px; letter-spacing: .04em; transition: opacity .25s ease; }
+.mgo:hover { opacity: .8; }
+.mtx .mn { margin: 12px 0 0; color: var(--muted); font-size: .85em; line-height: 1.5; }
+.mtx .malt { margin: auto 0 0; padding-top: 22px; border-top: 1px solid var(--line); margin-top: 26px; font-size: .88em; color: var(--muted); }
+.malt .addr { color: var(--fg); user-select: all; -webkit-user-select: all; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .mbox { grid-template-columns: minmax(0, 1fr); } .mph { height: 34vh; min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .modal, .mbox { transition: none; } }
+
+/* Formulaire intégré */
+.mform { display: block; width: 100%; height: 200px; border: 0; margin: 18px 0 0; background: transparent; transition: height .25s ease; }
+.mfb { display: inline-block; margin-top: 6px; color: var(--muted); font-size: .8em; }
+.mfb:hover { color: var(--fg); }
+</style>
+
+<div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
+
+<header class="top">
+  <div class="wrap bar">
+    <a class="name" href="#" id="home-link">Antoinepruvostobjects</a>
+    <div class="meta">
+      <button type="button" class="objbtn" id="obj-btn" aria-expanded="false" aria-controls="obj-menu">Objects</button>
+      <a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a>
+    </div>
+  </div>
+  <nav class="objmenu" id="obj-menu" hidden aria-label="Objects">
+    <div class="wrap omin">
+      <div class="ogrp"><p class="ocat">Tabouret</p><a href="#ani" data-id="ani">ANI</a></div>
+      <div class="ogrp"><p class="ocat">Cale-porte</p><a href="#hypar" data-id="hypar">Hypar</a></div>
+    </div>
+  </nav>
+</header>
+
+<div class="wrap main">
+  <main id="view" lang="fr"></main>
+  <footer>
+    <span>Antoinepruvostobjects</span>
+    <span>2026</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var fiche = {
+
+        title: "ANI - Tabouret",
+        model: "ani-model.js", name: "ani", poster: "ani-poster.jpg",
+        desc: "Une assise circulaire posée sur des plans de bois qui se croisent, inspirés de l'aile d'une libellule. Livré à plat, il se monte, se démonte et se répare simplement.",
+        specs: [["Matière", "Bois massif"], ["Finition", "Protection à effet mat"], ["Hauteur", "43 cm"], ["Diamètre d'assise", "32 cm"], ["Livraison", "À plat"], ["Montage", "Outils et notice inclus"]],
+        story: {
+          intro: { title: "ANI, une construction géométrique",
+            text: "ANI associe une assise circulaire à un piètement composé de plans de bois qui se croisent. Sa silhouette se révèle différemment selon le point de vue, entre surfaces pleines et espaces ouverts. Les assemblages métalliques apparents ponctuent sa construction." },
+          pair: [
+            { src: "ani-main.jpg", alt: "Le tabouret Ani porté à la main, assise vers le haut", pos: "50% 45%" },
+            { src: "ani-assise.jpg", alt: "L'assise du tabouret Ani tenue à la main, avec son ouverture centrale", pos: "50% 48%" }
+          ],
+          detail: { src: "ani-detail-new.jpg", pos: "50% 45%", alt: "Gros plan sur un assemblage métallique du tabouret Ani", title: "L'assemblage en détail",
+            text: "Les éléments du piètement sont reliés par des assemblages métalliques laissés visibles. Livré à plat, ANI s'assemble à l'aide des outils et de la notice fournis." },
+          note: "Prototype photographié. Version finale prévue en bois massif.",
+          designer: { name: "Antoine Pruvost", portrait: "ani-designer.jpg", portraitAlt: "Portrait d'Antoine Pruvost en noir et blanc", bio: ["Je conçois des objets utiles, pensés pour durer, être compris et réparés.", "Pourquoi remplacer ce que nous pouvons réparer ? L’esthétique doit servir l’usage et donner envie de garder un objet.", "Je pars de ce qui existe et de ce dont nous avons réellement besoin, en m’appuyant sur les savoir-faire d’hier et les moyens d’aujourd’hui."] }
+        },
+        extra: [
+          { title: "Construction et assemblage", items: ["4 vis en inox.", "4 inserts sphériques en aluminium.", "Tabouret à assembler, outils et notice inclus."] },
+          { title: "Conseils d'entretien", text: "Nettoyer avec un chiffon doux légèrement humide, puis essuyer immédiatement avec un chiffon sec. Éviter l'eau stagnante et les produits nettoyants agressifs." }
+        ],
+        colors: [
+          { name: "Jaune", light: "#f7c948", dark: "#e6a823", swatch: "#f0b92f" },
+          { name: "Naturel", light: "#efd9a8", dark: "#d9b070", swatch: "#e2c694" },
+          { name: "Cerisier", light: "#c9603c", dark: "#9a3a22", swatch: "#b84f2f" },
+          { name: "Châtaignier", light: "#8a6b4a", dark: "#5c4531", swatch: "#755a3e" },
+          { name: "Chêne", light: "#d2a768", dark: "#b08143", swatch: "#c29a5c" }
+        ]
+  };
+  var view = document.getElementById("view");
+  function mk(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text) n.textContent = text;
+    return n;
+  }
+  function mkp(t) {
+    var n = document.createElement("p");
+    t.split("**").forEach(function (part, i) {
+      if (!part) return;
+      if (i % 2) { var b = document.createElement("strong"); b.textContent = part; n.appendChild(b); }
+      else n.appendChild(document.createTextNode(part));
+    });
+    return n;
+  }
+  function img(src, alt) {
+    var i = document.createElement("img");
+    i.src = src; i.alt = alt || ""; i.decoding = "async";
+    return i;
+  }
+
+  function storyNode(st, reveal) {
+    var root = mk("div", "story");
+    function photo(src, alt, pos) { var i = img(src, alt); i.loading = "lazy"; if (pos) i.style.objectPosition = pos; return i; }
+    function textRow(title, text, cls) {
+      var r = mk("section", "trow " + (cls || "")), h = mk("h2", "", title), p = mk("p", "", text);
+      r.appendChild(reveal(h)); r.appendChild(reveal(p)); p.classList.add("d1"); return r;
+    }
+    root.appendChild(textRow(st.intro.title, st.intro.text, "intro"));
+    var pair = mk("section", "spair");
+    st.pair.forEach(function (p, k) { var f = mk("div", "sph"); f.appendChild(photo(p.src, p.alt, p.pos)); if (k) f.classList.add("d1"); pair.appendChild(reveal(f)); });
+    root.appendChild(pair);
+    var wide = mk("div", "swide"); var dp = photo(st.detail.src, st.detail.alt); if (st.detail.pos) dp.style.objectPosition = st.detail.pos; wide.appendChild(dp); root.appendChild(reveal(wide));
+    var drow = textRow(st.detail.title, st.detail.text, "detail"); if (st.note) { var nt = mk("p", "snote", st.note); drow.appendChild(reveal(nt)); } root.appendChild(drow);
+    var d = st.designer, band = mk("section", "sband"), inn = mk("div", "sbin");
+    var pw = mk("div", "sbph"); if (d.portrait) pw.appendChild(photo(d.portrait, d.portraitAlt || "")); else pw.classList.add("empty");
+    inn.appendChild(reveal(pw));
+    var side = mk("div", "sbtx");
+    side.appendChild(reveal(mk("p", "slab", "Le designer")));
+    var nm = reveal(mk("h2", "sname", d.name)); nm.classList.add("d1"); side.appendChild(nm);
+    var tx = mk("div", "sbio");
+    (d.bio || ["Biographie à venir."]).forEach(function (t) { tx.appendChild(mk("p", "", t)); });
+    reveal(tx); tx.classList.add("d2"); side.appendChild(tx);
+    inn.appendChild(side); band.appendChild(inn); root.appendChild(band);
+    return root;
+  }
+
+  function ficheNode(f, reveal) {
+    var sec = mk("section", "fiche");
+    var panel = mk("div", "fpanel"); sec.appendChild(panel);
+    var tm = mk("div", "ftitle-m", f.title); tm.setAttribute("aria-hidden", "true"); panel.appendChild(reveal(tm));
+    var grid = mk("div", "fgrid"); panel.appendChild(grid);
+    var card = mk("div", "fcard");
+    card.appendChild(mk("h1", "ftitle", f.title));
+    card.appendChild(statusNode(STATUS.ani));
+    if (f.desc) card.appendChild(mk("p", "fdesc", f.desc));
+    var vw = mk("div", "fvw"), fv = mk("div", "fv");
+    var poster = img(f.poster, "Le tabouret Ani"); poster.className = "poster"; fv.appendChild(poster);
+    vw.appendChild(fv); vw.appendChild(mk("p", "fnote", "Faites glisser pour voir le tabouret à 360°"));
+    grid.appendChild(reveal(vw)); grid.appendChild(reveal(card));
+    var col = mk("div", "fcol"), lab = mk("div", "lab"), cur = mk("span", "cur", f.colors[0].name);
+    lab.appendChild(mk("span", "k", "Teinte")); lab.appendChild(cur); col.appendChild(lab);
+    var sw = mk("div", "swatches"), btns = [], viewer = null, pending = 0;
+    f.colors.forEach(function (c, k) {
+      var b = mk("button", "swatch"); b.type = "button"; b.setAttribute("aria-pressed", k === 0 ? "true" : "false"); b.setAttribute("aria-label", "Teinte " + c.name);
+      var dot = mk("i"); dot.style.background = c.swatch; b.appendChild(dot);
+      b.addEventListener("click", function () {
+        btns.forEach(function (x, j) { x.setAttribute("aria-pressed", j === k ? "true" : "false"); });
+        cur.textContent = c.name; pending = k; if (viewer) viewer.setColor(k);
+      });
+      btns.push(b); sw.appendChild(b);
+    });
+    col.appendChild(sw); card.appendChild(col);
+    card.appendChild(askNode(STATUS.ani, "ANI"));
+    if (f.extra || f.specs) {
+      var ex = mk("div", "fextra");
+      /* Descriptif : les caractéristiques, repliées comme les autres rubriques */
+      var dd = mk("details", "facc"); dd.appendChild(mk("summary", "", "Descriptif"));
+      var db = mk("div", "fbody"), spec = mk("div", "fspec");
+      f.specs.forEach(function (r) {
+        var row = mk("div", "prow"); row.appendChild(mk("span", "pl", r[0])); row.appendChild(mk("span", "pv", r[1])); spec.appendChild(row);
+      });
+      db.appendChild(spec); dd.appendChild(db); ex.appendChild(dd);
+      (f.extra || []).forEach(function (x) {
+        var d = mk("details", "facc"), sm = mk("summary", "", x.title); d.appendChild(sm);
+        var body = mk("div", "fbody");
+        if (x.items) { var ul = mk("ul"); x.items.forEach(function (t) { ul.appendChild(mk("li", "", t)); }); body.appendChild(ul); }
+        if (x.text) body.appendChild(mk("p", "", x.text));
+        d.appendChild(body); ex.appendChild(d);
+      });
+      card.appendChild(ex);
+    }
+    if (f.story) sec.appendChild(storyNode(f.story, reveal));
+    var tries = 0;
+    (function mount() {
+      if (!fv.isConnected && tries > 0) return;
+      if (window.__mountViewer) {
+        try {
+          viewer = window.__mountViewer({ el: fv, shiftEl: card, model: f.model, name: f.name, colors: f.colors, start: pending,
+            onReady: function () { fv.classList.add("ready"); }, onMove: function () { fv.classList.add("moved"); } });
+        } catch (e) { viewer = null; }
+      } else if (tries++ < 100) setTimeout(mount, 100);
+    })();
+    return sec;
+  }
+
+  var io = null;
+  if ("IntersectionObserver" in window) {
+    io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { threshold: .12, rootMargin: "0px 0px -6% 0px" });
+  }
+  function reveal(el) { el.classList.add("reveal"); if (io) io.observe(el); else el.classList.add("in"); return el; }
+  function setHH() { var h = document.querySelector("header.top"); if (h) document.documentElement.style.setProperty("--hh", h.offsetHeight + "px"); }
+  window.addEventListener("resize", setHH);
+
+  /* Défilement du bandeau : avance seul ; on le fait glisser à la main (souris, doigt, pavé tactile),
+     on peut revenir en arrière, et un geste rapide le lance plus vite avant qu'il retrouve sa vitesse normale. */
+  function reelMotion(reel, track, n) {
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var base = reduce ? 0 : (window.innerWidth < 560 ? 28 : 42);   /* vitesse de croisière, px/s */
+    var x = 0, sp = base, drag = false, lx = 0, lt = 0, vel = 0, moved = 0, prev = 0, raf = 0;
+    function half() { var a = track.children[0], b = track.children[n]; return b && a ? b.offsetLeft - a.offsetLeft : 0; }
+    function wrap() { var h = half(); if (h > 0) { x = x % h; if (x > 0) x -= h; } }
+    function frame(t) {
+      if (!reel.isConnected) return;
+      var dt = prev ? Math.min(.05, (t - prev) / 1000) : 0; prev = t;
+      if (!drag) { sp += (base - sp) * (1 - Math.exp(-dt * 0.9)); x -= sp * dt; }
+      wrap(); track.style.transform = "translate3d(" + x.toFixed(2) + "px,0,0)";
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    reel.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0) return;
+      drag = true; moved = 0; lx = e.clientX; lt = performance.now(); vel = 0;
+      reel.classList.add("drag");
+      try { reel.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    reel.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var now = performance.now(), dx = e.clientX - lx, dtt = Math.max(1, now - lt) / 1000;
+      x += dx; moved += Math.abs(dx);
+      vel = vel * 0.6 + (dx / dtt) * 0.4;  /* px/s, positif = vers la droite */
+      lx = e.clientX; lt = now;
+    });
+    function end(e) {
+      if (!drag) return; drag = false; reel.classList.remove("drag");
+      if (moved <= 6 && e && e.type === "pointerup") {  /* simple clic : ouvrir l'objet */
+        var el = document.elementFromPoint(e.clientX, e.clientY), a = el && el.closest && el.closest("a.shot");
+        if (a) { location.hash = a.getAttribute("href"); return; }
+      }
+      if (performance.now() - lt > 120) vel = 0;  /* relâché sans élan */
+      sp = Math.max(-2400, Math.min(2400, -vel));  /* l'élan du geste devient la vitesse, puis revient à la normale */
+    }
+    reel.addEventListener("pointerup", end); reel.addEventListener("pointercancel", end);
+    reel.addEventListener("click", function (e) { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
+    reel.addEventListener("wheel", function (e) {
+      var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+      if (!d) return;
+      e.preventDefault(); x -= d; sp = Math.max(-2400, Math.min(2400, sp + d * 6));
+    }, { passive: false });
+    reel.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { sp = 900; } else if (e.key === "ArrowLeft") { sp = -900; }
+    });
+  }
+
+  /* Où en est chaque objet, et comment se manifester */
+  var MAIL = "antoine.pruvost.ap@gmail.com";
+  var STATUS = {
+    ani: { label: "En cours d'édition", note: "Prix à venir", ask: "Être informé de la sortie", form: "https://tally.so/r/PRjqKd",
+      embed: "https://tally.so/embed/PRjqKd?hideTitle=1&transparentBackground=1&dynamicHeight=1&alignLeft=1",
+      msg: "ANI est en cours d'édition : je consulte des fabricants pour la version en bois massif. Écrivez-moi en indiquant « ANI » et je vous préviendrai dès qu'il sera disponible, avec son prix." },
+    hypar: { label: "Prototype", note: "Sur demande", ask: "Me contacter",
+      msg: "Hypar existe aujourd'hui en prototype. Pour une pièce, une petite série ou une question, écrivez-moi en indiquant « Hypar »." }
+  };
+  function statusNode(st) {
+    var p = mk("p", "fstat"); p.appendChild(mk("i")); p.appendChild(mk("span", "sl", st.label)); p.appendChild(mk("span", "sn", st.note));
+    return p;
+  }
+  /* Fenêtre « Être informé » : au centre de l'écran, renvoie vers le formulaire d'inscription */
+  function openSignup(st, subject, opener) {
+    var ov = mk("div", "modal"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-labelledby", "mdl-t");
+    var bx = mk("div", "mbox");
+    var ph = mk("div", "mph"); ph.appendChild(img("ani-1.jpg", "")); bx.appendChild(ph);
+    var tx = mk("div", "mtx");
+    var x = mk("button", "mx", "×"); x.type = "button"; x.setAttribute("aria-label", "Fermer"); tx.appendChild(x);
+    tx.appendChild(mk("p", "mk", subject + " · " + st.label));
+    var h = mk("h2", "", "Être informé de la sortie"); h.id = "mdl-t"; tx.appendChild(h);
+    /* Formulaire Tally intégré dans la fenêtre : on s'inscrit sans quitter le site */
+    var fr = document.createElement("iframe");
+    fr.className = "mform"; fr.title = "Inscription à la sortie d'ANI"; fr.loading = "eager";
+    fr.src = st.embed;
+    tx.appendChild(fr);
+    var go = mk("a", "mfb", "Le formulaire ne s'affiche pas ? Ouvrez-le ici →"); go.href = st.form; go.target = "_blank"; go.rel = "noopener"; tx.appendChild(go);
+    var alt = mk("p", "malt", "Vous préférez écrire ? "); var am = mk("span", "addr", MAIL); alt.appendChild(am); tx.appendChild(alt);
+    bx.appendChild(tx); ov.appendChild(bx); document.body.appendChild(ov);
+    document.documentElement.style.overflow = "hidden";
+    requestAnimationFrame(function () { ov.classList.add("on"); });
+    function close() {
+      ov.classList.remove("on"); document.documentElement.style.overflow = "";
+      document.removeEventListener("keydown", key); window.removeEventListener("message", onMsg);
+      setTimeout(function () { ov.remove(); }, 300);
+      if (opener) opener.focus();
+    }
+    function key(e) {
+      if (e.key === "Escape") close();
+      if (e.key === "Tab") { var f = [x, fr, go]; var i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); go.focus(); } else if (!e.shiftKey && i === 2) { e.preventDefault(); x.focus(); } }
+    }
+    x.addEventListener("click", close);
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    /* Hauteur du formulaire ajustée à son contenu, et fermeture douce après l'inscription */
+    function onMsg(e) {
+      if (e.origin !== "https://tally.so" || typeof e.data !== "string") return;
+      try {
+        var d = JSON.parse(e.data);
+        if (d.event === "Tally.FormPageHeight" && d.payload && d.payload.height) fr.style.height = d.payload.height + "px";
+        if (d.event === "Tally.FormSubmitted") setTimeout(close, 2600);
+      } catch (er) {}
+    }
+    window.addEventListener("message", onMsg);
+    document.addEventListener("keydown", key);
+    x.focus();
+  }
+  function askNode(st, subject) {
+    if (st.form) {
+      var wf = mk("div", "ask");
+      var bf = mk("button", "askbtn", st.ask); bf.type = "button"; bf.setAttribute("aria-haspopup", "dialog");
+      bf.addEventListener("click", function () { openSignup(st, subject, bf); });
+      wf.appendChild(bf); return wf;
+    }
+    var w = mk("div", "ask");
+    var b = mk("button", "askbtn", st.ask); b.type = "button"; b.setAttribute("aria-expanded", "false");
+    var box = mk("div", "askbox"); box.hidden = true; box.id = "ask-" + subject.toLowerCase();
+    b.setAttribute("aria-controls", box.id);
+    box.appendChild(mk("p", "", st.msg));
+    var row = mk("div", "askrow");
+    var addr = mk("span", "addr", MAIL);
+    var cp = mk("button", "copy", "Copier l'adresse"); cp.type = "button";
+    cp.addEventListener("click", function () {
+      function done() { cp.textContent = "Adresse copiée"; setTimeout(function () { cp.textContent = "Copier l'adresse"; }, 2000); }
+      function sel() { var r = document.createRange(); r.selectNodeContents(addr); var s = getSelection(); s.removeAllRanges(); s.addRange(r); cp.textContent = "Adresse sélectionnée"; }
+      try { navigator.clipboard.writeText(MAIL).then(done, sel); } catch (e) { sel(); }
+    });
+    row.appendChild(addr); row.appendChild(cp);
+    box.appendChild(row);
+    var ml = mk("a", "mail", "Ouvrir ma messagerie →"); ml.href = "mailto:" + MAIL + "?subject=" + encodeURIComponent(subject);
+    box.appendChild(ml);
+    b.addEventListener("click", function () { var open = box.hidden; box.hidden = !open; b.setAttribute("aria-expanded", open ? "true" : "false"); });
+    w.appendChild(b); w.appendChild(box);
+    return w;
+  }
+
+  /* Accueil de la boutique */
+  function renderHome() {
+    document.title = "Antoinepruvostobjects";
+    /* Bandeau d'ouverture : les photos des objets défilent en continu, un clic ouvre l'objet */
+    var shots = [
+      ["ani-1.jpg", "ani", "ANI", "Tabouret", "Le tabouret ANI, photo studio"],
+      ["hypar-paysage.jpg", "hypar", "Hypar", "Cale-porte", "Hypar posé seul, vu de face"],
+      ["ani-02.jpg", "ani", "ANI", "Tabouret", "ANI tenu par son ouverture centrale"],
+      ["hypar-trio.jpg", "hypar", "Hypar", "Cale-porte", "Trois Hypar vus de dessus"],
+      ["ani-05.jpg", "ani", "ANI", "Tabouret", "Les pieds d'ANI vus de face"],
+      ["hypar-02.jpg", "hypar", "Hypar", "Cale-porte", "Hypar glissé sous une porte"],
+      ["ani-assise.jpg", "ani", "ANI", "Tabouret", "L'assise d'ANI tenue à la main"],
+      ["hypar-03.jpg", "hypar", "Hypar", "Cale-porte", "Deux Hypar près d'une porte"],
+      ["ani-detail-new.jpg", "ani", "ANI", "Tabouret", "Détail d'un assemblage d'ANI"]
+    ];
+    var reel = mk("section", "reel"); reel.setAttribute("aria-label", "Photos des objets");
+    var track = mk("div", "track");
+    [0, 1].forEach(function (copy) {
+      shots.forEach(function (sh, k) {
+        var a = mk("a", "shot"); a.href = "#" + sh[1];
+        if (copy) { a.setAttribute("aria-hidden", "true"); a.tabIndex = -1; }
+        var im = img(sh[0], copy ? "" : sh[4]); if (copy || k > 3) im.loading = "lazy";
+        var f = mk("span", "sf"); f.appendChild(im); a.appendChild(f);
+        var c = mk("span", "sc"); c.appendChild(mk("span", "t", sh[2])); c.appendChild(mk("span", "k", sh[3])); a.appendChild(c);
+        track.appendChild(a);
+      });
+    });
+    reel.appendChild(track);
+    view.appendChild(reel);
+    reelMotion(reel, track, shots.length);
+
+    var lead = mk("section", "slead");
+    lead.appendChild(reveal(mk("h1", "", "Des objets utiles, pensés pour durer, être compris et réparés.")));
+    var lp = mk("p", "", "Chaque objet part d'un usage réel et d'une construction lisible. Les assemblages restent visibles, les pièces se remplacent, et le dessin cherche la justesse plutôt que l'effet.");
+    lp.classList.add("d1"); lead.appendChild(reveal(lp));
+    view.appendChild(lead);
+
+    var t1 = mk("div", "secttl"); t1.appendChild(mk("h2", "", "Collection")); t1.appendChild(mk("span", "rule")); t1.appendChild(mk("span", "k", "2 objets"));
+    view.appendChild(t1);
+    var coll = mk("div", "coll");
+    [
+      { id: "ani", name: "ANI", kind: "Tabouret", photo: "ani-1.jpg", alt: "Le tabouret ANI jaune, photo studio", pos: "50% 62%", status: STATUS.ani,
+        text: "Une assise circulaire posée sur des plans de bois qui se croisent, inspirés de l'aile d'une libellule. Conçu pour le Musée Horta.",
+        colors: fiche.colors, specs: [["Matière", "Bois massif"], ["Dimensions", "H 43 cm, Ø 32 cm"], ["Livraison", "À plat, à monter"]], cta: "Voir le tabouret" },
+      { id: "hypar", name: "Hypar", kind: "Cale-porte", photo: "hypar-trio.jpg", alt: "Trois Hypar vus de dessus", pos: "50% 50%", status: STATUS.hypar,
+        text: "Une surface à double courbure qui se glisse sous la porte et la retient par simple pression. Discret, il se range contre le mur.",
+        specs: [["Matière", "Fibre de verre et époxy"], ["Dimensions", "15 × 10 × 3,2 cm"], ["Usage", "Sous la porte, retenu du pied"]], cta: "Voir le cale-porte" }
+    ].forEach(function (o, k) {
+      var ft = mk("section", "feat" + (k % 2 ? " flip" : ""));
+      var ph = mk("a", "ph"); ph.href = "#" + o.id; ph.setAttribute("aria-label", o.cta + " " + o.name);
+      var pi = img(o.photo, o.alt); pi.loading = "lazy"; pi.style.objectPosition = o.pos; ph.appendChild(pi);
+      ft.appendChild(reveal(ph));
+      var sd = mk("div", "side");
+      sd.appendChild(mk("h2", "nm", o.name));
+      sd.appendChild(mk("p", "kd", o.kind));
+      sd.appendChild(statusNode(o.status));
+      sd.appendChild(mk("p", "tg", o.text));
+      if (o.colors) {
+        var dots = mk("div", "dots");
+        o.colors.forEach(function (c) { var d = mk("i"); d.style.background = c.swatch; d.title = c.name; dots.appendChild(d); });
+        dots.appendChild(mk("span", "", o.colors.length + " teintes prévues"));
+        sd.appendChild(dots);
+      }
+      var sp = mk("div", "fspec");
+      o.specs.forEach(function (r) { var row = mk("div", "prow"); row.appendChild(mk("span", "pl", r[0])); row.appendChild(mk("span", "pv", r[1])); sp.appendChild(row); });
+      sd.appendChild(sp);
+      var cta = mk("a", "cta", o.cta); cta.href = "#" + o.id; sd.appendChild(cta);
+      reveal(sd); sd.classList.add("d1"); ft.appendChild(sd);
+      coll.appendChild(ft);
+    });
+    view.appendChild(coll);
+
+    var t2 = mk("div", "secttl"); t2.appendChild(mk("h2", "", "Fabriqué pour durer")); t2.appendChild(mk("span", "rule"));
+    view.appendChild(t2);
+    var vals = mk("section", "vals");
+    [["Bois massif", "Une matière franche, protégée par une finition mate qui laisse voir le fil du bois."],
+     ["Livré à plat", "Le tabouret arrive en pièces, avec les outils et la notice. Il se monte en quelques minutes."],
+     ["Réparable", "Quatre vis en inox et quatre inserts en aluminium : chaque pièce se démonte et se remplace."]].forEach(function (v, k) {
+      var b = mk("div", "val"); b.appendChild(mk("h3", "", v[0])); b.appendChild(mk("p", "", v[1]));
+      reveal(b); if (k) b.classList.add("d" + k); vals.appendChild(b);
+    });
+    view.appendChild(vals);
+
+    var gp = mk("section", "gpair");
+    [["ani-02.jpg", "Le tabouret ANI tenu par son ouverture centrale"], ["ani-detail-new.jpg", "Gros plan sur un assemblage métallique du tabouret ANI"]].forEach(function (g, k) {
+      var a = mk("a"); a.href = "#ani"; var i = img(g[0], g[1]); i.loading = "lazy"; a.appendChild(i); reveal(a); if (k) a.classList.add("d1"); gp.appendChild(a);
+    });
+    view.appendChild(gp);
+
+    var st = storyNode(fiche.story, reveal);
+    var band = st.querySelector(".sband"); if (band) view.appendChild(band);
+  }
+
+  function video(src) {
+    var v = document.createElement("video");
+    v.src = src; v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true;
+    v.setAttribute("playsinline", ""); v.setAttribute("muted", ""); v.preload = "auto";
+    var p = v.play && v.play(); if (p && p.catch) p.catch(function () {});
+    return v;
+  }
+  var hypar = {
+    title: "HYPAR - Cale-porte",
+    stl: "hypar-model.js", name: "hypar", fibre: "hypar-fibre.jpg",
+    desc: "Une surface à double courbure qui se glisse sous la porte et la retient par simple pression. Discret, il se range contre le mur.",
+    specs: [["Matière", "Fibre de verre et résine époxy"], ["Finition", "Tissu de verre apparent, vernis brillant"], ["Forme", "Paraboloïde hyperbolique"], ["Dimensions", "15 × 10 × 3,2 cm"], ["Usage", "Sous la porte, retenu du pied"]],
+    story: {
+      intro: { title: "Quand les mathématiques deviennent pratiques",
+        text: "Hypar réinterprète le cale-porte, un objet du quotidien souvent encombrant. Une enquête auprès de 66 personnes a fait ressortir trois attentes : la discrétion, l'intégration à la porte et moins d'objets laissés au sol." },
+      pair: [
+        { src: "hypar-02.jpg", alt: "Hypar glissé sous une porte" },
+        { src: "hypar-trio.jpg", alt: "Trois Hypar posés au sol, vus de dessus" }
+      ],
+      detail: { src: "hypar-paysage.jpg", alt: "Hypar posé seul, vu de face", pos: "50% 55%", title: "Une géométrie qui travaille",
+        text: "La double courbure est à la fois rigide et souple, ce qui crée une mise en tension. On glisse l'extrémité sous la porte et on la retient du pied ; la porte avance sur la surface, et la pression l'immobilise." },
+      note: "Prototypes photographiés, réalisés en impression 3D. Version finale en fibre de verre et époxy.",
+      designer: fiche.story.designer
+    }
+  };
+  function hyparNode(h) {
+    var sec = mk("section", "fiche");
+    var panel = mk("div", "fpanel"); sec.appendChild(panel);
+    var tm = mk("div", "ftitle-m", h.title); tm.setAttribute("aria-hidden", "true"); panel.appendChild(reveal(tm));
+    var grid = mk("div", "fgrid"); panel.appendChild(grid);
+    var vw = mk("div", "fvw"), fv = mk("div", "fv");
+    vw.appendChild(fv); vw.appendChild(mk("p", "fnote", "Faites glisser pour voir le cale-porte à 360°"));
+    var card = mk("div", "fcard");
+    card.appendChild(mk("h1", "ftitle", h.title));
+    card.appendChild(statusNode(STATUS.hypar));
+    card.appendChild(mk("p", "fdesc", h.desc));
+    var spec = mk("div", "fspec");
+    h.specs.forEach(function (r) { var row = mk("div", "prow"); row.appendChild(mk("span", "pl", r[0])); row.appendChild(mk("span", "pv", r[1])); spec.appendChild(row); });
+    card.appendChild(spec);
+    card.appendChild(askNode(STATUS.hypar, "Hypar"));
+    grid.appendChild(reveal(vw)); grid.appendChild(reveal(card));
+    sec.appendChild(storyNode(h.story, reveal));
+    var tries = 0;
+    (function mount() {
+      if (!fv.isConnected && tries > 0) return;
+      if (window.__mountViewer) {
+        try { window.__mountViewer({ el: fv, shiftEl: card, stl: h.stl, name: h.name, fibre: h.fibre, label: "Cale-porte Hypar en 3D, à faire tourner",
+          onReady: function () { fv.classList.add("ready"); }, onMove: function () { fv.classList.add("moved"); } }); } catch (e) {}
+      } else if (tries++ < 100) setTimeout(mount, 100);
+    })();
+    return sec;
+  }
+
+  /* Menu Objects */
+  var ob = document.getElementById("obj-btn"), om = document.getElementById("obj-menu");
+  function closeMenu() { om.hidden = true; ob.setAttribute("aria-expanded", "false"); }
+  ob.addEventListener("click", function (e) { e.stopPropagation(); var open = om.hidden; om.hidden = !open; ob.setAttribute("aria-expanded", open ? "true" : "false"); });
+  om.addEventListener("click", function (e) { var a = e.target.closest("a"); if (a && a.getAttribute("href") === location.hash) { e.preventDefault(); closeMenu(); } });
+  document.addEventListener("click", function (e) { if (!om.hidden && !om.contains(e.target)) closeMenu(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !om.hidden) { closeMenu(); ob.focus(); } });
+
+  function route() {
+    var id = (location.hash || "").replace("#", "");
+    view.textContent = "";
+    var isObj = id === "ani" || id === "hypar";
+    document.body.classList.toggle("fichepage", isObj);
+    closeMenu();
+    ob.classList.toggle("on", isObj);
+    om.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-id") === id); });
+    setHH();
+    if (id === "ani") { document.title = "ANI, tabouret | Antoinepruvostobjects"; view.appendChild(ficheNode(fiche, reveal)); }
+    else if (id === "hypar") { document.title = "Hypar, cale-porte | Antoinepruvostobjects"; view.appendChild(hyparNode(hypar)); }
+    else renderHome();
+    window.scrollTo(0, 0);
+  }
+  /* Chargement : le logo avance au rythme de ce qui est chargé.
+     Page rapide = animation rapide ; page lente = animation lente, qui attend la fin du chargement. */
+  var ov = document.getElementById("logo-ov"), lv = ov && ov.querySelector("video"), run = 0;
+  function progress() {
+    var tot = 0, done = 0;
+    view.querySelectorAll("img").forEach(function (im) {
+      if (im.loading === "lazy") return;
+      tot++; if (im.complete) done++;
+    });
+    var fv = view.querySelector(".fv");
+    if (fv) { tot += 4; if (fv.classList.contains("ready")) done += 4; }
+    if (document.fonts && document.fonts.status !== "loaded") tot++;
+    return tot ? done / tot : 1;
+  }
+  function loadWithLogo(first) {
+    var id = ++run, t0 = performance.now(), routed = !!first;
+    if (!ov || !lv) { if (!first) route(); return; }
+    ov.classList.remove("off"); ov.classList.add("in");
+    if (first) route(); else setTimeout(function () { if (id === run) { route(); routed = true; } }, 180);
+    try { lv.currentTime = 0; lv.playbackRate = 1; var pp = lv.play(); if (pp && pp.catch) pp.catch(function () {}); } catch (e) {}
+    (function tick() {
+      if (id !== run) return;
+      var D = lv.duration || 2.4, el = (performance.now() - t0) / 1000;
+      var p = routed ? progress() : 0;
+      if (el > 9) p = 1;  /* sécurité : on n'attend jamais plus de 9 s */
+      var ct = lv.currentTime, rate;
+      if (p >= 1) {
+        rate = Math.min(4, Math.max(1.6, (D - ct) / .35));  /* tout est là : on termine vite */
+        if (lv.paused && !lv.ended) { var q = lv.play(); if (q && q.catch) q.catch(function () {}); }
+      } else {
+        var target = Math.min(p, .9) * D;
+        rate = Math.min(2.5, Math.max(.35, (target - ct) / .6));  /* en retard sur le chargement : le logo ralentit */
+        if (ct >= .9 * D) { lv.pause(); rate = .35; }
+      }
+      try { lv.playbackRate = rate; } catch (e) {}
+      if (p >= 1 && (lv.ended || ct >= D - .03 || (lv.paused && lv.readyState < 2 && el > .6) || el > 10)) {
+        ov.classList.remove("in"); ov.classList.add("off"); return;
+      }
+      requestAnimationFrame(tick);
+    })();
+  }
+  window.addEventListener("hashchange", function () { loadWithLogo(false); });
+  document.getElementById("home-link").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (location.hash) { history.pushState("", document.title, location.pathname + location.search); loadWithLogo(false); }
+  });
+  loadWithLogo(true);
+})();
+</script></script><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import { HorizontalBlurShader } from "three/addons/shaders/HorizontalBlurShader.js";
+import { VerticalBlurShader } from "three/addons/shaders/VerticalBlurShader.js";
+
+/* Visionneuse 3D d'Ani : tabouret posé au sol, que l'on fait tourner à la souris ou au doigt */
+window.__mountViewer = function (o) {
+  var host = o.el, colors = o.colors || [{ light: "#ffffff", dark: "#ffffff" }], ro, io, raf = 0, alive = true, visible = true, disposed = false;
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+  } catch (e) { return null; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  var cv = renderer.domElement; cv.setAttribute("role", "img"); cv.setAttribute("aria-label", o.label || "Tabouret Ani en 3D, à faire tourner");
+  host.insertBefore(cv, host.firstChild);
+
+  var scene = new THREE.Scene(); 
+  var pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = 0.6;
+  var camera = new THREE.PerspectiveCamera(26, 1, 0.05, 20);
+  var target = new THREE.Vector3(0, 0.21, 0);
+  camera.position.set(-0.56, 0.44, 1.42); camera.lookAt(target);
+
+  var controls = new OrbitControls(camera, cv);
+  controls.target.copy(target); controls.enablePan = false; controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.enableZoom = false; controls.minDistance = 2.0; controls.maxDistance = 2.0; controls.minPolarAngle = 0.55; controls.maxPolarAngle = 1.5;
+  controls.autoRotate = true; controls.autoRotateSpeed = 1.1; controls.rotateSpeed = 0.7;
+  cv.style.touchAction = "pan-y";
+  var resumeT = 0;
+  controls.addEventListener("start", function () { clearTimeout(resumeT); controls.autoRotate = false; if (o.onMove) o.onMove(); });
+  controls.addEventListener("end", function () { clearTimeout(resumeT); resumeT = setTimeout(function () { controls.autoRotate = true; }, 1200); });
+
+  /* bois teinté : veinage procédural, deux teintes pilotées par des uniformes */
+  var uLight = { value: new THREE.Color(colors[0].light) }, uDark = { value: new THREE.Color(colors[0].dark) };
+  var woodMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0 });
+  woodMat.onBeforeCompile = function (sh) {
+    sh.uniforms.uLight = uLight; sh.uniforms.uDark = uDark;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvOP=position;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;\nuniform vec3 uLight;\nuniform vec3 uDark;\n" +
+      "float h31(vec3 p){p=fract(p*0.3183099+.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}\n" +
+      "float vn(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);return mix(mix(mix(h31(i),h31(i+vec3(1,0,0)),f.x),mix(h31(i+vec3(0,1,0)),h31(i+vec3(1,1,0)),f.x),f.y),mix(mix(h31(i+vec3(0,0,1)),h31(i+vec3(1,0,1)),f.x),mix(h31(i+vec3(0,1,1)),h31(i+vec3(1,1,1)),f.x),f.y),f.z);}\n")
+      .replace("#include <color_fragment>", "#include <color_fragment>\n{\n vec3 p=vOP*1000.0;\n" +
+        " float warp=vn(vec3(p.x*.02,p.y*.008,p.z*.02))*1.8+vn(vec3(p.x*.1,p.y*.03,p.z*.1))*.35;\n" +
+        " float rings=sin((p.x*.9+p.z*.9)*.22+warp*6.0);\n" +
+        " float g=smoothstep(-.2,1.,rings)*.55+vn(vec3(p.x*.9,p.y*.06,p.z*.9))*.45;\n" +
+        " float pores=vn(vec3(p.x*2.4,p.y*.22,p.z*2.4));\n" +
+        " vec3 c=mix(uLight,uDark,clamp(g*.6+pores*.1,0.,1.));\n c*=1.0-.04*smoothstep(.65,1.,pores);\n diffuseColor.rgb=c;\n}");
+  };
+  var alu = new THREE.MeshStandardMaterial({ color: 0xdfe1e3, roughness: 0.42, metalness: 1, envMapIntensity: 1.5 });
+  var inox = new THREE.MeshStandardMaterial({ color: 0xc2c5c8, roughness: 0.3, metalness: 1, envMapIntensity: 1.6 });
+
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.14 }));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  var dl = new THREE.DirectionalLight(0xffffff, 2.2); dl.position.set(-0.7, 1.8, 0.9); dl.castShadow = true;
+  dl.shadow.mapSize.set(2048, 2048); dl.shadow.radius = 8; dl.shadow.bias = -0.0003; dl.shadow.normalBias = 0.003;
+  Object.assign(dl.shadow.camera, { left: -1, right: 1, top: 1, bottom: -1, near: 0.2, far: 5 }); scene.add(dl);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.35));
+
+  function onModel(gltf) {
+    if (disposed) return;
+    gltf.scene.traverse(function (n) {
+      if (!n.isMesh) return;
+      var nm = (n.name + " " + (n.parent ? n.parent.name : "")).toLowerCase();
+      n.material = /ball/.test(nm) ? alu : /screw/.test(nm) ? inox : woodMat;
+      n.castShadow = true; n.receiveShadow = true;
+    });
+    scene.add(gltf.scene);
+    setColorNow(o.start || 0); resize(); draw(); if (o.onReady) o.onReady();
+  }
+  function parseB64(b64) {
+    var bin = atob(b64), len = bin.length, buf = new Uint8Array(len);
+    for (var k = 0; k < len; k++) buf[k] = bin.charCodeAt(k);
+    new GLTFLoader().parse(buf.buffer, "", onModel, function () {});
+  }
+  /* Pièce en fibre de verre et époxy : tissu de verre plaqué sur la forme (projection sur trois axes), vernis brillant par-dessus */
+  function fibreMaterial() {
+    var tex = new THREE.TextureLoader().load(o.fibre, function () { draw(); });
+    tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping; tex.anisotropy = 8;
+    var m = new THREE.MeshPhysicalMaterial({ color: 0xf6f5f1, roughness: 0.42, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, sheen: 0.25, sheenColor: new THREE.Color(0xffffff), sheenRoughness: 0.5 });
+    m.onBeforeCompile = function (sh) {
+      sh.uniforms.uFib = { value: tex }; sh.uniforms.uTile = { value: 0.045 };
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;\nvarying vec3 vON;")
+        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvOP=position;vON=normal;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;\nvarying vec3 vON;\nuniform sampler2D uFib;\nuniform float uTile;\nfloat fibL;")
+        .replace("#include <map_fragment>", "#include <map_fragment>\n{\n vec3 bw=pow(abs(normalize(vON)),vec3(4.0)); bw/=(bw.x+bw.y+bw.z);\n vec3 q=vOP/uTile;\n" +
+          " vec3 t=texture2D(uFib,q.yz).rgb*bw.x+texture2D(uFib,q.xz).rgb*bw.y+texture2D(uFib,q.xy).rgb*bw.z;\n" +
+          " fibL=dot(t,vec3(.333));\n diffuseColor.rgb*=mix(vec3(fibL*0.0+0.9),t*1.12,0.85);\n}")
+        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor*=mix(1.25,0.7,clamp(fibL*1.6-0.6,0.,1.));");
+    };
+    return m;
+  }
+  /* Ombre de contact : la pièce vue d'en dessous, sa hauteur au-dessus du sol devient une ombre floutée.
+     Plus la surface est proche du sol, plus l'ombre est dense et nette : elle naît au bord de l'objet. */
+  function contactShadow(r) {
+    var W = r * 3.2, H = r * 3.2, CH = r * 0.55;
+    var rt = new THREE.WebGLRenderTarget(1024, 1024), rtb = new THREE.WebGLRenderTarget(1024, 1024);
+    rt.texture.generateMipmaps = false; rtb.texture.generateMipmaps = false;
+    var pg = new THREE.PlaneGeometry(W, H).rotateX(Math.PI / 2);
+    var plane = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: rt.texture, opacity: 0.5, transparent: true, depthWrite: false }));
+    plane.renderOrder = 1; plane.scale.y = -1; plane.position.y = 0.0002;
+    var blurPlane = new THREE.Mesh(pg); blurPlane.visible = false;
+    var grp = new THREE.Group(); grp.add(plane); grp.add(blurPlane);
+    var cam = new THREE.OrthographicCamera(-W / 2, W / 2, H / 2, -H / 2, 0, CH); cam.rotation.x = Math.PI / 2; grp.add(cam);
+    scene.add(grp);
+    var dm = new THREE.MeshDepthMaterial();
+    dm.userData.darkness = { value: 1.1 };
+    dm.onBeforeCompile = function (sh) {
+      sh.uniforms.darkness = dm.userData.darkness;
+      sh.fragmentShader = "uniform float darkness;\n" + sh.fragmentShader.replace("gl_FragColor = vec4( vec3( 1.0 - fragCoordZ ), opacity );",
+        "float a = pow(1.0 - fragCoordZ, 2.2) * darkness; gl_FragColor = vec4( vec3( 0.0 ), a );");
+    };
+    dm.depthTest = false; dm.depthWrite = false;
+    var hb = new THREE.ShaderMaterial(HorizontalBlurShader), vb = new THREE.ShaderMaterial(VerticalBlurShader);
+    hb.depthTest = false; vb.depthTest = false;
+    function blur(a) {
+      blurPlane.visible = true;
+      blurPlane.material = hb; hb.uniforms.tDiffuse.value = rt.texture; hb.uniforms.h.value = a / 256;
+      renderer.setRenderTarget(rtb); renderer.render(blurPlane, cam);
+      blurPlane.material = vb; vb.uniforms.tDiffuse.value = rtb.texture; vb.uniforms.v.value = a / 256;
+      renderer.setRenderTarget(rt); renderer.render(blurPlane, cam);
+      blurPlane.visible = false;
+    }
+    var gv = ground.visible; ground.visible = false; plane.visible = false;
+    var cc = new THREE.Color(); renderer.getClearColor(cc); var ca = renderer.getClearAlpha();
+    renderer.setClearColor(0x000000, 0);
+    scene.overrideMaterial = dm;
+    renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, cam);
+    scene.overrideMaterial = null;
+    blur(1.6); blur(0.6);
+    renderer.setRenderTarget(null); renderer.setClearColor(cc, ca);
+    ground.visible = gv; plane.visible = true;
+  }
+  function onSTL(buf) {
+    if (disposed) return;
+    var g = new STLLoader().parse(buf);
+    g.deleteAttribute("normal"); g = mergeVertices(g, 1e-3); g.computeVertexNormals();
+    g.rotateX(-Math.PI / 2); g.scale(0.001, 0.001, 0.001); g.computeBoundingBox();
+    var b = g.boundingBox; g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+    g.computeBoundingSphere();
+    var mesh = new THREE.Mesh(g, fibreMaterial()); mesh.castShadow = true; mesh.receiveShadow = true;
+    scene.add(mesh);
+    var r = g.boundingSphere.radius, k = r / 0.27;
+    target.set(0, g.boundingSphere.center.y, 0); controls.target.copy(target);
+    camera.position.set(-0.56 * k, 0.44 * k + target.y, 1.42 * k); camera.near = 0.01; camera.updateProjectionMatrix();
+    controls.minDistance = controls.maxDistance = r * 6.8;
+    /* Ombre portée : lumière haute, ombre nette au contact, sans décalage qui la détache de la pièce */
+    dl.position.set(-0.35 * r * 8, 2.4 * r * 8, 0.55 * r * 8);
+    dl.shadow.bias = -0.00004; dl.shadow.normalBias = 0.0002; dl.shadow.mapSize.set(2048, 2048);
+    if (dl.shadow.map) { dl.shadow.map.dispose(); dl.shadow.map = null; }
+    Object.assign(dl.shadow.camera, { left: -r * 1.4, right: r * 1.4, top: r * 1.4, bottom: -r * 1.4, near: 0.01, far: r * 40 }); dl.shadow.camera.updateProjectionMatrix();
+    ground.material.opacity = 0.055;
+    contactShadow(r);
+    resize(); draw(); if (o.onReady) o.onReady();
+  }
+  window.__GLB = window.__GLB || {};
+  if (o.stl) {
+    window.__STL = window.__STL || {};
+    var fromB64 = function () { var bin = atob(window.__STL[o.name]), u = new Uint8Array(bin.length); for (var k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k); onSTL(u.buffer); };
+    if (window.__STL[o.name]) fromB64();
+    else { var ss = document.createElement("script"); ss.src = o.stl; ss.onload = function () { if (window.__STL[o.name]) fromB64(); }; document.head.appendChild(ss); }
+  } else if (window.__GLB[o.name]) parseB64(window.__GLB[o.name]);
+  else {
+    var sc = document.createElement("script"); sc.src = o.model;
+    sc.onload = function () { if (window.__GLB[o.name]) parseB64(window.__GLB[o.name]); };
+    document.head.appendChild(sc);
+  }
+
+  var tw = 0, from = [new THREE.Color(), new THREE.Color()], to = [new THREE.Color(), new THREE.Color()], tstart = 0;
+  function setColorNow(i) { uLight.value.set(colors[i].light); uDark.value.set(colors[i].dark); }
+  function setColor(i) {
+    from[0].copy(uLight.value); from[1].copy(uDark.value); to[0].set(colors[i].light); to[1].set(colors[i].dark);
+    tstart = performance.now(); tw = 1;
+  }
+  function resize() {
+    var w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h;
+    var sh = (o.shiftEl && window.innerWidth > 800) ? (o.shiftEl.offsetWidth + parseFloat(getComputedStyle(o.shiftEl).marginRight || 0)) / 2 : 0;
+    if (sh) camera.setViewOffset(w, h, sh, 0, w, h); else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+  }
+  function draw() {
+    if (tw) {
+      var t = Math.min(1, (performance.now() - tstart) / 450), e = t * t * (3 - 2 * t);
+      uLight.value.copy(from[0]).lerp(to[0], e); uDark.value.copy(from[1]).lerp(to[1], e); if (t >= 1) tw = 0;
+    }
+    controls.update(); renderer.render(scene, camera);
+  }
+  function loop() {
+    raf = 0;
+    if (disposed) return;
+    if (!host.isConnected) { dispose(); return; }
+    if (visible) draw();
+    raf = requestAnimationFrame(loop);
+  }
+  if ("ResizeObserver" in window) { ro = new ResizeObserver(resize); ro.observe(host); } else window.addEventListener("resize", resize);
+  if ("IntersectionObserver" in window) { io = new IntersectionObserver(function (es) { visible = es[0].isIntersecting; }); io.observe(host); }
+  resize(); raf = requestAnimationFrame(loop);
+  function dispose() {
+    disposed = true; if (raf) cancelAnimationFrame(raf);
+    if (ro) ro.disconnect(); if (io) io.disconnect();
+    controls.dispose(); renderer.dispose();
+  }
+  return { setColor: setColor, dispose: dispose };
+};
+
+</script>
+
+</body></html>
