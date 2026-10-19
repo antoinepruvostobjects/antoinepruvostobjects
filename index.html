@@ -509,6 +509,13 @@ header.top .meta a.on { color: var(--fg); }
 .mform { display: block; width: 100%; height: 200px; border: 0; margin: 18px 0 0; background: transparent; transition: height .25s ease; }
 .mfb { display: inline-block; margin-top: 6px; color: var(--muted); font-size: .8em; }
 .mfb:hover { color: var(--fg); }
+
+/* Textes en bloc : justifiés, avec césure française pour éviter les grands blancs entre les mots */
+.trow p, .slead p, .feat .tg, .fdesc, .val p, .sbio p, .fbody p, .askbox p, .mtx .mp {
+  text-align: justify; text-justify: inter-word; text-align-last: left;
+  hyphens: auto; -webkit-hyphens: auto; hyphenate-limit-chars: 6 3 3;
+  word-spacing: -0.01em;
+}
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
