@@ -608,25 +608,39 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 .mcol a.mall { margin-top: 6px; color: var(--muted); }
 .mcol a.mall:hover { color: var(--fg); }
 
-/* Fiche contact en bas de chaque page */
-footer.cfoot { display: block; margin-top: clamp(96px, 11vw, 180px); border-top: 1px solid var(--line); padding-top: clamp(32px, 3.4vw, 56px); color: var(--fg); }
-.cf-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 32px clamp(24px, 4vw, 72px); }
-.cf-q { margin: 0; max-width: 18em; font-size: clamp(20px, 1vw + 14px, 30px); line-height: 1.3; text-wrap: balance; }
-.cf-list { margin: 0; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
-.cf-list > div { min-width: 0; }
-.cf-list dt { margin: 0 0 8px; color: var(--muted); font-size: .85em; letter-spacing: .02em; }
-.cf-list dd { margin: 0; overflow-wrap: break-word; line-height: 1.5; }
-.cf-copy { display: block; margin: 4px 0 0 !important; }
-.cf-list a { color: var(--fg); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
-.cf-list a:hover { text-decoration-color: var(--fg); }
-.cf-copy { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; margin-left: 6px; font: inherit; font-size: .8em; color: var(--muted); cursor: pointer; }
-.cf-copy:hover { color: var(--fg); }
-.cf-copy:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
-.cf-bot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(40px, 4vw, 72px); padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9em; }
-@media (max-width: 1100px) { .cf-top { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 640px) { .cf-list { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
-.cf-list dd a { white-space: nowrap; }
-@media (max-width: 360px) { .cf-list dd a { white-space: normal; overflow-wrap: anywhere; } }
+/* Contact : bande sombre en bas de chaque page, coupe droite, coordonnées et formulaire */
+:root { --cf-bg: #232325; --cf-field: #1a1a1c; --cf-fg: #f1f1ef; --cf-mut: rgba(241,241,239,.55); --cf-line: rgba(241,241,239,.14); }
+body { padding-bottom: 0; }
+footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--gut)) 0; padding: clamp(44px, 4.4vw, 72px) var(--gut) max(22px, env(safe-area-inset-bottom, 0px)); background: var(--cf-bg); color: var(--cf-fg); font-size: .95em; }
+.wrap.main:has(.sband) footer.cfoot { margin-top: 0; }
+.cf-in { max-width: 1100px; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 32px clamp(32px, 6vw, 110px); }
+.cf-info h2 { margin: 0 0 8px; font-size: 1.25em; font-weight: 500; letter-spacing: .03em; }
+.cf-sub { margin: 0 0 26px; color: var(--cf-mut); line-height: 1.5; max-width: 26em; }
+.cf-list { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.cf-list dt { margin: 0 0 3px; color: var(--cf-mut); font-size: .8em; letter-spacing: .05em; }
+.cf-list dd { margin: 0; }
+.cf-list a { color: var(--cf-fg); overflow-wrap: anywhere; }
+.cf-list a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.cf-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.cf-wide { grid-column: 1 / -1; }
+.cf-f { display: block; min-width: 0; }
+.cf-f input, .cf-f textarea { display: block; width: 100%; box-sizing: border-box; border: 1px solid transparent; border-radius: 0; background: var(--cf-field); color: var(--cf-fg); font: inherit; font-size: .95em; padding: 13px 15px; letter-spacing: .02em; resize: vertical; }
+.cf-f textarea { min-height: 112px; }
+.cf-f input::placeholder, .cf-f textarea::placeholder { color: var(--cf-mut); font-size: .8em; letter-spacing: .08em; text-transform: uppercase; }
+.cf-f input:focus, .cf-f textarea:focus { outline: none; border-color: rgba(241,241,239,.5); }
+.cf-act { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 4px; }
+.cf-state { margin: 0; color: var(--cf-mut); font-size: .88em; min-height: 1.2em; }
+.cf-state.ok { color: var(--cf-fg); }
+.cf-send { appearance: none; -webkit-appearance: none; border: 0; border-radius: 0; background: #0e0e0f; color: var(--cf-fg); font: inherit; font-size: .85em; letter-spacing: .1em; text-transform: uppercase; padding: 14px 34px; cursor: pointer; transition: background .25s ease; }
+.cf-send:hover { background: #000; }
+.cf-send:disabled { opacity: .5; cursor: default; }
+.cf-send:focus-visible, .cf-top-link:focus-visible, .cf-list a:focus-visible { outline: 2px solid var(--cf-fg); outline-offset: 3px; }
+.cf-hp, .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cf-bot { max-width: 1100px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(40px, 4vw, 64px); padding-top: 16px; border-top: 1px solid var(--cf-line); color: var(--cf-mut); font-size: .85em; }
+.cf-top-link { color: var(--cf-fg); letter-spacing: .04em; }
+@media (min-width: 1300px) { .cf-in, .cf-bot { margin-inline: auto; } }
+@media (max-width: 800px) { .cf-in { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .cf-form { grid-template-columns: minmax(0, 1fr); } .cf-send { width: 100%; } .cf-act { flex-direction: column-reverse; align-items: stretch; } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
@@ -656,16 +670,26 @@ footer.cfoot { display: block; margin-top: clamp(96px, 11vw, 180px); border-top:
 
 <div class="wrap main">
   <main id="view" lang="fr"></main>
-  <footer class="cfoot" aria-label="Contact">
-    <div class="cf-top">
-      <p class="cf-q">Un projet, une question, une pièce à imprimer&nbsp;? Écrivez-moi.</p>
-      <dl class="cf-list">
-        <div><dt>Mail</dt><dd><a class="cf-mail" href="mailto:antoine.pruvost.ap@gmail.com">antoine.pruvost.ap@gmail.com</a> <button type="button" class="cf-copy" data-copy="antoine.pruvost.ap@gmail.com">Copier</button></dd></div>
-        <div><dt>Instagram</dt><dd><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">@ap_for_design</a></dd></div>
-        <div><dt>Impression 3D</dt><dd><a href="#impression-3d">Demander un devis</a></dd></div>
-      </dl>
+  <footer class="cfoot" id="contact" aria-label="Contact">
+    <div class="cf-in">
+      <div class="cf-info">
+        <h2>Contact</h2>
+        <p class="cf-sub">Un projet, une question ou une pièce à imprimer.</p>
+        <dl class="cf-list">
+          <div><dt>Mail</dt><dd><a href="mailto:antoine.pruvost.ap@gmail.com">antoine.pruvost.ap@gmail.com</a></dd></div>
+          <div><dt>Instagram</dt><dd><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">@ap_for_design</a></dd></div>
+        </dl>
+      </div>
+      <form class="cf-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/">
+        <input type="hidden" name="form-name" value="contact">
+        <p class="cf-hp" aria-hidden="true"><label>Ne pas remplir <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+        <label class="cf-f"><span class="vh">Nom</span><input id="cf-nom" name="nom" type="text" autocomplete="name" placeholder="Nom"></label>
+        <label class="cf-f"><span class="vh">E-mail</span><input id="cf-mail" name="email" type="email" autocomplete="email" placeholder="E-mail" required></label>
+        <label class="cf-f cf-wide"><span class="vh">Message</span><textarea id="cf-msg" name="message" rows="4" placeholder="Message" required></textarea></label>
+        <div class="cf-act cf-wide"><p class="cf-state" role="status" aria-live="polite"></p><button type="submit" class="cf-send">Envoyer</button></div>
+      </form>
     </div>
-    <div class="cf-bot"><span>© Antoine Pruvost, 2026</span><span>Antoinepruvostobjects</span></div>
+    <div class="cf-bot"><span>© Antoine Pruvost, 2026</span><a href="#" class="cf-top-link" id="to-top">Retour en haut ↑</a></div>
   </footer>
 </div>
 
@@ -1247,15 +1271,22 @@ footer.cfoot { display: block; margin-top: clamp(96px, 11vw, 180px); border-top:
 
   /* Menu Objects */
   function closeMenu() {}
-  /* Bouton « Copier » de la fiche contact */
-  document.querySelectorAll(".cf-copy").forEach(function (b) {
-    b.addEventListener("click", function () {
-      var t = b.getAttribute("data-copy");
-      function ok() { b.textContent = "Copié"; setTimeout(function () { b.textContent = "Copier"; }, 2000); }
-      function sel() { var a = b.previousElementSibling, r = document.createRange(); r.selectNodeContents(a); var g = getSelection(); g.removeAllRanges(); g.addRange(r); }
-      try { navigator.clipboard.writeText(t).then(ok, sel); } catch (e) { sel(); }
+  /* Formulaire de contact : envoyé à Netlify sans quitter la page */
+  (function () {
+    var f = document.querySelector(".cf-form"); if (!f) return;
+    var st = f.querySelector(".cf-state"), bt = f.querySelector(".cf-send");
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!f.reportValidity()) return;
+      bt.disabled = true; st.className = "cf-state"; st.textContent = "Envoi…";
+      var body = new URLSearchParams(new FormData(f)).toString();
+      fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); f.reset(); st.className = "cf-state ok"; st.textContent = "Merci, votre message est bien envoyé."; })
+        .catch(function () { st.textContent = "L'envoi n'a pas fonctionné. Écrivez-moi directement à " + MAIL + "."; })
+        .then(function () { bt.disabled = false; });
     });
-  });
+    document.getElementById("to-top").addEventListener("click", function (e) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  })();
   /* Menu téléphone */
   var mb = document.getElementById("mob-btn"), mm = document.getElementById("mob-menu");
   var ml = mb.querySelector(".ml");
