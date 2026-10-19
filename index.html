@@ -623,7 +623,10 @@ footer.cfoot { display: block; margin-top: clamp(96px, 11vw, 180px); border-top:
 .cf-copy:hover { color: var(--fg); }
 .cf-copy:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 .cf-bot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(40px, 4vw, 72px); padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9em; }
-@media (max-width: 800px) { .cf-top { grid-template-columns: minmax(0, 1fr); } .cf-list { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
+@media (max-width: 1100px) { .cf-top { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .cf-list { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
+.cf-list dd a { white-space: nowrap; }
+@media (max-width: 360px) { .cf-list dd a { white-space: normal; overflow-wrap: anywhere; } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
@@ -1239,10 +1242,6 @@ footer.cfoot { display: block; margin-top: clamp(96px, 11vw, 180px); border-top:
     pt.appendChild(ps); lead.appendChild(reveal(pt));
     var tx = mk("div"); ABOUT.forEach(function (t) { tx.appendChild(mk("p", "", t)); }); reveal(tx); tx.classList.add("d1"); lead.appendChild(tx);
     box.appendChild(lead);
-    var soon = mk("div", "soon");
-    var m = mk("span", "", "Mail : "); m.appendChild(mk("span", "addr", MAIL)); soon.appendChild(m);
-    var ig = mk("span", "", "Instagram : "); var ia = mk("a", "", "@ap_for_design"); ia.href = "https://www.instagram.com/ap_for_design/"; ia.target = "_blank"; ia.rel = "noopener"; ig.appendChild(ia); soon.appendChild(ig);
-    box.appendChild(soon);
     view.appendChild(box);
   }
 
