@@ -536,7 +536,6 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
   header.top .bar { flex-wrap: nowrap; align-items: baseline; }
   .objmenu { display: none !important; }
 }
-@media (min-width: 761px) { .mobmenu { display: none !important; } }
 
 /* Archive : liste des projets, nom, type et année ; la photo apparaît au survol */
 .pagehead { padding-top: clamp(24px, 3vw, 56px); display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: clamp(20px, 2.4vw, 40px); }
@@ -578,37 +577,63 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 .svc .soon { margin-top: clamp(48px, 6vw, 96px); border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; color: var(--muted); }
 .svc .soon a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
 @media (max-width: 800px) { .svc .lead { grid-template-columns: minmax(0, 1fr); } }
+
+/* En-tête : Menu à gauche, nom au centre, About à droite */
+header.top .bar.tri { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: baseline; flex-wrap: nowrap; gap: 12px; }
+header.top .bar.tri .name { justify-self: center; text-align: center; white-space: nowrap; }
+.menubtn { justify-self: start; appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; font: inherit; color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; gap: 10px; font-size: clamp(14px, .6vw + 9px, 23px); letter-spacing: .03em; }
+.menubtn .mi { display: inline-flex; flex-direction: column; gap: 5px; width: 18px; }
+.menubtn .mi i { display: block; height: 1.5px; background: currentColor; transition: transform .3s ease; }
+.menubtn[aria-expanded="true"] .mi i:first-child { transform: translateY(3.25px) rotate(45deg); }
+.menubtn[aria-expanded="true"] .mi i:last-child { transform: translateY(-3.25px) rotate(-45deg); }
+.menubtn:focus-visible, .aboutlink:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+.aboutlink { justify-self: end; font-size: clamp(14px, .6vw + 9px, 23px); color: var(--muted); letter-spacing: .03em; }
+.aboutlink:hover, .aboutlink.on { color: var(--fg); }
+.mobmenu { display: block; position: absolute; left: 0; right: 0; top: 100%; background: #fff; min-height: auto; padding: 0 var(--gut) clamp(28px, 3vw, 56px); box-shadow: 0 30px 40px -30px rgba(0,0,0,.22); animation: omin .3s ease; }
+.mobmenu[hidden] { display: none !important; }
+.mmin { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px clamp(24px, 4vw, 80px); padding-top: clamp(8px, 1.4vw, 24px); font-size: inherit; }
+.mcol { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; min-width: 0; }
+.mmin .mcat { margin: 0 0 6px; color: var(--muted); font-size: .9em; letter-spacing: .05em; }
+.mmin a.mbig { font-size: clamp(22px, 1.6vw + 12px, 40px); line-height: 1.15; letter-spacing: .01em; color: var(--fg); padding-left: 0; }
+.mmin a.mbig span { display: block; margin: 4px 0 0; font-size: max(13px, .38em); color: var(--muted); letter-spacing: .04em; }
+.mmin a.mbig:hover, .mmin a.mbig.on { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.mmin a.mbig.on span, .mmin a.mbig:hover span { text-decoration: none; }
+.mfoot { grid-column: 1 / -1; display: flex; gap: 28px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; color: var(--muted); letter-spacing: .03em; }
+.mfoot a:hover, .mfoot a.on { color: var(--fg); }
+body.menuopen main, body.menuopen footer { opacity: .35; transition: opacity .3s ease; }
+@media (max-width: 760px) {
+  .mmin { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .mobmenu { min-height: calc(100vh - 60px); }
+  header.top .bar.tri .name { font-size: 15px; letter-spacing: .04em; }
+  .menubtn, .aboutlink { font-size: 14px; }
+}
+@media (max-width: 380px) { .menubtn .ml { display: none; } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
 
 <header class="top">
-  <div class="wrap bar">
+  <div class="wrap bar tri">
+    <button type="button" class="menubtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu"><span class="mi" aria-hidden="true"><i></i><i></i></span><span class="ml">Menu</span></button>
     <a class="name" href="#" id="home-link">Antoinepruvostobjects</a>
-    <div class="meta">
-      <button type="button" class="objbtn" id="obj-btn" aria-expanded="false" aria-controls="obj-menu">Objects</button>
-      <a href="#archive" data-nav="archive">Archive</a>
-      <a href="#impression-3d" data-nav="impression-3d">Impression 3D</a>
-      <a href="#a-propos" data-nav="a-propos">About</a>
-      <a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a>
-    </div>
-    <button type="button" class="mobbtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu">Menu</button>
+    <a class="aboutlink" href="#a-propos" data-nav="a-propos">About</a>
   </div>
-  <nav class="objmenu" id="obj-menu" hidden aria-label="Objects">
-    <div class="wrap omin">
-      <div class="ogrp"><p class="ocat">Tabouret</p><a href="#ani" data-id="ani">ANI</a></div>
-      <div class="ogrp"><p class="ocat">Cale-porte</p><a href="#hypar" data-id="hypar">Hypar</a></div>
-    </div>
-  </nav>
   <nav class="mobmenu" id="mob-menu" hidden aria-label="Menu">
-    <div class="mmin">
-      <p class="mcat">Objects</p>
-      <a class="msub" href="#ani" data-nav="ani">ANI <span>Tabouret</span></a>
-      <a class="msub" href="#hypar" data-nav="hypar">Hypar <span>Cale-porte</span></a>
-      <a href="#archive" data-nav="archive">Archive</a>
-      <a href="#impression-3d" data-nav="impression-3d">Impression 3D</a>
-      <a href="#a-propos" data-nav="a-propos">About</a>
-      <a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a>
+    <div class="wrap mmin">
+      <div class="mcol">
+        <p class="mcat">Objects</p>
+        <a class="mbig" href="#ani" data-nav="ani">ANI <span>Tabouret</span></a>
+        <a class="mbig" href="#hypar" data-nav="hypar">Hypar <span>Cale-porte</span></a>
+      </div>
+      <div class="mcol">
+        <p class="mcat">Projets</p>
+        <a class="mbig" href="#archive" data-nav="archive">Archive <span>10 projets</span></a>
+      </div>
+      <div class="mcol">
+        <p class="mcat">Service</p>
+        <a class="mbig" href="#impression-3d" data-nav="impression-3d">Impression 3D <span>Sur demande</span></a>
+      </div>
+      <div class="mfoot"><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a><a href="#a-propos" data-nav="a-propos">About</a></div>
     </div>
   </nav>
 </header>
@@ -1202,18 +1227,15 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
   }
 
   /* Menu Objects */
-  var ob = document.getElementById("obj-btn"), om = document.getElementById("obj-menu");
-  function closeMenu() { om.hidden = true; ob.setAttribute("aria-expanded", "false"); }
-  ob.addEventListener("click", function (e) { e.stopPropagation(); var open = om.hidden; om.hidden = !open; ob.setAttribute("aria-expanded", open ? "true" : "false"); });
-  om.addEventListener("click", function (e) { var a = e.target.closest("a"); if (a && a.getAttribute("href") === location.hash) { e.preventDefault(); closeMenu(); } });
-  document.addEventListener("click", function (e) { if (!om.hidden && !om.contains(e.target)) closeMenu(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !om.hidden) { closeMenu(); ob.focus(); } });
+  function closeMenu() {}
   /* Menu téléphone */
   var mb = document.getElementById("mob-btn"), mm = document.getElementById("mob-menu");
-  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); mb.textContent = "Menu"; }
-  mb.addEventListener("click", function (e) { e.stopPropagation(); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); mb.textContent = open ? "Fermer" : "Menu"; });
+  var ml = mb.querySelector(".ml");
+  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); ml.textContent = "Menu"; document.body.classList.remove("menuopen"); }
+  mb.addEventListener("click", function (e) { e.stopPropagation(); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); ml.textContent = open ? "Fermer" : "Menu"; document.body.classList.toggle("menuopen", open); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !mm.hidden) { closeMob(); mb.focus(); } });
   mm.addEventListener("click", function (e) { var a = e.target.closest("a"); if (a && a.getAttribute("href") === location.hash) { e.preventDefault(); closeMob(); } });
-  document.addEventListener("click", function (e) { if (!mm.hidden && !mm.contains(e.target) && e.target !== mb) closeMob(); });
+  document.addEventListener("click", function (e) { if (!mm.hidden && !mm.contains(e.target) && !mb.contains(e.target)) closeMob(); });
 
   function route() {
     var id = (location.hash || "").replace("#", "");
@@ -1221,10 +1243,8 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
     var isObj = id === "ani" || id === "hypar";
     document.body.classList.toggle("fichepage", isObj);
     closeMenu(); closeMob();
-    ob.classList.toggle("on", isObj);
     var sect = id.indexOf("projet-") === 0 ? "archive" : id;
     document.querySelectorAll("[data-nav]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-nav") === sect); });
-    om.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-id") === id); });
     setHH();
     if (id === "ani") { document.title = "ANI, tabouret | Antoinepruvostobjects"; view.appendChild(ficheNode(fiche, reveal)); }
     else if (id === "hypar") { document.title = "Hypar, cale-porte | Antoinepruvostobjects"; view.appendChild(hyparNode(hypar)); }
