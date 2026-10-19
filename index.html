@@ -843,9 +843,9 @@ header.top .meta a.on { color: var(--fg); }
       shots.forEach(function (sh, k) {
         var a = mk("a", "shot"); a.href = "#" + sh[1];
         if (copy) { a.setAttribute("aria-hidden", "true"); a.tabIndex = -1; }
+        else a.setAttribute("aria-label", sh[2] + ", " + sh[3].toLowerCase());
         var im = img(sh[0], copy ? "" : sh[4]); if (copy || k > 3) im.loading = "lazy";
         var f = mk("span", "sf"); f.appendChild(im); a.appendChild(f);
-        var c = mk("span", "sc"); c.appendChild(mk("span", "t", sh[2])); c.appendChild(mk("span", "k", sh[3])); a.appendChild(c);
         track.appendChild(a);
       });
     });
