@@ -516,6 +516,68 @@ header.top .meta a.on { color: var(--fg); }
   hyphens: auto; -webkit-hyphens: auto; hyphenate-limit-chars: 6 3 3;
   word-spacing: -0.01em;
 }
+
+/* Menu principal */
+header.top .meta { align-items: baseline; }
+header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
+.mobbtn { display: none; appearance: none; -webkit-appearance: none; border: 0; background: none; font: inherit; color: var(--fg); cursor: pointer; padding: 0; letter-spacing: .03em; }
+.mobbtn:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.mobmenu { position: absolute; left: 0; right: 0; top: 100%; background: rgba(255,255,255,.98); padding: 6px var(--gut) 28px; box-shadow: 0 18px 30px -24px rgba(0,0,0,.25); animation: omin .3s ease; }
+.mmin { display: flex; flex-direction: column; gap: 14px; font-size: 20px; letter-spacing: .02em; }
+.mmin .mcat { margin: 0; color: var(--muted); font-size: .7em; letter-spacing: .05em; }
+.mmin a { color: var(--fg); }
+.mmin a.msub { padding-left: 14px; }
+.mmin a.msub span { color: var(--muted); font-size: .7em; margin-left: 8px; }
+.mmin a.on { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.mmin a.msub + a:not(.msub) { margin-top: 10px; }
+@media (max-width: 760px) {
+  header.top .meta { display: none; }
+  .mobbtn { display: block; font-size: 15px; }
+  header.top .bar { flex-wrap: nowrap; align-items: baseline; }
+  .objmenu { display: none !important; }
+}
+@media (min-width: 761px) { .mobmenu { display: none !important; } }
+
+/* Archive : liste des projets, nom, type et année ; la photo apparaît au survol */
+.pagehead { padding-top: clamp(24px, 3vw, 56px); display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: clamp(20px, 2.4vw, 40px); }
+.pagehead h1 { margin: 0; font-size: clamp(26px, 2.6vw, 44px); font-weight: 500; letter-spacing: .01em; line-height: 1.1; }
+.pagehead .k { color: var(--muted); }
+.alist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.alist li { border-bottom: 1px solid var(--line); }
+.arow { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 5fr) auto; gap: 16px; align-items: center; padding-block: clamp(14px, 1.5vw, 24px); font-size: clamp(16px, .6vw + 12px, 24px); letter-spacing: .02em; transition: padding .35s ease, color .25s ease; }
+.arow .ath { display: none; }
+.arow .an { color: var(--fg); }
+.arow .ak { color: var(--muted); }
+.arow .ay { color: var(--muted); font-variant-numeric: tabular-nums; }
+.alist:hover .arow { color: var(--muted); }
+.alist:hover .arow .an { color: var(--muted); }
+.alist .arow:hover .an, .alist .arow:focus-visible .an { color: var(--fg); }
+.arow:hover { padding-left: 10px; }
+.arow:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
+.apeek { position: fixed; z-index: 50; width: clamp(220px, 22vw, 380px); aspect-ratio: 4 / 5; pointer-events: none; opacity: 0; transform: scale(.96); transition: opacity .25s ease, transform .35s cubic-bezier(.2,.7,.2,1); background: var(--ph); overflow: hidden; box-shadow: 0 20px 50px -25px rgba(0,0,0,.35); }
+.apeek.on { opacity: 1; transform: none; }
+.apeek img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (hover: none), (max-width: 760px) {
+  .apeek { display: none; }
+  .arow { grid-template-columns: 64px minmax(0, 1fr) auto; row-gap: 2px; }
+  .arow .ath { display: block; grid-row: span 2; width: 64px; aspect-ratio: 1; overflow: hidden; background: var(--ph); }
+  .arow .ath img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .arow .ak { grid-column: 2; font-size: .8em; }
+  .arow .ay { grid-row: 1; grid-column: 3; }
+  .alist:hover .arow, .alist:hover .arow .an { color: inherit; }
+  .arow:hover { padding-left: 0; }
+}
+.objlink { display: inline-block; margin-top: 18px; padding: 12px 26px; background: #111; color: #fff; letter-spacing: .04em; }
+.objlink:hover { opacity: .8; }
+
+/* Impression 3D et À propos */
+.svc { max-width: 1100px; }
+.svc .lead { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: clamp(32px, 7vw, 140px); row-gap: 20px; margin-top: clamp(24px, 3vw, 48px); }
+.svc .lead h2 { margin: 0; font-size: clamp(24px, 2.4vw, 40px); font-weight: 500; line-height: 1.15; text-wrap: balance; }
+.svc .lead p { margin: 0 0 14px; max-width: 46ch; line-height: 1.7; color: #333; text-align: justify; hyphens: auto; -webkit-hyphens: auto; text-align-last: left; }
+.svc .soon { margin-top: clamp(48px, 6vw, 96px); border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; color: var(--muted); }
+.svc .soon a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 800px) { .svc .lead { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
@@ -525,13 +587,28 @@ header.top .meta a.on { color: var(--fg); }
     <a class="name" href="#" id="home-link">Antoinepruvostobjects</a>
     <div class="meta">
       <button type="button" class="objbtn" id="obj-btn" aria-expanded="false" aria-controls="obj-menu">Objects</button>
+      <a href="#archive" data-nav="archive">Archive</a>
+      <a href="#impression-3d" data-nav="impression-3d">Impression 3D</a>
+      <a href="#a-propos" data-nav="a-propos">About</a>
       <a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a>
     </div>
+    <button type="button" class="mobbtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu">Menu</button>
   </div>
   <nav class="objmenu" id="obj-menu" hidden aria-label="Objects">
     <div class="wrap omin">
       <div class="ogrp"><p class="ocat">Tabouret</p><a href="#ani" data-id="ani">ANI</a></div>
       <div class="ogrp"><p class="ocat">Cale-porte</p><a href="#hypar" data-id="hypar">Hypar</a></div>
+    </div>
+  </nav>
+  <nav class="mobmenu" id="mob-menu" hidden aria-label="Menu">
+    <div class="mmin">
+      <p class="mcat">Objects</p>
+      <a class="msub" href="#ani" data-nav="ani">ANI <span>Tabouret</span></a>
+      <a class="msub" href="#hypar" data-nav="hypar">Hypar <span>Cale-porte</span></a>
+      <a href="#archive" data-nav="archive">Archive</a>
+      <a href="#impression-3d" data-nav="impression-3d">Impression 3D</a>
+      <a href="#a-propos" data-nav="a-propos">About</a>
+      <a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a>
     </div>
   </nav>
 </header>
@@ -544,6 +621,7 @@ header.top .meta a.on { color: var(--fg); }
   </footer>
 </div>
 
+<script src="archive-data.js"></script>
 <script>
 (function () {
   var fiche = {
@@ -975,6 +1053,154 @@ header.top .meta a.on { color: var(--fg); }
     return sec;
   }
 
+  /* ---------- Archive, Impression 3D, À propos ---------- */
+  var ARCHIVE = (window.ARCHIVE || []).map(function (p) { var q = {}; for (var k in p) if (k !== "fiche" && k !== "onlyFiche" && k !== "featured") q[k] = p[k]; return q; });
+  var OBJECT_OF = { ani: "#ani", hypar: "#hypar" };
+
+  function mediaNode(m) {
+    if (m.layout === "pair") {
+      var pw = mk("div", "mw pair"), pb = mk("div", "media mpair"), pi = mk("div", "items");
+      m.items.forEach(function (it) {
+        var im = img(it.src, it.alt); im.loading = "lazy";
+        var fit = function () { if (im.naturalWidth && im.naturalHeight) { var ar = im.naturalWidth / im.naturalHeight; im.style.flex = (ar * (it.w || 1)) + " 1 0"; im.style.setProperty("--ar", ar); } };
+        if (im.complete && im.naturalWidth) fit(); else im.addEventListener("load", fit);
+        pi.appendChild(im);
+      });
+      pb.appendChild(pi); pw.appendChild(pb);
+      return pw;
+    }
+    var box = mk("div", "media " + (m.layout === "grid" ? "mgrid" : "single") + (m.cols === 2 ? " cols2" : "") + (m.plans ? " plans" : "") + (m.layout === "grid" && !m.plans ? " collage" : ""));
+    var wrap = mk("div", "mw" + (m.layout === "grid" && !m.plans ? " wide" : ""));
+    var items = mk("div", "items");
+    m.items.forEach(function (it) {
+      if (m.layout === "grid") { var cell = mk("div", "cell"); var ci = img(it.src, it.alt); ci.loading = "lazy"; cell.appendChild(ci); items.appendChild(cell); }
+      else { var el = it.video ? video(it.video) : img(it.src, it.alt); if (!it.video) el.loading = "lazy"; items.appendChild(el); }
+    });
+    box.appendChild(items);
+    if (m.layout !== "grid") {
+      var first = items.firstChild;
+      var setShape = function () {
+        var w = first.naturalWidth || first.videoWidth, h = first.naturalHeight || first.videoHeight;
+        if (!w || !h) return;
+        var r = w / h;
+        [box, wrap].forEach(function (n) { n.classList.toggle("sq", r < 1.15 && r >= .85); n.classList.toggle("port", r < .85); });
+      };
+      if (first.complete && first.naturalWidth) setShape();
+      else { first.addEventListener("load", setShape); first.addEventListener("loadedmetadata", setShape); }
+    }
+    wrap.appendChild(box);
+    return wrap;
+  }
+
+  function renderArchive() {
+    document.title = "Archive | Antoinepruvostobjects";
+    var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Archive")); head.appendChild(mk("span", "k", ARCHIVE.length + " projets"));
+    view.appendChild(head);
+    var ul = mk("ul", "alist");
+    var peek = mk("div", "apeek"), pim = document.createElement("img"); pim.alt = ""; peek.appendChild(pim); view.appendChild(peek);
+    ARCHIVE.forEach(function (p) {
+      var li = mk("li"), a = mk("a", "arow"); a.href = "#projet-" + p.id;
+      var th = mk("span", "ath"); var ti = img(p.cover, ""); ti.loading = "lazy"; if (p.pos) ti.style.objectPosition = p.pos; th.appendChild(ti); a.appendChild(th);
+      a.appendChild(mk("span", "an", p.title));
+      a.appendChild(mk("span", "ak", p.kind));
+      a.appendChild(mk("span", "ay", String(p.year)));
+      a.addEventListener("mouseenter", function () { pim.src = p.cover; pim.style.objectPosition = p.pos || "50% 50%"; peek.classList.add("on"); });
+      a.addEventListener("mouseleave", function () { peek.classList.remove("on"); });
+      li.appendChild(a); ul.appendChild(li);
+    });
+    ul.addEventListener("mousemove", function (e) {
+      var w = peek.offsetWidth, h = peek.offsetHeight, x = e.clientX + 28, y = e.clientY - h / 2;
+      if (x + w > innerWidth - 16) x = e.clientX - w - 28;
+      y = Math.max(16, Math.min(innerHeight - h - 16, y));
+      peek.style.left = x + "px"; peek.style.top = y + "px";
+    });
+    view.appendChild(ul);
+  }
+
+  function renderArchiveProject(p) {
+    document.title = p.title + " | Antoinepruvostobjects";
+    var head = mk("div", "phead2");
+    var back = mk("a", "back", "← Archive"); back.href = "#archive"; head.appendChild(back);
+    var split = mk("div", "psplit"), pinfo = mk("div", "pinfo");
+    var tr = mk("div", "prow ptitle2"), h1 = mk("h1", "", p.title);
+    h1.appendChild(mk("span", "kind", p.kind)); tr.appendChild(h1); tr.appendChild(mk("span", "yr", String(p.year)));
+    pinfo.appendChild(reveal(tr));
+    (p.specs || []).forEach(function (sp, k) {
+      var r = mk("div", "prow"); r.appendChild(mk("span", "pl", sp[0])); r.appendChild(mk("span", "pv", sp[1]));
+      pinfo.appendChild(reveal(r)); if (k < 4) r.classList.add("d" + (k + 1));
+    });
+    if (OBJECT_OF[p.id]) { var ol = mk("a", "objlink", "Voir l'objet →"); ol.href = OBJECT_OF[p.id]; pinfo.appendChild(ol); }
+    split.appendChild(pinfo);
+    var lead = mk("div", "lead2");
+    if (p.photos && p.photos.length) lead.appendChild(img(p.photos[0].src, p.photos[0].alt));
+    split.appendChild(reveal(lead)); lead.classList.add("d2");
+    head.appendChild(split); view.appendChild(head);
+    if (p.tagline) { var intro = mk("section", "flowsec"), it = mk("div", "txt"); it.appendChild(mk("p", "", p.tagline)); intro.appendChild(reveal(it)); view.appendChild(intro); }
+    (p.sections || []).forEach(function (s) {
+      var sec = mk("section", "flowsec"), txt = mk("div", "txt");
+      (s.p || []).forEach(function (t) { txt.appendChild(mkp(t)); });
+      if (s.list) { var l = mk("ul"); s.list.forEach(function (t) { l.appendChild(mk("li", "", t)); }); txt.appendChild(l); }
+      sec.appendChild(reveal(txt));
+      if (s.media) (Array.isArray(s.media) ? s.media : [s.media]).forEach(function (m) { sec.appendChild(reveal(mediaNode(m))); });
+      view.appendChild(sec);
+    });
+    var rest = (p.photos || []).slice(1);
+    if (rest.length) {
+      var gal = mk("div", "gallery collage-g flowgal");
+      rest.forEach(function (ph) {
+        var fig = mk("figure"); reveal(fig);
+        var gi = img(ph.src, ph.alt); gi.loading = "lazy";
+        gi.addEventListener("load", function () { if (gi.naturalWidth / gi.naturalHeight > 1.2) fig.classList.add("wide"); });
+        fig.appendChild(gi); gal.appendChild(fig);
+      });
+      view.appendChild(gal);
+    }
+    var i = ARCHIVE.indexOf(p), prev = ARCHIVE[(i + ARCHIVE.length - 1) % ARCHIVE.length], next = ARCHIVE[(i + 1) % ARCHIVE.length];
+    var nav = mk("div", "next");
+    var a1 = mk("a", "", "← " + prev.title); a1.href = "#projet-" + prev.id;
+    var a2 = mk("a", "", next.title + " →"); a2.href = "#projet-" + next.id;
+    nav.appendChild(a1); nav.appendChild(a2); view.appendChild(nav);
+  }
+
+  function renderPrint() {
+    document.title = "Impression 3D | Antoinepruvostobjects";
+    var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Impression 3D")); view.appendChild(head);
+    var box = mk("div", "svc"), lead = mk("section", "lead");
+    lead.appendChild(reveal(mk("h2", "", "Vos pièces imprimées en 3D, par un designer.")));
+    var tx = mk("div");
+    ["Équipé d'une imprimante Bambu Lab P1S, j'imprime vos pièces à partir de vos fichiers : prototypes, pièces de rechange, objets du quotidien ou petites séries.",
+     "Je vous conseille sur la matière et l'orientation de la pièce, et je vérifie le fichier avant l'impression."].forEach(function (t) { tx.appendChild(mk("p", "", t)); });
+    reveal(tx); tx.classList.add("d1"); lead.appendChild(tx);
+    box.appendChild(lead);
+    var soon = mk("div", "soon");
+    soon.appendChild(mk("span", "", "Tarifs et demande de devis en ligne : bientôt."));
+    var c = mk("span", "", "En attendant : "); var ad = mk("span", "addr", MAIL); c.appendChild(ad); soon.appendChild(c);
+    box.appendChild(soon);
+    view.appendChild(box);
+  }
+
+  var ABOUT = [
+    "À travers mes projets, j'explore la relation entre la forme, la fonction, la matière et les usages. Mon travail s'appuie sur l'observation du quotidien, l'analyse des contextes et l'expérimentation, avec la volonté de développer des objets dont les choix formels et constructifs répondent à une intention précise.",
+    "Qu'il s'agisse de concevoir une assise pour un lieu patrimonial, d'exploiter une géométrie pour créer un mécanisme, de réduire la matière d'un objet ou de transformer une atmosphère par la lumière, je cherche à comprendre comment le design peut influencer notre manière d'interagir avec les objets et les espaces.",
+    "J'accorde une importance particulière à la simplicité constructive, à la justesse des proportions, à la fabrication et à la durabilité. Mon objectif est de concevoir des objets où la forme, l'usage et la réalisation ne sont pas des éléments indépendants, mais les différentes expressions d'une même intention."
+  ];
+  function renderAbout() {
+    document.title = "About | Antoinepruvostobjects";
+    var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Antoine Pruvost")); head.appendChild(mk("span", "k", "Designer")); view.appendChild(head);
+    var box = mk("div", "svc"), lead = mk("section", "lead");
+    var pt = mk("div", "about"); pt.style.padding = "0";
+    var ps = mk("div", "portraits"); ps.style.marginTop = "0";
+    ps.appendChild(img("portrait-face.jpg", "Antoine Pruvost, de face")); ps.appendChild(img("portrait-profil.jpg", "Antoine Pruvost, de profil"));
+    pt.appendChild(ps); lead.appendChild(reveal(pt));
+    var tx = mk("div"); ABOUT.forEach(function (t) { tx.appendChild(mk("p", "", t)); }); reveal(tx); tx.classList.add("d1"); lead.appendChild(tx);
+    box.appendChild(lead);
+    var soon = mk("div", "soon");
+    var m = mk("span", "", "Mail : "); m.appendChild(mk("span", "addr", MAIL)); soon.appendChild(m);
+    var ig = mk("span", "", "Instagram : "); var ia = mk("a", "", "@ap_for_design"); ia.href = "https://www.instagram.com/ap_for_design/"; ia.target = "_blank"; ia.rel = "noopener"; ig.appendChild(ia); soon.appendChild(ig);
+    box.appendChild(soon);
+    view.appendChild(box);
+  }
+
   /* Menu Objects */
   var ob = document.getElementById("obj-btn"), om = document.getElementById("obj-menu");
   function closeMenu() { om.hidden = true; ob.setAttribute("aria-expanded", "false"); }
@@ -982,18 +1208,30 @@ header.top .meta a.on { color: var(--fg); }
   om.addEventListener("click", function (e) { var a = e.target.closest("a"); if (a && a.getAttribute("href") === location.hash) { e.preventDefault(); closeMenu(); } });
   document.addEventListener("click", function (e) { if (!om.hidden && !om.contains(e.target)) closeMenu(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !om.hidden) { closeMenu(); ob.focus(); } });
+  /* Menu téléphone */
+  var mb = document.getElementById("mob-btn"), mm = document.getElementById("mob-menu");
+  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); mb.textContent = "Menu"; }
+  mb.addEventListener("click", function (e) { e.stopPropagation(); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); mb.textContent = open ? "Fermer" : "Menu"; });
+  mm.addEventListener("click", function (e) { var a = e.target.closest("a"); if (a && a.getAttribute("href") === location.hash) { e.preventDefault(); closeMob(); } });
+  document.addEventListener("click", function (e) { if (!mm.hidden && !mm.contains(e.target) && e.target !== mb) closeMob(); });
 
   function route() {
     var id = (location.hash || "").replace("#", "");
     view.textContent = "";
     var isObj = id === "ani" || id === "hypar";
     document.body.classList.toggle("fichepage", isObj);
-    closeMenu();
+    closeMenu(); closeMob();
     ob.classList.toggle("on", isObj);
+    var sect = id.indexOf("projet-") === 0 ? "archive" : id;
+    document.querySelectorAll("[data-nav]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-nav") === sect); });
     om.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-id") === id); });
     setHH();
     if (id === "ani") { document.title = "ANI, tabouret | Antoinepruvostobjects"; view.appendChild(ficheNode(fiche, reveal)); }
     else if (id === "hypar") { document.title = "Hypar, cale-porte | Antoinepruvostobjects"; view.appendChild(hyparNode(hypar)); }
+    else if (id === "archive") renderArchive();
+    else if (id === "impression-3d") renderPrint();
+    else if (id === "a-propos") renderAbout();
+    else if (id.indexOf("projet-") === 0 && ARCHIVE.some(function (p) { return "projet-" + p.id === id; })) renderArchiveProject(ARCHIVE.filter(function (p) { return "projet-" + p.id === id; })[0]);
     else renderHome();
     window.scrollTo(0, 0);
   }
