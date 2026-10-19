@@ -531,8 +531,6 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 .mmin a.on { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
 .mmin a.msub + a:not(.msub) { margin-top: 10px; }
 @media (max-width: 760px) {
-  header.top .meta { display: none; }
-  .mobbtn { display: block; font-size: 15px; }
   header.top .bar { flex-wrap: nowrap; align-items: baseline; }
   .objmenu { display: none !important; }
 }
@@ -578,62 +576,58 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 .svc .soon a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
 @media (max-width: 800px) { .svc .lead { grid-template-columns: minmax(0, 1fr); } }
 
-/* En-tête : Menu à gauche, nom au centre, About à droite */
-header.top .bar.tri { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: baseline; flex-wrap: nowrap; gap: 12px; }
-header.top .bar.tri .name { justify-self: center; text-align: center; white-space: nowrap; }
-.menubtn { justify-self: start; appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; font: inherit; color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; gap: 10px; font-size: clamp(14px, .6vw + 9px, 23px); letter-spacing: .03em; }
-.menubtn .mi { display: inline-flex; flex-direction: column; gap: 5px; width: 18px; }
-.menubtn .mi i { display: block; height: 1.5px; background: currentColor; transition: transform .3s ease; }
-.menubtn[aria-expanded="true"] .mi i:first-child { transform: translateY(3.25px) rotate(45deg); }
-.menubtn[aria-expanded="true"] .mi i:last-child { transform: translateY(-3.25px) rotate(-45deg); }
+
+
+/* En-tête : nom à gauche, Menu et About à droite ; le menu s'ouvre dans une carte blanche */
+.menubtn { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; letter-spacing: inherit; }
+.menubtn:hover, .menubtn[aria-expanded="true"], .aboutlink:hover, .aboutlink.on { color: var(--fg); }
 .menubtn:focus-visible, .aboutlink:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
-.aboutlink { justify-self: end; font-size: clamp(14px, .6vw + 9px, 23px); color: var(--muted); letter-spacing: .03em; }
-.aboutlink:hover, .aboutlink.on { color: var(--fg); }
-.mobmenu { display: block; position: absolute; left: 0; right: 0; top: 100%; background: #fff; min-height: auto; padding: 0 var(--gut) clamp(28px, 3vw, 56px); box-shadow: 0 30px 40px -30px rgba(0,0,0,.22); animation: omin .3s ease; }
-.mobmenu[hidden] { display: none !important; }
-.mmin { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px clamp(24px, 4vw, 80px); padding-top: clamp(8px, 1.4vw, 24px); font-size: inherit; }
-.mcol { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; min-width: 0; }
-.mmin .mcat { margin: 0 0 6px; color: var(--muted); font-size: .9em; letter-spacing: .05em; }
-.mmin a.mbig { font-size: clamp(22px, 1.6vw + 12px, 40px); line-height: 1.15; letter-spacing: .01em; color: var(--fg); padding-left: 0; }
-.mmin a.mbig span { display: block; margin: 4px 0 0; font-size: max(13px, .38em); color: var(--muted); letter-spacing: .04em; }
-.mmin a.mbig:hover, .mmin a.mbig.on { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
-.mmin a.mbig.on span, .mmin a.mbig:hover span { text-decoration: none; }
-.mfoot { grid-column: 1 / -1; display: flex; gap: 28px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; color: var(--muted); letter-spacing: .03em; }
-.mfoot a:hover, .mfoot a.on { color: var(--fg); }
-body.menuopen main, body.menuopen footer { opacity: .35; transition: opacity .3s ease; }
-@media (max-width: 760px) {
-  .mmin { grid-template-columns: minmax(0, 1fr); gap: 22px; }
-  .mobmenu { min-height: calc(100vh - 60px); }
-  header.top .bar.tri .name { font-size: 15px; letter-spacing: .04em; }
-  .menubtn, .aboutlink { font-size: 14px; }
+.mcard { position: absolute; top: 100%; left: max(12px, calc(var(--gut) / 3)); right: max(12px, calc(var(--gut) / 3)); background: #fff; border-radius: 6px; box-shadow: 0 1px 2px rgba(20,20,18,.06), 0 24px 60px -20px rgba(20,20,18,.28); --ms: clamp(17px, .5vw + 13px, 22px); font-size: var(--ms); letter-spacing: .01em; animation: mcin .35s cubic-bezier(.2,.7,.2,1); }
+.mcard[hidden] { display: none !important; }
+@keyframes mcin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.mcin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 40px clamp(24px, 4vw, 72px); padding: clamp(28px, 2.6vw, 44px) clamp(24px, 2.6vw, 44px) clamp(20px, 1.8vw, 30px); min-height: min(52vh, 440px); }
+.mlead { min-width: 0; }
+.mq { margin: 0; max-width: 16em; font-size: 1.3em; line-height: 1.3; color: var(--fg); text-wrap: balance; }
+.mcta { display: inline-flex; gap: 22px; margin-top: 24px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--fg); }
+.mcta span { font-size: .8em; }
+.mcta:hover { border-color: var(--fg); }
+.mcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-content: start; }
+.mcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mcol .mcat { margin: 0 0 6px; font-size: .68em; color: var(--muted); letter-spacing: .02em; }
+.mcol a { color: var(--fg); line-height: 1.35; width: fit-content; }
+.mcol a:hover, .mcol a.on { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.mbot { grid-column: 1 / -1; align-self: end; display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 22px; font-size: .78em; color: var(--fg); }
+.mbot .addr { color: var(--muted); user-select: all; -webkit-user-select: all; }
+@media (max-width: 800px) {
+  .mcin { grid-template-columns: minmax(0, 1fr); min-height: 0; gap: 32px; }
+  .mcols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mq { font-size: 1.15em; }
 }
-@media (max-width: 380px) { .menubtn .ml { display: none; } }
+@media (max-width: 560px) { header.top .meta { gap: 18px; } .mcard { --ms: 18px; } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
 
 <header class="top">
-  <div class="wrap bar tri">
-    <button type="button" class="menubtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu"><span class="mi" aria-hidden="true"><i></i><i></i></span><span class="ml">Menu</span></button>
+  <div class="wrap bar">
     <a class="name" href="#" id="home-link">Antoinepruvostobjects</a>
-    <a class="aboutlink" href="#a-propos" data-nav="a-propos">About</a>
+    <div class="meta">
+      <button type="button" class="menubtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu"><span class="ml">Menu</span></button>
+      <a class="aboutlink" href="#a-propos" data-nav="a-propos">About</a>
+    </div>
   </div>
-  <nav class="mobmenu" id="mob-menu" hidden aria-label="Menu">
-    <div class="wrap mmin">
-      <div class="mcol">
-        <p class="mcat">Objects</p>
-        <a class="mbig" href="#ani" data-nav="ani">ANI <span>Tabouret</span></a>
-        <a class="mbig" href="#hypar" data-nav="hypar">Hypar <span>Cale-porte</span></a>
+  <nav class="mcard" id="mob-menu" hidden aria-label="Menu">
+    <div class="mcin">
+      <div class="mlead">
+        <p class="mq">Une pièce à imprimer, un objet qui vous intéresse&nbsp;?</p>
+        <a class="mcta" href="mailto:antoine.pruvost.ap@gmail.com">Me contacter <span aria-hidden="true">↗</span></a>
       </div>
-      <div class="mcol">
-        <p class="mcat">Projets</p>
-        <a class="mbig" href="#archive" data-nav="archive">Archive <span>10 projets</span></a>
+      <div class="mcols">
+        <div class="mcol"><p class="mcat">Objects</p><a href="#ani" data-nav="ani">ANI</a><a href="#hypar" data-nav="hypar">Hypar</a></div>
+        <div class="mcol"><p class="mcat">Navigation</p><a href="#" data-nav="">Accueil</a><a href="#archive" data-nav="archive">Archive</a><a href="#impression-3d" data-nav="impression-3d">Impression 3D</a><a href="#a-propos" data-nav="a-propos">About</a></div>
+        <div class="mcol"><p class="mcat">Social</p><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a></div>
       </div>
-      <div class="mcol">
-        <p class="mcat">Service</p>
-        <a class="mbig" href="#impression-3d" data-nav="impression-3d">Impression 3D <span>Sur demande</span></a>
-      </div>
-      <div class="mfoot"><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a><a href="#a-propos" data-nav="a-propos">About</a></div>
+      <div class="mbot"><span>© Antoine Pruvost, 2026</span><span class="addr">antoine.pruvost.ap@gmail.com</span></div>
     </div>
   </nav>
 </header>
@@ -1231,10 +1225,10 @@ body.menuopen main, body.menuopen footer { opacity: .35; transition: opacity .3s
   /* Menu téléphone */
   var mb = document.getElementById("mob-btn"), mm = document.getElementById("mob-menu");
   var ml = mb.querySelector(".ml");
-  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); ml.textContent = "Menu"; document.body.classList.remove("menuopen"); }
-  mb.addEventListener("click", function (e) { e.stopPropagation(); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); ml.textContent = open ? "Fermer" : "Menu"; document.body.classList.toggle("menuopen", open); });
+  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); ml.textContent = "Menu"; }
+  mb.addEventListener("click", function (e) { e.stopPropagation(); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); ml.textContent = open ? "Fermer" : "Menu"; });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !mm.hidden) { closeMob(); mb.focus(); } });
-  mm.addEventListener("click", function (e) { var a = e.target.closest("a"); if (a && a.getAttribute("href") === location.hash) { e.preventDefault(); closeMob(); } });
+  mm.addEventListener("click", function (e) { var a = e.target.closest("a"); if (!a) return; var h = a.getAttribute("href"); if (h === location.hash || (h === "#" && !location.hash)) e.preventDefault(); closeMob(); });
   document.addEventListener("click", function (e) { if (!mm.hidden && !mm.contains(e.target) && !mb.contains(e.target)) closeMob(); });
 
   function route() {
