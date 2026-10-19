@@ -1141,7 +1141,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       pb.appendChild(pi); pw.appendChild(pb);
       return pw;
     }
-    var box = mk("div", "media " + (m.layout === "grid" ? "mgrid" : "single") + (m.cols === 2 ? " cols2" : "") + (m.plans ? " plans" : "") + (m.layout === "grid" && !m.plans ? " collage" : ""));
+    var box = mk("div", "media " + (m.layout === "grid" ? "mgrid" : "single") + (m.cols === 2 ? " cols2" : "") + (m.plans ? " plans" : "") + (m.layout === "grid" && !m.plans && !m.cols ? " collage" : ""));
     var wrap = mk("div", "mw" + (m.layout === "grid" && !m.plans ? " wide" : ""));
     var items = mk("div", "items");
     m.items.forEach(function (it) {
