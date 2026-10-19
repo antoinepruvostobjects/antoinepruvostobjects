@@ -224,16 +224,16 @@ header.top .meta a:hover { color: var(--fg); }
 .trow .snote { grid-column: 2; margin-top: clamp(28px, 3vw, 48px); }
 @media (max-width: 800px) { .story { --tsp: 88px; } .trow { grid-template-columns: minmax(0, 1fr); row-gap: 20px; } .trow .snote { grid-column: 1; } }
 .snote { margin: clamp(40px, 5vw, 80px) 0 0; font-size: .9em; color: #5c5c5c; letter-spacing: .02em; }
-.sband { margin: 0 calc(-1 * var(--gut)) 0; padding: clamp(48px, 5.5vw, 96px) var(--gut); background: var(--dk); color: #fff; }
+.sband { margin: 0 calc(-1 * var(--gut)) 0; padding: clamp(48px, 5.5vw, 96px) var(--gut); background: #f2f2f0; color: var(--fg); }
 .sbin { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: clamp(32px, 6vw, 110px); align-items: center; max-width: 1100px; margin-inline: auto; }
-.sbph { aspect-ratio: 3 / 2; overflow: hidden; background: var(--dk2); }
+.sbph { aspect-ratio: 3 / 2; overflow: hidden; background: #e6e6e3; }
 .sbph img { width: 100%; height: 100%; object-fit: cover; }
 .sbtx { max-width: 40ch; }
-.slab { margin: 0 0 8px; font-size: .92em; color: rgba(255,255,255,.72); letter-spacing: .04em; }
-.sname { margin: 0 0 clamp(18px, 2vw, 32px); font-size: clamp(28px, 3vw, 48px); font-weight: 400; line-height: 1.1; color: #fff; }
-.sbio p { margin: 0 0 .9em; font-size: .95em; line-height: 1.7; color: rgba(255,255,255,.88); }
+.slab { margin: 0 0 8px; font-size: .92em; color: var(--muted); letter-spacing: .04em; }
+.sname { margin: 0 0 clamp(18px, 2vw, 32px); font-size: clamp(28px, 3vw, 48px); font-weight: 400; line-height: 1.1; color: var(--fg); }
+.sbio p { margin: 0 0 .9em; font-size: .95em; line-height: 1.7; color: #333; }
 .sbio p:last-child { margin-bottom: 0; }
-.slink { display: inline-block; margin-top: clamp(22px, 2.4vw, 36px); padding: 12px 32px; color: #fff; border-top: 1px solid rgba(255,255,255,.7); border-bottom: 1px solid rgba(255,255,255,.7); letter-spacing: .03em; }
+.slink { display: inline-block; margin-top: clamp(22px, 2.4vw, 36px); padding: 12px 32px; color: var(--fg); border-top: 1px solid var(--fg); border-bottom: 1px solid var(--fg); letter-spacing: .03em; }
 .slink:hover { opacity: .65; }
 @media (max-width: 800px) {
   .sband { padding-block: 48px; }
@@ -612,7 +612,7 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 :root { --dk: #2e2e30; --dk2: #3a3a3d; --btn: #3a3a3c; --cf-bg: #2e2e30; --cf-field: #3a3a3d; --cf-fg: #f1f1ef; --cf-mut: rgba(241,241,239,.55); --cf-line: rgba(241,241,239,.14); }
 body { padding-bottom: 0; }
 footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--gut)) 0; padding: clamp(44px, 4.4vw, 72px) var(--gut) max(22px, env(safe-area-inset-bottom, 0px)); background: var(--cf-bg); color: var(--cf-fg); font-size: .95em; }
-.wrap.main:has(.sband) footer.cfoot { margin-top: clamp(56px, 6vw, 110px); }
+.wrap.main:has(.sband) footer.cfoot { margin-top: 0; }
 .cf-in { max-width: 1100px; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 32px clamp(32px, 6vw, 110px); }
 .cf-info h2 { margin: 0 0 8px; font-size: 1.25em; font-weight: 500; letter-spacing: .03em; }
 .cf-sub { margin: 0 0 26px; color: var(--cf-mut); line-height: 1.5; max-width: 26em; }
