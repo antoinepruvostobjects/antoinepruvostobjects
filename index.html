@@ -604,6 +604,9 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
   .mq { font-size: 1.15em; }
 }
 @media (max-width: 560px) { header.top .meta { gap: 18px; } .mcard { --ms: 18px; } }
+
+.mcol a.mall { margin-top: 6px; color: var(--muted); }
+.mcol a.mall:hover { color: var(--fg); }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
@@ -613,7 +616,6 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
     <a class="name" href="#" id="home-link">Antoinepruvostobjects</a>
     <div class="meta">
       <button type="button" class="menubtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu"><span class="ml">Menu</span></button>
-      <a class="aboutlink" href="#a-propos" data-nav="a-propos">About</a>
     </div>
   </div>
   <nav class="mcard" id="mob-menu" hidden aria-label="Menu">
@@ -624,8 +626,8 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
       </div>
       <div class="mcols">
         <div class="mcol"><p class="mcat">Objects</p><a href="#ani" data-nav="ani">ANI</a><a href="#hypar" data-nav="hypar">Hypar</a></div>
-        <div class="mcol"><p class="mcat">Navigation</p><a href="#" data-nav="">Accueil</a><a href="#archive" data-nav="archive">Archive</a><a href="#impression-3d" data-nav="impression-3d">Impression 3D</a><a href="#a-propos" data-nav="a-propos">About</a></div>
-        <div class="mcol"><p class="mcat">Social</p><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a></div>
+        <div class="mcol" id="m-archive"><p class="mcat">Archive</p><a class="mall" href="#archive" data-nav="archive">Tout voir →</a></div>
+        <div class="mcol"><p class="mcat">Studio</p><a href="#impression-3d" data-nav="impression-3d">Impression 3D</a><a href="#a-propos" data-nav="a-propos">About</a><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a></div>
       </div>
       <div class="mbot"><span>© Antoine Pruvost, 2026</span><span class="addr">antoine.pruvost.ap@gmail.com</span></div>
     </div>
@@ -1225,6 +1227,11 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
   /* Menu téléphone */
   var mb = document.getElementById("mob-btn"), mm = document.getElementById("mob-menu");
   var ml = mb.querySelector(".ml");
+  /* Colonne Archive du menu : un lien par projet (les 12 plus récents), puis « Tout voir » */
+  (function () {
+    var col = document.getElementById("m-archive"), all = col.querySelector(".mall");
+    ARCHIVE.slice(0, 12).forEach(function (p) { var a = mk("a", "", p.title); a.href = "#projet-" + p.id; a.setAttribute("data-nav", "projet-" + p.id); col.insertBefore(a, all); });
+  })();
   function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); ml.textContent = "Menu"; }
   mb.addEventListener("click", function (e) { e.stopPropagation(); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); ml.textContent = open ? "Fermer" : "Menu"; });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !mm.hidden) { closeMob(); mb.focus(); } });
@@ -1237,8 +1244,7 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
     var isObj = id === "ani" || id === "hypar";
     document.body.classList.toggle("fichepage", isObj);
     closeMenu(); closeMob();
-    var sect = id.indexOf("projet-") === 0 ? "archive" : id;
-    document.querySelectorAll("[data-nav]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-nav") === sect); });
+    document.querySelectorAll("[data-nav]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-nav") === id); });
     setHH();
     if (id === "ani") { document.title = "ANI, tabouret | Antoinepruvostobjects"; view.appendChild(ficheNode(fiche, reveal)); }
     else if (id === "hypar") { document.title = "Hypar, cale-porte | Antoinepruvostobjects"; view.appendChild(hyparNode(hypar)); }
