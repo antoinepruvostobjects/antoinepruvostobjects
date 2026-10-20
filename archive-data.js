@@ -24,10 +24,7 @@ window.ARCHIVE = [
         ],
         colors: [
           { name: "Jaune", light: "#f7c948", dark: "#e6a823", swatch: "#f0b92f" },
-          { name: "Naturel", light: "#efd9a8", dark: "#d9b070", swatch: "#e2c694" },
-          { name: "Cerisier", light: "#c9603c", dark: "#9a3a22", swatch: "#b84f2f" },
-          { name: "Châtaignier", light: "#8a6b4a", dark: "#5c4531", swatch: "#755a3e" },
-          { name: "Chêne", light: "#d2a768", dark: "#b08143", swatch: "#c29a5c" }
+          { name: "Naturel", light: "#efd9a8", dark: "#d9b070", swatch: "#e2c694" }
         ]
       }, title: "Ani", kind: "Tabouret", cover: "ani-1.jpg", featured: true,
       tagline: "Se fondre dans le décor sans se confondre avec lui.",
