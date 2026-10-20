@@ -191,7 +191,7 @@ function loadAni() {
   return new Promise((res) => {
     if (!window.__GLB || !window.__GLB.ani) return res();
     new GLTFLoader().parse(b64(window.__GLB.ani), "", (gltf) => {
-      const wood = woodMaterial("#efd9a8", "#d9b070");
+      const wood = woodMaterial("#e9dbc2", "#d2bb98");
       gltf.scene.traverse((n) => {
         if (!n.isMesh) return;
         const nm = (n.name + " " + (n.parent ? n.parent.name : "")).toLowerCase();
@@ -260,7 +260,7 @@ async function loadDesk() {
   const [comp, chair] = await Promise.all([loadGLB("computer"), loadGLB("chair")]);
   const g = new THREE.Group();
   const white = new THREE.MeshStandardMaterial({ color: 0xf1f0ec, roughness: 0.55 });
-  const birch = woodMaterial("#e9d3a8", "#d3b37f");
+  const birch = woodMaterial("#e7d9c1", "#cfb894");
   const TOP = 0.75, W = 1.4, D = 0.6;
   const top = new THREE.Mesh(new THREE.BoxGeometry(W, 0.025, D), white); top.position.y = TOP - 0.0125; g.add(top);
   // tréteaux réglables en bois : pieds en A, traverse haute, petite étagère à lattes
@@ -276,6 +276,15 @@ async function loadDesk() {
   });
   if (comp) {
     const rm = []; comp.traverse((n) => { if (n.isMesh) { const b = new THREE.Box3().setFromObject(n); if (b.min.z > 0.5) rm.push(n); } }); rm.forEach((n) => n.parent.remove(n));
+    // matières de l'iMac : coque en aluminium gris clair, clavier et souris blancs, dalle et cadre noirs
+    const iAlu = new THREE.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 0.6, roughness: 0.3, envMapIntensity: 1.8 });
+    const iWhite = new THREE.MeshStandardMaterial({ color: 0xf3f3f1, metalness: 0, roughness: 0.45 });
+    const iBlack = new THREE.MeshStandardMaterial({ color: 0x0b0b0c, metalness: 0, roughness: 0.25 });
+    comp.traverse((n) => {
+      if (!n.isMesh || !n.material || !n.material.color) return;
+      const l = n.material.color.r;
+      n.material = l > 0.9 ? iWhite : l > 0.3 ? iAlu : l > 0.12 ? iAlu : iBlack;
+    });
     const c = new THREE.Group(); c.add(comp); comp.rotation.y = -Math.PI / 2; c.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(c), ce = b.getCenter(new THREE.Vector3());
     comp.position.x -= ce.x; comp.position.z -= ce.z; comp.position.y -= b.min.y;
