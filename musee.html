@@ -414,7 +414,7 @@ async function loadAvatar() {
   if (!window.__GLB || !window.__GLB.avatar) return;
   const g = await new Promise((res) => new GLTFLoader().parse(b64(window.__GLB.avatar), "", res, () => res(null)));
   if (!g || !g.animations.length) return;
-  const model = g.scene, clip = g.animations[0];
+  const model = g.scene, find = (n) => g.animations.find((a) => a.name === n), clip = find("walk") || g.animations[0];
   const bone = (n) => model.getObjectByName("mixamorig" + n);
   const B = {}; ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "LeftShoulder", "RightShoulder", "LeftArm", "LeftForeArm", "LeftHand", "RightArm", "RightForeArm", "RightHand",
     "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase", "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase"].forEach((n) => (B[n] = bone(n)));
@@ -478,17 +478,46 @@ async function loadAvatar() {
   bones.forEach((b) => b.quaternion.copy(AV.sitType.get(b))); holder.updateMatrixWorld(true);
   AV.sitDrop = holder.worldToLocal(B.LeftFoot.getWorldPosition(new THREE.Vector3())).y - toeY0;
   reset();
+  // capture de mouvement pour le bureau : s'asseoir (« Sit To Stand » joué à l'envers), taper au clavier, se lever
+  const typeClip = find("typing"), stsClip = find("sit_to_stand");
+  if (typeClip && stsClip) {
+    const sitClip = stsClip.clone(); sitClip.name = "sit";
+    const mk = (c, once) => { const a = mixer.clipAction(c); a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity); a.clampWhenFinished = true; a.play(); a.setEffectiveWeight(0); return a; };
+    AV.acts = { sit: mk(sitClip, true), stand: mk(stsClip, true), type: mk(typeClip, false) };
+    AV.stsDur = stsClip.duration;
+    const hp = stsClip.tracks.find((t) => t.name === hipsName + ".position"), n = hp.values.length;
+    AV.standOff = (hp.values[n - 1] - hp.values[2]) * S;          // le bassin avance de l'assise à la position debout
+    AV.mode = "loco"; AV.cw = { loco: 1, sit: 0, type: 0, stand: 0 }; AV.snap = false;
+    mixer.update(0); model.updateMatrixWorld(true);
+  }
   AV.base = bones.map((b) => b.quaternion.clone());
   Object.assign(AV, { model, mixer, walk, idle, B, bones, v0: (walkClip.travel * S) / walkClip.duration, tw: 0, t: 0, ready: true });
   person.body.visible = false;
 }
+function avMode(m, snap) {
+  if (!AV.acts) return;
+  const A = AV.acts;
+  if (m === "sit") { A.sit.reset(); A.sit.timeScale = -1; A.sit.time = AV.stsDur; A.sit.play(); }
+  if (m === "stand") { A.stand.reset(); A.stand.timeScale = 1; A.stand.play(); }
+  if (m === "type" && AV.mode !== "type") { A.type.reset(); A.type.time = Math.random() * A.type.getClip().duration; A.type.play(); }
+  AV.mode = m; if (snap) AV.snap = true;
+}
 function blendPose(map, w) { if (w < 0.001) return; AV.bones.forEach((b) => b.quaternion.slerp(map.get(b), Math.min(1, w))); }
 function updateAvatar(dt) {
   if (!AV.ready) return;
-  const sw = walker.sitW, lw = walker.lieW, mid = Math.sin(lw * Math.PI);
+  const sw = AV.acts ? 0 : walker.sitW, lw = walker.lieW, mid = Math.sin(lw * Math.PI);
   // marche : la vitesse de la capture suit la vitesse réelle, pour que les pieds ne glissent pas
   const ww = THREE.MathUtils.clamp(walker.speed / 0.16, 0, 1) * (1 - sw) * (1 - lw);
-  AV.walk.setEffectiveWeight(ww); AV.idle.setEffectiveWeight(1 - ww);
+  let L = 1;
+  if (AV.acts) {
+    const m = AV.mode, tg = { loco: m === "loco" ? 1 : 0, sit: m === "sit" || m === "seated" ? 1 : 0, type: m === "type" ? 1 : 0, stand: m === "stand" ? 1 : 0 };
+    for (const k in tg) AV.cw[k] = AV.snap ? tg[k] : THREE.MathUtils.damp(AV.cw[k], tg[k], 4, dt);
+    AV.snap = false;
+    const tot = AV.cw.loco + AV.cw.sit + AV.cw.type + AV.cw.stand || 1;
+    ["sit", "type", "stand"].forEach((k) => AV.acts[k].setEffectiveWeight(AV.cw[k] / tot));
+    L = AV.cw.loco / tot;
+  }
+  AV.walk.setEffectiveWeight(ww * L); AV.idle.setEffectiveWeight((1 - ww) * L);
   AV.walk.timeScale = THREE.MathUtils.clamp(Math.pow(walker.speed / AV.v0, 0.7), 0.45, 1.4);
   // le mélangeur n'écrit que ce qui change : on repart de sa dernière sortie avant d'y ajouter les postures
   AV.bones.forEach((b, i) => b.quaternion.copy(AV.base[i]));
@@ -514,8 +543,9 @@ function updateAvatar(dt) {
   rotB(B.Spine, AX.z, Math.sin(AV.t * 0.35) * 0.015 * still * (1 - sw) * (1 - lw));
   if (walker.state === "look") rotB(B.Spine, AX.x, 0.07);
   // regard
-  rotB(B.Neck, AX.y, walker.headYaw * 0.35); rotB(B.Head, AX.y, walker.headYaw * 0.65);
-  rotB(B.Head, AX.x, walker.headPitch * (sw > 0.5 ? 0.6 : 0.85));
+  const hk = AV.acts ? AV.cw.loco : 1; // assis, la capture de mouvement gère déjà le regard
+  rotB(B.Neck, AX.y, walker.headYaw * 0.35 * hk); rotB(B.Head, AX.y, walker.headYaw * 0.65 * hk);
+  rotB(B.Head, AX.x, walker.headPitch * (sw > 0.5 ? 0.6 : 0.85) * hk);
   // doigts sur le clavier
   if (AV.tw > 0.05 && sw > 0.5) {
     const k = performance.now() / 1000;
@@ -564,33 +594,40 @@ function goWork() {
   const OUT = 0.36, IN = 0.12;
   const side = Math.random() < 0.5 ? 1 : -1;                        // il arrive par la droite ou par la gauche de la chaise
   const SW = -side * Math.PI / 2;                                      // la chaise pivote vers lui
-  const stand = seatPoint(OUT).add(new THREE.Vector3(side * 0.58, 0, 0.04).applyAxisAngle(up, dy));
   const faceChair = dy - side * Math.PI / 2, faceOut = dy + side * Math.PI / 2, faceDesk = dy + Math.PI;
   const ease = (t) => t * t * (3 - 2 * t);
   const follow = () => { person.root.position.copy(seatPoint(deskParts.out)); person.root.rotation.y = faceDesk + deskParts.swivel; };
   walker.lastAct = "work"; walker.pockets = 0;
+  const atEnd = () => { walker.atDesk = false; setTimeout(() => (deskParts.screenTarget = 0), 2500); };
+  if (AV.acts) {
+    // version capture de mouvement : il s'assoit et se lève comme dans « Sit To Stand », puis tape au clavier
+    const fwd = new THREE.Vector3(Math.sin(faceOut), 0, Math.cos(faceOut));
+    const stand = seatPoint(OUT).addScaledVector(fwd, AV.standOff);
+    const seat = () => { person.root.position.copy(seatPoint(OUT)); person.root.rotation.y = faceOut; };
+    startWalk(stand, ex, () => runSteps([
+      { dur: 1.1, start: () => { walker.atDesk = true; }, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * e; deskParts.swivel = SW * e; person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 6, dt); } },
+      { dur: 0.9, fn: (t, dt) => { person.root.rotation.y = dampAngle(person.root.rotation.y, faceOut, 7, dt); } },
+      { dur: AV.stsDur, start: () => { seat(); avMode("sit", true); walker.sitT = 1; }, fn: seat },
+      { dur: 1.5, start: () => { avMode("seated"); deskParts.screenTarget = 1; }, fn: (t) => { const e = ease(t); deskParts.swivel = SW * (1 - e); deskParts.out = OUT + (IN - OUT) * e; follow(); } },
+      { dur: rnd(12, 22), start: () => { avMode("type"); walker.typing = true; }, fn: () => follow() },
+      { dur: 1.5, start: () => { avMode("seated"); walker.typing = false; }, fn: (t) => { const e = ease(t); deskParts.swivel = SW * e; deskParts.out = IN + (OUT - IN) * e; follow(); } },
+      { dur: AV.stsDur, start: () => { seat(); avMode("stand"); }, fn: seat, end: () => { person.root.position.copy(stand); avMode("loco", true); walker.sitT = 0; walker.sitW = 0; } },
+      { dur: 1.1, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * (1 - e); deskParts.swivel = SW * (1 - e); person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 5, dt); }, end: atEnd }
+    ]));
+    return true;
+  }
+  const stand = seatPoint(OUT).add(new THREE.Vector3(side * 0.58, 0, 0.04).applyAxisAngle(up, dy));
   startWalk(stand, ex, () => runSteps([
-    // il tire la chaise et la fait pivoter vers lui
     { dur: 1.1, start: () => { walker.atDesk = true; }, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * e; deskParts.swivel = SW * e; person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 6, dt); } },
-    // il se retourne, dos à l'assise
     { dur: 0.8, fn: (t, dt) => { person.root.rotation.y = dampAngle(person.root.rotation.y, faceOut, 7, dt); } },
-    // il recule jusqu'à l'assise
     { dur: 0.6, fn: (t) => { person.root.position.lerpVectors(stand, seatPoint(OUT), ease(t)); person.root.rotation.y = faceOut; } },
-    // il s'assoit
     { dur: 1.2, start: () => (walker.sitT = 1), fn: () => follow() },
-    // il pivote avec la chaise vers le bureau et s'approche du plateau ; l'écran s'allume
     { dur: 1.5, start: () => (deskParts.screenTarget = 1), fn: (t) => { const e = ease(t); deskParts.swivel = SW * (1 - e); deskParts.out = OUT + (IN - OUT) * e; follow(); } },
-    // il travaille
     { dur: rnd(10, 18), start: () => (walker.typing = true), fn: () => { if (Math.random() < 0.004) walker.typing = !walker.typing; follow(); } },
-    // il se recule et pivote
     { dur: 1.5, start: () => (walker.typing = false), fn: (t) => { const e = ease(t); deskParts.swivel = SW * e; deskParts.out = IN + (OUT - IN) * e; follow(); } },
-    // il se lève
     { dur: 1.1, start: () => (walker.sitT = 0), fn: () => follow() },
-    // il fait un pas hors de la chaise
     { dur: 0.6, fn: (t) => { person.root.position.lerpVectors(seatPoint(OUT), stand, ease(t)); } },
-    // il remet la chaise en place ; l'écran se met en veille un peu plus tard
-    { dur: 1.1, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * (1 - e); deskParts.swivel = SW * (1 - e); person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 5, dt); },
-      end: () => { walker.atDesk = false; setTimeout(() => (deskParts.screenTarget = 0), 2500); } }
+    { dur: 1.1, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * (1 - e); deskParts.swivel = SW * (1 - e); person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 5, dt); }, end: atEnd }
   ]));
   return true;
 }
@@ -623,7 +660,7 @@ function decide() {
     if (pool.length) { const ex = pool[Math.floor(Math.random() * pool.length)]; walker.last = ex; walker.lastAct = "visit"; return startWalk(viewSpot(ex), ex); }
   }
   // s'asseoir au bureau et s'allonger : en pause, en attendant les animations dédiées
-  if (WITH_POSES && r < 0.5 && walker.lastAct !== "work" && goWork()) return;
+  if ((WITH_POSES || AV.acts) && r < 0.5 && walker.lastAct !== "work" && goWork()) return;
   if (WITH_POSES && r < 0.62 && walker.lastAct !== "lie" && goLie()) return;
   walker.lastAct = "free";
   if (r < 0.85) return startWalk(freeSpot(), null);
