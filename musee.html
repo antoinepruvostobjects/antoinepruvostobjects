@@ -69,6 +69,16 @@ const OBJECTS = [
   { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.25,  z: 0.1, rot: -32 }
 ];
 const PERSON_HEIGHT = 1.83;
+/* Liens : sur le site, on change de page ; ailleurs (aperçu), on ouvre la page du site en ligne dans un nouvel onglet */
+const SITE = "https://antoinepruvostobjects.netlify.app/";
+const ON_SITE = /antoinepruvostobjects/.test(location.hostname);
+function siteUrl(href) { return ON_SITE ? href : SITE + href.replace(/^\//, ""); }
+function go(href) {
+  if (ON_SITE) { location.href = href; return; }
+  const a = document.createElement("a"); a.href = siteUrl(href); a.target = "_blank"; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+document.querySelectorAll("header a").forEach((a) => { if (!ON_SITE) { a.href = SITE; a.target = "_blank"; a.rel = "noopener"; } });
 /* Le bureau : plateau blanc 140 × 60 cm sur tréteaux en bois, iMac, chaise Setu. Un clic mène à l'Archive. */
 const DESK = { id: "bureau", name: "Mon bureau", kind: "Archive, tous mes projets", year: "", href: "/#archive", x: 0.05, z: -1.05, rot: 0 };
 const ME = { id: "moi", name: "Antoine Pruvost", kind: "Designer, à propos de moi", href: "/#a-propos" };
@@ -633,7 +643,7 @@ function release(e) {
   if (!dragging) return; dragging = false; cv.classList.remove("drag");
   if (moved <= 6) {
     const ex = pickAt(e.clientX, e.clientY);
-    if (ex) { location.href = ex.def.href; return; }
+    if (ex) { go(ex.def.href); return; }
   }
 }
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
@@ -645,7 +655,7 @@ let kIndex = -1;
 addEventListener("keydown", (e) => {
   if (!exhibits.length) return;
   if (e.key === "Tab") { e.preventDefault(); kIndex = (kIndex + (e.shiftKey ? -1 : 1) + exhibits.length) % exhibits.length; const ex = exhibits[kIndex]; setHover(ex); const p = ex.group.position.clone().project(camera); tag.style.left = ((p.x + 1) / 2 * innerWidth) + "px"; tag.style.top = ((1 - p.y) / 2 * innerHeight - 40) + "px"; }
-  if (e.key === "Enter" && hovered) location.href = hovered.def.href;
+  if (e.key === "Enter" && hovered) go(hovered.def.href);
 });
 
 /* ---------- Mise à l'échelle de l'écran ---------- */
