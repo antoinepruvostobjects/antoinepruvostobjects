@@ -196,7 +196,45 @@ function loadGLB(name) {
     new GLTFLoader().parse(b64(window.__GLB[name]), "", (g) => res(g.scene), () => res(null));
   });
 }
-const deskParts = { chair: null, chairHome: new THREE.Vector3(), out: 0, outTarget: 0, seat: new THREE.Vector3() };
+const deskParts = { chair: null, chairHome: new THREE.Vector3(), out: 0, outTarget: 0, swivel: 0, seat: new THREE.Vector3(), screen: null, screenOn: 0, screenTarget: 0 };
+
+/* Écran de l'iMac : noir au repos ; quand Antoine travaille, il s'allume sur un logiciel de modélisation 3D */
+function makeScreen(w, h) {
+  const cvs = document.createElement("canvas"); cvs.width = 1024; cvs.height = Math.round(1024 * h / w);
+  const ctx = cvs.getContext("2d"), tex = new THREE.CanvasTexture(cvs); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const mat = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.12, metalness: 0, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0 });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  let t = 0, cur = { x: 600, y: 300 }, goal = { x: 600, y: 300 }, rot = 0.6;
+  function draw(dt) {
+    t += dt; const W = cvs.width, H = cvs.height;
+    if (Math.hypot(goal.x - cur.x, goal.y - cur.y) < 6) goal = { x: 240 + Math.random() * 680, y: 90 + Math.random() * (H - 200) };
+    cur.x += (goal.x - cur.x) * Math.min(1, dt * 3); cur.y += (goal.y - cur.y) * Math.min(1, dt * 3);
+    rot += dt * 0.25;
+    ctx.fillStyle = "#2b2c30"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#3a3b40"; ctx.fillRect(0, 0, W, 34); ctx.fillStyle = "#4b4c52"; for (let i = 0; i < 14; i++) ctx.fillRect(14 + i * 34, 9, 22, 16);
+    ctx.fillStyle = "#323338"; ctx.fillRect(0, 34, 200, H - 34);
+    ctx.fillStyle = "#8c8d93"; ctx.font = "15px Helvetica, Arial, sans-serif";
+    ["ANI_tabouret v12", "  Corps", "  Assise", "  Pieds (×3)", "  Inserts", "  Vis M6", "Esquisses", "Origine"].forEach((l, i) => ctx.fillText(l, 14, 64 + i * 26));
+    // vue 3D : grille et tabouret en fil de fer qui tourne
+    const vx = 200, vy = 34, vw = W - 200, vh = H - 34 - 54;
+    const g = ctx.createLinearGradient(0, vy, 0, vy + vh); g.addColorStop(0, "#e9eaee"); g.addColorStop(1, "#c9cbd1"); ctx.fillStyle = g; ctx.fillRect(vx, vy, vw, vh);
+    const cx = vx + vw / 2, cy = vy + vh * 0.62, S = vh * 0.5;
+    const P = (x, y, z) => { const c = Math.cos(rot), s2 = Math.sin(rot), X = x * c - z * s2, Z = x * s2 + z * c; return [cx + X * S, cy - y * S + Z * S * 0.35]; };
+    ctx.strokeStyle = "rgba(90,95,110,.25)"; ctx.lineWidth = 1;
+    for (let i = -5; i <= 5; i++) { let a = P(i * 0.2, 0, -1), b = P(i * 0.2, 0, 1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); a = P(-1, 0, i * 0.2); b = P(1, 0, i * 0.2); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    ctx.strokeStyle = "#2e6fd6"; ctx.lineWidth = 2;
+    ctx.beginPath(); for (let i = 0; i <= 48; i++) { const a = i / 48 * Math.PI * 2, p = P(Math.cos(a) * 0.36, 0.9, Math.sin(a) * 0.36); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
+    for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, f = P(Math.cos(a) * 0.42, 0, Math.sin(a) * 0.42), u = P(Math.cos(a) * 0.12, 0.88, Math.sin(a) * 0.12), m = P(Math.cos(a + 0.5) * 0.3, 0.5, Math.sin(a + 0.5) * 0.3);
+      ctx.beginPath(); ctx.moveTo(f[0], f[1]); ctx.lineTo(u[0], u[1]); ctx.lineTo(m[0], m[1]); ctx.closePath(); ctx.stroke(); }
+    // frise chronologique en bas
+    ctx.fillStyle = "#35363b"; ctx.fillRect(200, H - 54, W - 200, 54); ctx.fillStyle = "#5c5e66"; for (let i = 0; i < 22; i++) ctx.fillRect(214 + i * 34, H - 38, 24, 20);
+    // curseur
+    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(cur.x, cur.y + 22); ctx.lineTo(cur.x + 6, cur.y + 16); ctx.lineTo(cur.x + 15, cur.y + 16); ctx.closePath(); ctx.fill();
+    tex.needsUpdate = true;
+  }
+  let acc = 0;
+  return { mesh, mat, update(dt, on) { mat.emissiveIntensity = on; if (on > 0.02) { acc += dt; if (acc > 1 / 15) { draw(acc); acc = 0; } } } };
+}
 async function loadDesk() {
   const [comp, chair] = await Promise.all([loadGLB("computer"), loadGLB("chair")]);
   const g = new THREE.Group();
@@ -221,6 +259,16 @@ async function loadDesk() {
     const b = new THREE.Box3().setFromObject(c), ce = b.getCenter(new THREE.Vector3());
     comp.position.x -= ce.x; comp.position.z -= ce.z; comp.position.y -= b.min.y;
     c.position.set(0.05, TOP, -0.06); g.add(c);
+    // la dalle de l'écran : on la recouvre d'une surface noire brillante qui s'allume pendant le travail
+    g.updateMatrixWorld(true);
+    let body = null, bh = 0;
+    c.traverse((n) => { if (!n.isMesh) return; const b = new THREE.Box3().setFromObject(n), h = b.max.y - b.min.y; if (h > bh && b.max.y - TOP > 0.4) { bh = h; body = b; } });
+    if (body) {
+      const bw = body.max.x - body.min.x, sw = bw * 0.918, sh = sw * 9 / 16;
+      const scr = makeScreen(sw, sh);
+      scr.mesh.position.set((body.min.x + body.max.x) / 2, body.max.y - bw * 0.04 - sh / 2, body.max.z + 0.0015);
+      g.add(scr.mesh); deskParts.screen = scr;
+    }
   }
   if (chair) {
     const c = new THREE.Group(); c.add(chair); chair.rotation.y = Math.PI; // dossier vers l'avant du bureau, assise face au plateau
@@ -328,22 +376,42 @@ function runSteps(steps) { walker.steps = steps; walker.stepI = 0; walker.stepT 
 const deskEx = () => exhibits.find((e) => e.isDesk);
 function seatPoint(out) {
   const ex = deskEx(), c = deskParts.chair; if (!ex || !c) return null;
-  const p = new THREE.Vector3(deskParts.chairHome.x, 0, deskParts.chairHome.z + 0.22 * out);
+  const p = new THREE.Vector3(deskParts.chairHome.x, 0, deskParts.chairHome.z + out);
   return ex.inner.localToWorld(p).setY(0);
 }
 function goWork() {
   const ex = deskEx(); if (!ex || !deskParts.chair) return false;
-  const seat = seatPoint(1), stand = seat.clone().add(new THREE.Vector3(0, 0, 0.48).applyAxisAngle(new THREE.Vector3(0, 1, 0), ex.group.rotation.y));
-  const yaw = ex.group.rotation.y + Math.PI; // face au plateau
+  const dy = ex.group.rotation.y, up = new THREE.Vector3(0, 1, 0);
+  const OUT = 0.36, IN = 0.12;
+  const side = Math.random() < 0.5 ? 1 : -1;                        // il arrive par la droite ou par la gauche de la chaise
+  const SW = -side * Math.PI / 2;                                      // la chaise pivote vers lui
+  const stand = seatPoint(OUT).add(new THREE.Vector3(side * 0.58, 0, 0.04).applyAxisAngle(up, dy));
+  const faceChair = dy - side * Math.PI / 2, faceOut = dy + side * Math.PI / 2, faceDesk = dy + Math.PI;
+  const ease = (t) => t * t * (3 - 2 * t);
+  const follow = () => { person.root.position.copy(seatPoint(deskParts.out)); person.root.rotation.y = faceDesk + deskParts.swivel; };
   walker.lastAct = "work"; walker.pockets = 0;
   startWalk(stand, ex, () => runSteps([
-    { dur: 0.9, start: () => { deskParts.outTarget = 1; walker.atDesk = true; }, fn: (t, dt) => { person.root.rotation.y = dampAngle(person.root.rotation.y, yaw, 6, dt); } },
-    { dur: 0.8, fn: (t) => { person.root.position.lerpVectors(stand, seat, t * t * (3 - 2 * t)); person.root.rotation.y = yaw; } },
-    { dur: 1.2, start: () => (walker.sitT = 1) },
-    { dur: rnd(9, 17), start: () => (walker.typing = true), fn: (t) => { if (Math.random() < 0.004) walker.typing = !walker.typing; } },
-    { dur: 1.1, start: () => { walker.typing = false; walker.sitT = 0; } },
-    { dur: 0.8, fn: (t) => { person.root.position.lerpVectors(seat, stand, t * t * (3 - 2 * t)); } },
-    { dur: 0.7, start: () => (deskParts.outTarget = 0), fn: () => {}, end: () => (walker.atDesk = false) }
+    // il tire la chaise et la fait pivoter vers lui
+    { dur: 1.1, start: () => { walker.atDesk = true; }, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * e; deskParts.swivel = SW * e; person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 6, dt); } },
+    // il se retourne, dos à l'assise
+    { dur: 0.8, fn: (t, dt) => { person.root.rotation.y = dampAngle(person.root.rotation.y, faceOut, 7, dt); } },
+    // il recule jusqu'à l'assise
+    { dur: 0.6, fn: (t) => { person.root.position.lerpVectors(stand, seatPoint(OUT), ease(t)); person.root.rotation.y = faceOut; } },
+    // il s'assoit
+    { dur: 1.2, start: () => (walker.sitT = 1), fn: () => follow() },
+    // il pivote avec la chaise vers le bureau et s'approche du plateau ; l'écran s'allume
+    { dur: 1.5, start: () => (deskParts.screenTarget = 1), fn: (t) => { const e = ease(t); deskParts.swivel = SW * (1 - e); deskParts.out = OUT + (IN - OUT) * e; follow(); } },
+    // il travaille
+    { dur: rnd(10, 18), start: () => (walker.typing = true), fn: () => { if (Math.random() < 0.004) walker.typing = !walker.typing; follow(); } },
+    // il se recule et pivote
+    { dur: 1.5, start: () => (walker.typing = false), fn: (t) => { const e = ease(t); deskParts.swivel = SW * e; deskParts.out = IN + (OUT - IN) * e; follow(); } },
+    // il se lève
+    { dur: 1.1, start: () => (walker.sitT = 0), fn: () => follow() },
+    // il fait un pas hors de la chaise
+    { dur: 0.6, fn: (t) => { person.root.position.lerpVectors(seatPoint(OUT), stand, ease(t)); } },
+    // il remet la chaise en place ; l'écran se met en veille un peu plus tard
+    { dur: 1.1, fn: (t, dt) => { const e = ease(t); deskParts.out = OUT * (1 - e); deskParts.swivel = SW * (1 - e); person.root.rotation.y = dampAngle(person.root.rotation.y, faceChair, 5, dt); },
+      end: () => { walker.atDesk = false; setTimeout(() => (deskParts.screenTarget = 0), 2500); } }
   ]));
   return true;
 }
@@ -597,7 +665,11 @@ const clock = new THREE.Clock();
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (hovered) { hoverT += dt; if (!hovered.isMe && hoverT > 0.9 && walker.target !== hovered && !walker.steps) walker.wanted = hovered; }
-  if (deskParts.chair) { deskParts.out = THREE.MathUtils.damp(deskParts.out, deskParts.outTarget, 4, dt); deskParts.chair.position.z = deskParts.chairHome.z + 0.22 * deskParts.out; deskParts.chair.rotation.y = 0.12 * (1 - deskParts.out) - 0.05; }
+  if (deskParts.chair) {
+    if (!walker.atDesk) { deskParts.out = THREE.MathUtils.damp(deskParts.out, 0, 3, dt); deskParts.swivel = THREE.MathUtils.damp(deskParts.swivel, 0, 3, dt); }
+    deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
+  }
+  if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
   exhibits.forEach((e) => {
     if (e.isDesk && walker.atDesk) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
