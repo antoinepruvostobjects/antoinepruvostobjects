@@ -57,6 +57,7 @@ header .back:hover { color: var(--fg); }
 <script src="hypar-model.js"></script>
 <script src="computer-model.js"></script>
 <script src="chair-model.js"></script>
+<script src="avatar-model.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from "three";
@@ -72,6 +73,7 @@ const OBJECTS = [
   { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.25,  z: 0.1, rot: -32 }
 ];
 const PERSON_HEIGHT = 1.83;
+const WITH_POSES = false; // passer à true quand les animations assis / allongé seront prêtes
 /* Liens : sur le site, on change de page ; ailleurs (aperçu), on ouvre la page du site en ligne dans un nouvel onglet */
 const SITE = "https://antoinepruvostobjects.pages.dev/";
 const EMBED = /[?&]embed=1/.test(location.search);
@@ -362,6 +364,154 @@ person.root.traverse((n) => { if (n.isMesh) n.userData.me = true; });
 const MEX = { def: ME, isMe: true };
 person.root.position.set(0.1, 0, 0.75);
 
+/* ---------- Antoine en vrai : modèle 3D texturé, squelette Mixamo ----------
+   La silhouette simplifiée ci-dessus reste invisible : elle sert de zone de clic et suit les mêmes postures.
+   La marche vient de la capture de mouvement ; s'asseoir et s'allonger sont des poses calculées
+   sur le squelette, en attendant les animations dédiées. */
+const AV = { ready: false };
+const _qH = new THREE.Quaternion(), _qP = new THREE.Quaternion(), _qR = new THREE.Quaternion(), _qX = new THREE.Quaternion();
+const AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
+function rotB(b, axis, ang) { // tourne un os autour d'un axe exprimé dans le repère du personnage
+  if (!b || !ang) return;
+  AV.holder.getWorldQuaternion(_qH); b.parent.getWorldQuaternion(_qP);
+  _qX.copy(_qH).invert().multiply(_qP);                    // parent, dans le repère du personnage
+  _qR.setFromAxisAngle(axis, ang);
+  b.quaternion.premultiply(_qX.clone().invert().multiply(_qR).multiply(_qX));
+  b.updateMatrixWorld(true);
+}
+function sampleClip(clip, t0, t1, fps, hipsName, seam) {
+  // ré-échantillonne un morceau du clip à pas fixe ; pour la boucle de marche, on referme la boucle et on retire l'avancée
+  const L = Math.max(1, Math.round((t1 - t0) * fps)); let travel = 0;
+  const tracks = clip.tracks.map((tr) => {
+    const n = tr.getValueSize(), it = tr.createInterpolant(), times = new Float32Array(L + 1), vals = new Float32Array((L + 1) * n);
+    for (let k = 0; k <= L; k++) { times[k] = k / fps; const r = it.evaluate(t0 + (t1 - t0) * k / L); for (let c = 0; c < n; c++) vals[k * n + c] = r[c]; }
+    if (n === 4) for (let k = 1; k <= L; k++) { let d = 0; for (let c = 0; c < 4; c++) d += vals[k * 4 + c] * vals[(k - 1) * 4 + c]; if (d < 0) for (let c = 0; c < 4; c++) vals[k * 4 + c] *= -1; }
+    const hipPos = tr.name === hipsName + ".position";
+    if (seam) {
+      if (hipPos) {
+        const x0 = vals[0], z0 = vals[2], xL = vals[L * 3], zL = vals[L * 3 + 2]; travel = Math.hypot(xL - x0, zL - z0);
+        for (let k = 0; k <= L; k++) { vals[k * 3] -= x0 + (xL - x0) * k / L; vals[k * 3 + 2] -= z0 + (zL - z0) * k / L; }
+      }
+      const err = []; for (let c = 0; c < n; c++) err[c] = vals[c] - vals[L * n + c];
+      for (let k = 0; k <= L; k++) for (let c = 0; c < n; c++) vals[k * n + c] += err[c] * k / L;
+      if (n === 4) for (let k = 0; k <= L; k++) { const l = Math.hypot(vals[k * 4], vals[k * 4 + 1], vals[k * 4 + 2], vals[k * 4 + 3]); for (let c = 0; c < 4; c++) vals[k * 4 + c] /= l; }
+    } else if (hipPos) for (let k = 0; k <= L; k++) { vals[k * 3] = vals[0]; vals[k * 3 + 2] = vals[2]; }
+    return new tr.constructor(tr.name, times, vals);
+  });
+  const c = new THREE.AnimationClip(seam ? "marche" : "repos", L / fps, tracks); c.travel = travel; return c;
+}
+async function loadAvatar() {
+  if (!window.__GLB || !window.__GLB.avatar) return;
+  const g = await new Promise((res) => new GLTFLoader().parse(b64(window.__GLB.avatar), "", res, () => res(null)));
+  if (!g || !g.animations.length) return;
+  const model = g.scene, clip = g.animations[0];
+  const bone = (n) => model.getObjectByName("mixamorig" + n);
+  const B = {}; ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "LeftShoulder", "RightShoulder", "LeftArm", "LeftForeArm", "LeftHand", "RightArm", "RightForeArm", "RightHand",
+    "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase", "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase"].forEach((n) => (B[n] = bone(n)));
+  if (!B.Hips) return;
+  model.traverse((n) => {
+    if (!n.isMesh) return;
+    n.castShadow = true; n.receiveShadow = true; n.frustumCulled = false; n.raycast = () => {}; // le clic passe par la silhouette invisible
+    if (n.material) { n.material.roughness = 0.82; n.material.metalness = 0; n.material.envMapIntensity = 0.75; }
+  });
+  const holder = new THREE.Group(), wrap = new THREE.Group(); wrap.add(model); holder.add(wrap); person.root.add(holder);
+  AV.holder = holder;
+  const fps = 24, hipsName = B.Hips.name;
+  const walkClip = sampleClip(clip, 36 / fps, 68 / fps, fps, hipsName, true);   // un cycle complet de marche
+  const idleClip = sampleClip(clip, 0, 2 / fps, fps, hipsName, false);           // la pose debout du début
+  const mixer = new THREE.AnimationMixer(model);
+  const walk = mixer.clipAction(walkClip), idle = mixer.clipAction(idleClip);
+  walk.play(); idle.play(); walk.setEffectiveWeight(0); idle.setEffectiveWeight(1);
+  mixer.update(0); model.updateMatrixWorld(true);
+  // mise à l'échelle : 1,83 m, semelles posées au sol
+  const box = new THREE.Box3().setFromObject(model, true), S = PERSON_HEIGHT / (box.max.y - box.min.y);
+  wrap.scale.setScalar(S); wrap.position.y = -box.min.y * S;
+  holder.updateMatrixWorld(true);
+  const bones = []; model.traverse((n) => { if (n.isBone) bones.push(n); });
+  const side = (b) => Math.sign(holder.worldToLocal(b.getWorldPosition(new THREE.Vector3())).x) || 1;
+  const sL = side(B.LeftArm), sR = side(B.RightArm);
+  const rest = new Map(); bones.forEach((b) => rest.set(b, b.quaternion.clone()));
+  const reset = () => { bones.forEach((b) => b.quaternion.copy(rest.get(b))); holder.updateMatrixWorld(true); };
+  function pose(fn) { // pose figée = pose debout + rotations ; on la mémorise os par os
+    reset(); fn(); const m = new Map(); bones.forEach((b) => m.set(b, b.quaternion.clone())); return m;
+  }
+  const legsSit = () => {
+    [[B.LeftUpLeg, B.LeftLeg, B.LeftFoot, sL, -0.05], [B.RightUpLeg, B.RightLeg, B.RightFoot, sR, 0.07]].forEach(([u, l, f, s, k]) => {
+      rotB(u, AX.x, -1.5 + k); rotB(u, AX.z, s * 0.07); rotB(l, AX.x, 1.48 - k * 1.4); rotB(f, AX.x, 0.05);
+    });
+  };
+  AV.sitType = pose(() => {
+    legsSit(); rotB(B.Spine, AX.x, 0.08); rotB(B.Spine1, AX.x, 0.06); rotB(B.Head, AX.x, 0.18);
+    [[B.LeftArm, B.LeftForeArm, B.LeftHand, sL], [B.RightArm, B.RightForeArm, B.RightHand, sR]].forEach(([a, f, h, s]) => {
+      rotB(a, AX.x, -0.42); rotB(a, AX.z, -s * 0.06); rotB(f, AX.x, -1.12); rotB(f, AX.y, -s * 0.42); rotB(h, AX.z, s * 0.25);
+    });
+  });
+  AV.sitRest = pose(() => {
+    legsSit(); rotB(B.Spine, AX.x, -0.06); rotB(B.Head, AX.x, 0.05);
+    [[B.LeftArm, B.LeftForeArm, sL], [B.RightArm, B.RightForeArm, sR]].forEach(([a, f, s]) => { rotB(a, AX.x, -0.3); rotB(f, AX.x, -0.95); rotB(f, AX.y, -s * 0.5); });
+  });
+  AV.lie = pose(() => {
+    rotB(B.RightUpLeg, AX.x, -0.22); rotB(B.RightLeg, AX.x, 0.45); rotB(B.LeftFoot, AX.x, 0.25); rotB(B.RightFoot, AX.x, 0.15);
+    rotB(B.Head, AX.x, -0.12);
+    [[B.LeftArm, B.LeftForeArm, B.LeftHand, sL], [B.RightArm, B.RightForeArm, B.RightHand, sR]].forEach(([a, f, h, s]) => {
+      rotB(a, AX.z, s * 2.35); rotB(a, AX.x, -0.35); rotB(f, AX.z, s * 2.25); rotB(f, AX.x, 0.25);
+    });
+  });
+  AV.crouch = pose(() => {
+    [[B.LeftUpLeg, B.LeftLeg, B.LeftFoot], [B.RightUpLeg, B.RightLeg, B.RightFoot]].forEach(([u, l, f]) => { rotB(u, AX.x, -1.35); rotB(l, AX.x, 2.05); rotB(f, AX.x, -0.55); });
+    rotB(B.Spine, AX.x, 0.35);
+  });
+  // repère du pied debout, pour poser les pieds au sol une fois assis
+  reset();
+  const toeY0 = holder.worldToLocal(B.LeftFoot.getWorldPosition(new THREE.Vector3())).y;
+  bones.forEach((b) => b.quaternion.copy(AV.sitType.get(b))); holder.updateMatrixWorld(true);
+  AV.sitDrop = holder.worldToLocal(B.LeftFoot.getWorldPosition(new THREE.Vector3())).y - toeY0;
+  reset();
+  AV.base = bones.map((b) => b.quaternion.clone());
+  Object.assign(AV, { model, mixer, walk, idle, B, bones, v0: (walkClip.travel * S) / walkClip.duration, tw: 0, t: 0, ready: true });
+  person.body.visible = false;
+}
+function blendPose(map, w) { if (w < 0.001) return; AV.bones.forEach((b) => b.quaternion.slerp(map.get(b), Math.min(1, w))); }
+function updateAvatar(dt) {
+  if (!AV.ready) return;
+  const sw = walker.sitW, lw = walker.lieW, mid = Math.sin(lw * Math.PI);
+  // marche : la vitesse de la capture suit la vitesse réelle, pour que les pieds ne glissent pas
+  const ww = THREE.MathUtils.clamp(walker.speed / 0.16, 0, 1) * (1 - sw) * (1 - lw);
+  AV.walk.setEffectiveWeight(ww); AV.idle.setEffectiveWeight(1 - ww);
+  AV.walk.timeScale = THREE.MathUtils.clamp(Math.pow(walker.speed / AV.v0, 0.7), 0.45, 1.4);
+  // le mélangeur n'écrit que ce qui change : on repart de sa dernière sortie avant d'y ajouter les postures
+  AV.bones.forEach((b, i) => b.quaternion.copy(AV.base[i]));
+  AV.mixer.update(dt);
+  AV.bones.forEach((b, i) => AV.base[i].copy(b.quaternion));
+  AV.t += dt;
+  // assis : frappe au clavier ou dossier ; allongé : mains derrière la tête ; accroupi pendant qu'il se couche ou se relève
+  AV.tw = THREE.MathUtils.damp(AV.tw, walker.typing ? 1 : 0, 3, dt);
+  if (sw > 0.001) {
+    const m = new Map(); AV.bones.forEach((b) => m.set(b, AV.sitRest.get(b).clone().slerp(AV.sitType.get(b), AV.tw)));
+    blendPose(m, sw);
+  }
+  blendPose(AV.lie, lw);
+  blendPose(AV.crouch, mid * 0.75 * (1 - lw * 0.6));
+  const H = AV.holder;
+  H.position.set(0, -AV.sitDrop * sw + 0.1 * lw - 0.36 * mid * (1 - lw), -0.32 * mid);
+  H.rotation.x = -Math.PI / 2 * Math.pow(lw, 1.4);
+  H.updateMatrixWorld(true);
+  const B = AV.B;
+  // respiration et petites variations quand il est immobile
+  const still = 1 - ww;
+  rotB(B.Spine1, AX.x, Math.sin(AV.t * 1.7) * 0.012 * still);
+  rotB(B.Spine, AX.z, Math.sin(AV.t * 0.35) * 0.015 * still * (1 - sw) * (1 - lw));
+  if (walker.state === "look") rotB(B.Spine, AX.x, 0.07);
+  // regard
+  rotB(B.Neck, AX.y, walker.headYaw * 0.35); rotB(B.Head, AX.y, walker.headYaw * 0.65);
+  rotB(B.Head, AX.x, walker.headPitch * (sw > 0.5 ? 0.6 : 0.85));
+  // doigts sur le clavier
+  if (AV.tw > 0.05 && sw > 0.5) {
+    const k = performance.now() / 1000;
+    rotB(B.LeftHand, AX.x, Math.sin(k * 13) * 0.05 * AV.tw); rotB(B.RightHand, AX.x, Math.sin(k * 11 + 1) * 0.05 * AV.tw);
+  }
+}
+
 /* ---------- Comportement : il se promène librement ----------
    Il choisit lui-même : aller voir un objet, flâner vers un coin de l'espace, s'arrêter et regarder autour,
    ou se tourner vers le visiteur du site. Vitesse, durées et posture (mains dans les poches ou bras libres) changent à chaque fois. */
@@ -386,7 +536,7 @@ function viewSpot(ex) {
 function startWalk(goal, target, onArrive) {
   walker.onArrive = onArrive || null;
   walker.goal.copy(goal); walker.target = target || null; walker.state = "walk";
-  walker.maxSpeed = rnd(0.34, 0.56);
+  walker.maxSpeed = rnd(0.5, 0.78);
   walker.pockets = Math.random() < 0.45 ? 1 : 0;
 }
 /* Enchaînement d'étapes chronométrées (s'asseoir, travailler, s'allonger…) */
@@ -461,8 +611,9 @@ function decide() {
     let pool = exhibits.filter((e) => e !== walker.last && !e.isDesk); if (!pool.length) pool = exhibits.filter((e) => !e.isDesk);
     if (pool.length) { const ex = pool[Math.floor(Math.random() * pool.length)]; walker.last = ex; walker.lastAct = "visit"; return startWalk(viewSpot(ex), ex); }
   }
-  if (r < 0.5 && walker.lastAct !== "work" && goWork()) return;
-  if (r < 0.62 && walker.lastAct !== "lie" && goLie()) return;
+  // s'asseoir au bureau et s'allonger : en pause, en attendant les animations dédiées
+  if (WITH_POSES && r < 0.5 && walker.lastAct !== "work" && goWork()) return;
+  if (WITH_POSES && r < 0.62 && walker.lastAct !== "lie" && goLie()) return;
   walker.lastAct = "free";
   if (r < 0.85) return startWalk(freeSpot(), null);
   // s'arrêter sur place : regarder autour, parfois vers l'écran
@@ -716,13 +867,14 @@ function loop() {
     e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
   });
   updateWalker(dt);
+  updateAvatar(dt);
   updateZoom(dt);
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar(), loadDesk()]).then(() => {
+Promise.all([loadAni(), loadHypar(), loadDesk(), loadAvatar()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
