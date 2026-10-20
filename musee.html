@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Accueil 3D (prototype) | Antoinepruvostobjects</title>
+<meta name="robots" content="noindex">
+<style>
+/* Prototype de l'accueil : un sol blanc vu en plongée, les objets posés à l'échelle, un visiteur de 1,83 m qui se promène. */
+:root {
+  --bg: #f4f4f2;
+  --fg: #111;
+  --muted: #7a7a7a;
+  --line: #e2e2df;
+  --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#stage canvas.drag { cursor: grabbing; }
+#stage canvas.hot { cursor: pointer; }
+header { position: fixed; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  padding: max(clamp(18px, 2.6vw, 48px), env(safe-area-inset-top, 0px)) max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)) 0 max(clamp(20px, 5vw, 120px), env(safe-area-inset-left, 0px)); pointer-events: none; }
+header a { pointer-events: auto; color: inherit; text-decoration: none; }
+header .name { font-weight: 700; font-size: clamp(17px, .85vw + 9.5px, 28px); letter-spacing: .07em; }
+header .back { color: var(--muted); font-size: clamp(14px, .6vw + 9px, 23px); letter-spacing: .03em; }
+header .back:hover { color: var(--fg); }
+.tag { position: fixed; z-index: 6; pointer-events: none; transform: translate(-50%, -100%); padding: 0 0 14px; opacity: 0; transition: opacity .25s ease; white-space: nowrap; text-align: center; }
+.tag.on { opacity: 1; }
+.tag b { display: block; font-weight: 500; font-size: 18px; letter-spacing: .02em; }
+.tag span { display: block; color: var(--muted); font-size: 13px; letter-spacing: .03em; margin-top: 2px; }
+.hint { position: fixed; z-index: 5; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); color: var(--muted); font-size: 13px; letter-spacing: .04em; pointer-events: none; transition: opacity .6s ease; text-align: center; padding-inline: 16px; }
+.load { position: fixed; inset: 0; z-index: 7; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--muted); font-size: 13px; letter-spacing: .05em; transition: opacity .6s ease; }
+.load.off { opacity: 0; pointer-events: none; }
+.proto { position: fixed; z-index: 5; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); bottom: max(24px, env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: 12px; letter-spacing: .05em; }
+@media (max-width: 640px) { .proto { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="name" href="/">Antoinepruvostobjects</a>
+  <a class="back" href="/">Retour au site</a>
+</header>
+<div id="stage" aria-label="Espace d'exposition en 3D : survolez un objet pour le soulever, cliquez pour ouvrir sa fiche"></div>
+<div class="tag" id="tag" aria-hidden="true"><b></b><span></span></div>
+<p class="hint" id="hint">Survolez un objet · cliquez pour l'ouvrir · faites glisser pour vous déplacer</p>
+<p class="proto">Prototype</p>
+<div class="load" id="load">Chargement de l'espace…</div>
+
+<script src="ani-model.js"></script>
+<script src="hypar-model.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+/* ---------- Les objets exposés : ajouter un objet = ajouter une ligne ici ----------
+   x, z : position au sol en mètres ; rot : rotation en degrés ; href : page ouverte au clic */
+const OBJECTS = [
+  { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.05, z: -0.25, rot: 18 },
+  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.05,  z: -0.45, rot: -32 }
+];
+const PERSON_HEIGHT = 1.83;
+
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+stage.appendChild(renderer.domElement);
+const cv = renderer.domElement;
+
+const scene = new THREE.Scene();
+const BG = new THREE.Color(0xf4f4f2);
+scene.background = BG;
+scene.fog = new THREE.Fog(0xf4f4f2, 26, 44);
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.55;
+
+/* Caméra en plongée (~60°), focale longue pour garder une lecture presque « vue de dessus » */
+const camera = new THREE.PerspectiveCamera(11, 1, 0.5, 120);
+const look = new THREE.Vector3(0, 0.55, -0.15);
+const CAM_PITCH = THREE.MathUtils.degToRad(62);
+let camDist = 9.5;
+function placeCamera() {
+  camera.position.set(look.x, look.y + Math.sin(CAM_PITCH) * camDist, look.z + Math.cos(CAM_PITCH) * camDist);
+  camera.lookAt(look);
+}
+
+/* Sol blanc infini qui reçoit les ombres */
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 1, metalness: 0 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xe9e7e2, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+sun.position.set(-2.6, 6.5, 3.2);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.radius = 6; sun.shadow.blurSamples = 16;
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.01;
+Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 20 });
+scene.add(sun); scene.add(sun.target);
+
+/* ---------- Matières ---------- */
+function woodMaterial(light, dark) {
+  const uL = { value: new THREE.Color(light) }, uD = { value: new THREE.Color(dark) };
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0 });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uLight = uL; sh.uniforms.uDark = uD;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvOP=position;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;\nuniform vec3 uLight;\nuniform vec3 uDark;\n" +
+      "float h31(vec3 p){p=fract(p*0.3183099+.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}\n" +
+      "float vn(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);return mix(mix(mix(h31(i),h31(i+vec3(1,0,0)),f.x),mix(h31(i+vec3(0,1,0)),h31(i+vec3(1,1,0)),f.x),f.y),mix(mix(h31(i+vec3(0,0,1)),h31(i+vec3(1,0,1)),f.x),mix(h31(i+vec3(0,1,1)),h31(i+vec3(1,1,1)),f.x),f.y),f.z);}\n")
+      .replace("#include <color_fragment>", "#include <color_fragment>\n{\n vec3 p=vOP*1000.0;\n" +
+        " float warp=vn(vec3(p.x*.02,p.y*.008,p.z*.02))*1.8+vn(vec3(p.x*.1,p.y*.03,p.z*.1))*.35;\n" +
+        " float rings=sin((p.x*.9+p.z*.9)*.22+warp*6.0);\n" +
+        " float g=smoothstep(-.2,1.,rings)*.55+vn(vec3(p.x*.9,p.y*.06,p.z*.9))*.45;\n" +
+        " float pores=vn(vec3(p.x*2.4,p.y*.22,p.z*2.4));\n" +
+        " vec3 c=mix(uLight,uDark,clamp(g*.6+pores*.1,0.,1.));\n diffuseColor.rgb=c;\n}");
+  };
+  return m;
+}
+const alu = new THREE.MeshStandardMaterial({ color: 0xdfe1e3, roughness: 0.42, metalness: 1, envMapIntensity: 1.5 });
+const inox = new THREE.MeshStandardMaterial({ color: 0xc2c5c8, roughness: 0.3, metalness: 1, envMapIntensity: 1.6 });
+function fibreMaterial() {
+  const tex = new THREE.TextureLoader().load("hypar-fibre.jpg");
+  tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping; tex.anisotropy = 8;
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xf6f5f1, roughness: 0.42, clearcoat: 1, clearcoatRoughness: 0.05 });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uFib = { value: tex }; sh.uniforms.uTile = { value: 0.045 };
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;\nvarying vec3 vON;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvOP=position;vON=normal;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vOP;\nvarying vec3 vON;\nuniform sampler2D uFib;\nuniform float uTile;")
+      .replace("#include <map_fragment>", "#include <map_fragment>\n{\n vec3 bw=pow(abs(normalize(vON)),vec3(4.0)); bw/=(bw.x+bw.y+bw.z);\n vec3 q=vOP/uTile;\n" +
+        " vec3 t=texture2D(uFib,q.yz).rgb*bw.x+texture2D(uFib,q.xz).rgb*bw.y+texture2D(uFib,q.xy).rgb*bw.z;\n diffuseColor.rgb*=mix(vec3(0.9),t*1.12,0.85);\n}");
+  };
+  return m;
+}
+function b64(s) { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
+
+/* ---------- Chargement des objets ---------- */
+const exhibits = []; // { def, group, inner, radius, lift }
+function addExhibit(def, inner) {
+  const group = new THREE.Group();
+  inner.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; n.userData.exhibit = def.id; } });
+  const box = new THREE.Box3().setFromObject(inner);
+  inner.position.x -= (box.min.x + box.max.x) / 2; inner.position.z -= (box.min.z + box.max.z) / 2; inner.position.y -= box.min.y;
+  group.add(inner);
+  group.position.set(def.x, 0, def.z);
+  group.rotation.y = THREE.MathUtils.degToRad(def.rot || 0);
+  scene.add(group);
+  const size = box.getSize(new THREE.Vector3());
+  exhibits.push({ def, group, inner, radius: Math.max(size.x, size.z) / 2, height: size.y, lift: 0, target: 0 });
+}
+function loadAni() {
+  return new Promise((res) => {
+    if (!window.__GLB || !window.__GLB.ani) return res();
+    new GLTFLoader().parse(b64(window.__GLB.ani), "", (gltf) => {
+      const wood = woodMaterial("#efd9a8", "#d9b070");
+      gltf.scene.traverse((n) => {
+        if (!n.isMesh) return;
+        const nm = (n.name + " " + (n.parent ? n.parent.name : "")).toLowerCase();
+        n.material = /ball/.test(nm) ? alu : /screw/.test(nm) ? inox : wood;
+      });
+      addExhibit(OBJECTS[0], gltf.scene); res();
+    }, () => res());
+  });
+}
+function loadHypar() {
+  return new Promise((res) => {
+    if (!window.__STL || !window.__STL.hypar) return res();
+    let g = new STLLoader().parse(b64(window.__STL.hypar));
+    g.deleteAttribute("normal"); g = mergeVertices(g, 1e-3); g.computeVertexNormals();
+    g.rotateX(-Math.PI / 2); g.scale(0.001, 0.001, 0.001);
+    addExhibit(OBJECTS[1], new THREE.Mesh(g, fibreMaterial())); res();
+  });
+}
+
+/* ---------- Le visiteur : silhouette sobre de 1,83 m, façon maquette d'architecture ---------- */
+const skin = new THREE.MeshStandardMaterial({ color: 0xe4e3df, roughness: 0.85, metalness: 0 });
+function limb(len, r) {
+  const g = new THREE.CapsuleGeometry(r, len - 2 * r, 6, 12); g.translate(0, -len / 2, 0);
+  const m = new THREE.Mesh(g, skin); m.castShadow = true; return m;
+}
+function makePerson(H) {
+  const k = H / 1.83;
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const hip = 0.96 * k, legL = 0.92 * k;
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.135 * k, 0.4 * k, 8, 16), skin);
+  torso.scale.set(1.12, 1, 0.56); torso.position.y = hip + 0.3 * k; torso.castShadow = true; body.add(torso);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.045 * k, 0.05 * k, 0.1 * k, 10), skin); neck.position.y = hip + 0.6 * k; body.add(neck);
+  const headPivot = new THREE.Group(); headPivot.position.y = hip + 0.64 * k; body.add(headPivot);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.098 * k, 24, 18), skin); head.scale.set(0.92, 1.12, 1); head.position.y = 0.12 * k; head.castShadow = true; headPivot.add(head);
+  function legPivot(side) { const p = new THREE.Group(); p.position.set(side * 0.085 * k, hip, 0); const thigh = limb(legL * 0.52, 0.058 * k); p.add(thigh); const knee = new THREE.Group(); knee.position.y = -legL * 0.5; p.add(knee); const shin = limb(legL * 0.52, 0.045 * k); knee.add(shin); const foot = new THREE.Mesh(new THREE.BoxGeometry(0.08 * k, 0.045 * k, 0.25 * k), skin); foot.position.set(0, -legL * 0.5, 0.06 * k); foot.castShadow = true; knee.add(foot); body.add(p); return { p, knee }; }
+  function armPivot(side) { const p = new THREE.Group(); p.position.set(side * 0.185 * k, hip + 0.5 * k, 0); const up = limb(0.31 * k, 0.036 * k); p.add(up); const el = new THREE.Group(); el.position.y = -0.3 * k; p.add(el); const lo = limb(0.29 * k, 0.031 * k); el.add(lo); p.rotation.z = side * 0.06; body.add(p); return { p, el }; }
+  const L = legPivot(1), R = legPivot(-1), AL = armPivot(1), AR = armPivot(-1);
+  return { root, body, headPivot, L, R, AL, AR, k };
+}
+const person = makePerson(PERSON_HEIGHT);
+scene.add(person.root);
+person.root.position.set(0.05, 0, 0.6);
+
+/* Promenade : il va d'objet en objet, s'arrête, contemple, puis repart */
+const walker = { state: "idle", timer: 1.2, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, look: null, last: -1, wanted: null };
+function viewSpot(ex) {
+  const from = person.root.position, c = ex.group.position;
+  const dir = new THREE.Vector3(from.x - c.x, 0, from.z - c.z);
+  if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
+  dir.normalize();
+  const tilt = (Math.random() - 0.5) * 0.9; dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), tilt);
+  return new THREE.Vector3(c.x + dir.x * (ex.radius + 0.42), 0, c.z + dir.z * (ex.radius + 0.42));
+}
+function pickNext() {
+  if (!exhibits.length) return null;
+  if (walker.wanted) { const w = walker.wanted; walker.wanted = null; return w; }
+  if (exhibits.length === 1) return exhibits[0];
+  let i; do { i = Math.floor(Math.random() * exhibits.length); } while (i === walker.last);
+  walker.last = i; return exhibits[i];
+}
+function goTo(ex) { walker.target = ex; walker.goal.copy(viewSpot(ex)); walker.state = "walk"; }
+const tmpV = new THREE.Vector3();
+function updateWalker(dt) {
+  const P = person, pos = P.root.position;
+  let moving = false;
+  if (walker.state === "idle" || walker.state === "look") {
+    walker.timer -= dt;
+    if (walker.wanted && walker.wanted !== walker.target) walker.timer = Math.min(walker.timer, 0);
+    if (walker.timer <= 0) { const n = pickNext(); if (n) goTo(n); }
+  }
+  if (walker.state === "walk") {
+    tmpV.subVectors(walker.goal, pos); tmpV.y = 0;
+    const d = tmpV.length();
+    if (d < 0.04) { walker.state = "look"; walker.timer = 3.5 + Math.random() * 3; }
+    else {
+      const dir = tmpV.normalize();
+      // contourner les autres objets
+      exhibits.forEach((ex) => {
+        if (ex === walker.target) return;
+        const ox = pos.x - ex.group.position.x, oz = pos.z - ex.group.position.z, od = Math.hypot(ox, oz), safe = ex.radius + 0.45;
+        if (od < safe) { dir.x += (ox / od) * (safe - od) * 4; dir.z += (oz / od) * (safe - od) * 4; }
+      });
+      dir.normalize();
+      walker.speed = THREE.MathUtils.damp(walker.speed, Math.min(0.5, d * 1.4 + 0.08), 4, dt);
+      pos.x += dir.x * walker.speed * dt; pos.z += dir.z * walker.speed * dt;
+      const yaw = Math.atan2(dir.x, dir.z);
+      P.root.rotation.y = dampAngle(P.root.rotation.y, yaw, 6, dt);
+      moving = true;
+    }
+  }
+  if (!moving) walker.speed = THREE.MathUtils.damp(walker.speed, 0, 6, dt);
+  if (walker.state === "look" && walker.target) {
+    const c = walker.target.group.position, yaw = Math.atan2(c.x - pos.x, c.z - pos.z);
+    P.root.rotation.y = dampAngle(P.root.rotation.y, yaw, 3, dt);
+  }
+  // pas de marche
+  const amp = THREE.MathUtils.clamp(walker.speed / 0.5, 0, 1);
+  walker.phase += dt * (2 + 3.6 * amp);
+  const s = Math.sin(walker.phase) * amp;
+  P.L.p.rotation.x = s * 0.34; P.R.p.rotation.x = -s * 0.34;
+  P.L.knee.rotation.x = Math.max(0, -Math.sin(walker.phase + 0.6)) * 0.45 * amp;
+  P.R.knee.rotation.x = Math.max(0, Math.sin(walker.phase + 0.6)) * 0.45 * amp;
+  P.AL.p.rotation.x = -s * 0.28; P.AR.p.rotation.x = s * 0.28;
+  P.AL.el.rotation.x = -0.25 * amp - 0.05; P.AR.el.rotation.x = -0.25 * amp - 0.05;
+  P.body.position.y = Math.abs(Math.cos(walker.phase)) * 0.025 * amp;
+  // contempler : tête légèrement penchée vers l'objet, mains dans le dos
+  const lookAmt = walker.state === "look" ? 1 : 0;
+  P.headPivot.rotation.x = THREE.MathUtils.damp(P.headPivot.rotation.x, 0.38 * lookAmt, 3, dt);
+  P.headPivot.rotation.z = THREE.MathUtils.damp(P.headPivot.rotation.z, 0.06 * lookAmt * Math.sin(performance.now() / 1700), 2, dt);
+  const back = lookAmt;
+  P.AL.p.rotation.x += 0.35 * back; P.AR.p.rotation.x += 0.35 * back;
+  P.AL.p.rotation.z = THREE.MathUtils.damp(P.AL.p.rotation.z, 0.06 - 0.2 * back, 3, dt);
+  P.AR.p.rotation.z = THREE.MathUtils.damp(P.AR.p.rotation.z, -0.06 + 0.2 * back, 3, dt);
+}
+function dampAngle(a, b, l, dt) { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * (1 - Math.exp(-l * dt)); }
+
+/* ---------- Survol, soulèvement, clic ---------- */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(-9, -9);
+const tag = document.getElementById("tag");
+let hovered = null, hoverT = 0, pointerIn = false;
+function pickAt(x, y) {
+  const r = cv.getBoundingClientRect();
+  mouse.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hits = ray.intersectObjects(exhibits.map((e) => e.group), true);
+  if (!hits.length) return null;
+  const id = hits[0].object.userData.exhibit;
+  return exhibits.find((e) => e.def.id === id) || null;
+}
+function setHover(ex) {
+  if (ex === hovered) return;
+  hovered = ex; hoverT = 0;
+  exhibits.forEach((e) => (e.target = e === ex ? 1 : 0));
+  cv.classList.toggle("hot", !!ex);
+  if (ex) { tag.querySelector("b").textContent = ex.def.name; tag.querySelector("span").textContent = ex.def.kind + ", " + ex.def.year; tag.classList.add("on"); }
+  else tag.classList.remove("on");
+}
+
+/* ---------- Déplacement dans l'espace : glisser pour se promener, molette pour s'approcher ---------- */
+let dragging = false, downX = 0, downY = 0, lastX = 0, lastY = 0, moved = 0;
+const bounds = { x: 3.5, z: 2.5 };
+cv.addEventListener("pointerdown", (e) => { dragging = true; moved = 0; downX = lastX = e.clientX; downY = lastY = e.clientY; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", (e) => {
+  pointerIn = true;
+  if (dragging) {
+    const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 6) {
+      cv.classList.add("drag");
+      const scale = (camDist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2) / cv.clientHeight;
+      look.x = THREE.MathUtils.clamp(look.x - dx * scale, -bounds.x, bounds.x);
+      look.z = THREE.MathUtils.clamp(look.z - dy * scale / Math.sin(CAM_PITCH), -bounds.z, bounds.z);
+      placeCamera(); setHover(null); return;
+    }
+  }
+  setHover(pickAt(e.clientX, e.clientY));
+  tag.style.left = e.clientX + "px"; tag.style.top = (e.clientY - 8) + "px";
+});
+function release(e) {
+  if (!dragging) return; dragging = false; cv.classList.remove("drag");
+  if (moved <= 6) {
+    const ex = pickAt(e.clientX, e.clientY);
+    if (ex) { location.href = ex.def.href; return; }
+  }
+}
+cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
+cv.addEventListener("pointerleave", () => { pointerIn = false; if (!dragging) setHover(null); });
+cv.addEventListener("wheel", (e) => { e.preventDefault(); camDist = THREE.MathUtils.clamp(camDist * Math.exp(e.deltaY * 0.0012), 10, 32); placeCamera(); }, { passive: false });
+
+/* Touches clavier : Tab parcourt les objets, Entrée ouvre */
+let kIndex = -1;
+addEventListener("keydown", (e) => {
+  if (!exhibits.length) return;
+  if (e.key === "Tab") { e.preventDefault(); kIndex = (kIndex + (e.shiftKey ? -1 : 1) + exhibits.length) % exhibits.length; const ex = exhibits[kIndex]; setHover(ex); const p = ex.group.position.clone().project(camera); tag.style.left = ((p.x + 1) / 2 * innerWidth) + "px"; tag.style.top = ((1 - p.y) / 2 * innerHeight - 40) + "px"; }
+  if (e.key === "Enter" && hovered) location.href = hovered.def.href;
+});
+
+/* ---------- Mise à l'échelle de l'écran ---------- */
+function frameAll() {
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  const span = Math.max(5.2, 3.6 / camera.aspect + 2); // largeur de sol à montrer, en mètres
+  const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  camDist = THREE.MathUtils.clamp((span / 2) / (halfH * camera.aspect), 12, 32);
+  placeCamera();
+}
+function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); frameAll(); }
+addEventListener("resize", resize);
+
+/* ---------- Boucle ---------- */
+const clock = new THREE.Clock();
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (hovered) { hoverT += dt; if (hoverT > 0.9 && walker.target !== hovered) walker.wanted = hovered; }
+  exhibits.forEach((e) => {
+    e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
+    e.inner.position.y = e.baseY + e.lift * 0.09;
+    e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
+  });
+  updateWalker(dt);
+  sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+Promise.all([loadAni(), loadHypar()]).then(() => {
+  exhibits.forEach((e) => (e.baseY = e.inner.position.y));
+  resize();
+  document.getElementById("load").classList.add("off");
+  setTimeout(() => { document.getElementById("hint").style.opacity = "0"; }, 7000);
+  loop();
+});
+</script>
+</body>
+</html>
