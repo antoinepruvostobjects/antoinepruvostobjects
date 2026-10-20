@@ -73,7 +73,7 @@ const OBJECTS = [
 ];
 const PERSON_HEIGHT = 1.83;
 /* Liens : sur le site, on change de page ; ailleurs (aperçu), on ouvre la page du site en ligne dans un nouvel onglet */
-const SITE = "https://antoinepruvostobjects.netlify.app/";
+const SITE = "https://antoinepruvostobjects.pages.dev/";
 const EMBED = /[?&]embed=1/.test(location.search);
 let PARENT = null; try { if (EMBED && window.parent !== window && window.parent.location.host === location.host) PARENT = window.parent; } catch (e) {}
 const ON_SITE = !!PARENT || /antoinepruvostobjects/.test(location.hostname);
