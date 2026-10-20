@@ -185,100 +185,182 @@ function loadHypar() {
   });
 }
 
-/* ---------- Le visiteur : silhouette sobre de 1,83 m, façon maquette d'architecture ---------- */
-const skin = new THREE.MeshStandardMaterial({ color: 0xe4e3df, roughness: 0.85, metalness: 0 });
-function limb(len, r) {
-  const g = new THREE.CapsuleGeometry(r, len - 2 * r, 6, 12); g.translate(0, -len / 2, 0);
-  const m = new THREE.Mesh(g, skin); m.castShadow = true; return m;
+/* ---------- Le visiteur : Antoine, 1,83 m, pointure 42 ----------
+   T-shirt blanc ou noir, jean brut coupe droite, chaussures bateau en cuir brun à semelle blanche.
+   Toutes les cotes sont en mètres. */
+const SHIRT = Math.random() < 0.5 ? 0xf2f1ee : 0x1d1d1f;
+const M = {
+  skin:  new THREE.MeshStandardMaterial({ color: 0xc99a7c, roughness: 0.7 }),
+  hair:  new THREE.MeshStandardMaterial({ color: 0x2b2019, roughness: 0.65 }),
+  shirt: new THREE.MeshStandardMaterial({ color: SHIRT, roughness: 0.92 }),
+  denim: new THREE.MeshStandardMaterial({ color: 0x20232e, roughness: 0.88 }),
+  stitch: new THREE.MeshStandardMaterial({ color: 0x9a6a3a, roughness: 0.8 }),
+  leather: new THREE.MeshStandardMaterial({ color: 0x6a3a22, roughness: 0.45, metalness: 0.02 }),
+  sole:  new THREE.MeshStandardMaterial({ color: 0xece5d6, roughness: 0.8 })
+};
+function mesh(geo, mat) { const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; return m; }
+function capsule(len, r, mat) { const g = new THREE.CapsuleGeometry(r, Math.max(0.001, len - 2 * r), 6, 14); g.translate(0, -len / 2, 0); return mesh(g, mat); }
+function taper(len, rTop, rBot, mat) { const g = new THREE.CylinderGeometry(rTop, rBot, len, 18, 1); g.translate(0, -len / 2, 0); return mesh(g, mat); }
+function shoe() {
+  // pointure 42 : pied de 26,7 cm, chaussure d'environ 28,5 cm
+  const g = new THREE.Group();
+  const sole = mesh(new THREE.BoxGeometry(0.098, 0.022, 0.285), M.sole); sole.position.set(0, 0.011, 0.07); g.add(sole);
+  const up = mesh(new THREE.CapsuleGeometry(0.046, 0.18, 6, 14), M.leather); up.rotation.x = Math.PI / 2; up.scale.set(1, 1, 0.7); up.position.set(0, 0.045, 0.07); g.add(up);
+  const lace = mesh(new THREE.TorusGeometry(0.03, 0.004, 6, 18, Math.PI), M.leather); lace.rotation.y = Math.PI / 2; lace.position.set(0, 0.07, 0.085); g.add(lace);
+  return g;
 }
-function makePerson(H) {
-  const k = H / 1.83;
+function makePerson() {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
-  const hip = 0.96 * k, legL = 0.92 * k;
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.135 * k, 0.4 * k, 8, 16), skin);
-  torso.scale.set(1.12, 1, 0.56); torso.position.y = hip + 0.3 * k; torso.castShadow = true; body.add(torso);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.045 * k, 0.05 * k, 0.1 * k, 10), skin); neck.position.y = hip + 0.6 * k; body.add(neck);
-  const headPivot = new THREE.Group(); headPivot.position.y = hip + 0.64 * k; body.add(headPivot);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.098 * k, 24, 18), skin); head.scale.set(0.92, 1.12, 1); head.position.y = 0.12 * k; head.castShadow = true; headPivot.add(head);
-  function legPivot(side) { const p = new THREE.Group(); p.position.set(side * 0.085 * k, hip, 0); const thigh = limb(legL * 0.52, 0.058 * k); p.add(thigh); const knee = new THREE.Group(); knee.position.y = -legL * 0.5; p.add(knee); const shin = limb(legL * 0.52, 0.045 * k); knee.add(shin); const foot = new THREE.Mesh(new THREE.BoxGeometry(0.08 * k, 0.045 * k, 0.25 * k), skin); foot.position.set(0, -legL * 0.5, 0.06 * k); foot.castShadow = true; knee.add(foot); body.add(p); return { p, knee }; }
-  function armPivot(side) { const p = new THREE.Group(); p.position.set(side * 0.185 * k, hip + 0.5 * k, 0); const up = limb(0.31 * k, 0.036 * k); p.add(up); const el = new THREE.Group(); el.position.y = -0.3 * k; p.add(el); const lo = limb(0.29 * k, 0.031 * k); el.add(lo); p.rotation.z = side * 0.06; body.add(p); return { p, el }; }
-  const L = legPivot(1), R = legPivot(-1), AL = armPivot(1), AR = armPivot(-1);
-  return { root, body, headPivot, L, R, AL, AR, k };
+  const HIP = 0.99, THIGH = 0.47, SHIN = 0.44;
+  // bassin en jean
+  const pelvis = mesh(new THREE.CapsuleGeometry(0.15, 0.06, 6, 16), M.denim); pelvis.rotation.z = Math.PI / 2; pelvis.scale.set(0.62, 1.1, 0.72); pelvis.position.y = HIP + 0.02; body.add(pelvis);
+  // buste : t-shirt un peu ample
+  const chest = new THREE.Group(); chest.position.y = HIP + 0.06; body.add(chest);
+  const torso = mesh(new THREE.CapsuleGeometry(0.155, 0.28, 8, 18), M.shirt); torso.scale.set(1.18, 1, 0.66); torso.position.y = 0.25; chest.add(torso);
+  const neck = mesh(new THREE.CylinderGeometry(0.052, 0.058, 0.1, 14), M.skin); neck.position.y = 0.5; chest.add(neck);
+  const headPivot = new THREE.Group(); headPivot.position.y = 0.53; chest.add(headPivot);
+  const head = mesh(new THREE.SphereGeometry(0.1, 26, 20), M.skin); head.scale.set(0.84, 1.08, 0.98); head.position.set(0, 0.12, 0.008); headPivot.add(head);
+  // cheveux : dessus et arrière, raie sur le côté, un peu de volume vers l'avant
+  const hair = mesh(new THREE.SphereGeometry(0.104, 26, 16, 0, Math.PI * 2, 0, Math.PI * 0.56), M.hair); hair.scale.set(0.88, 1.06, 1.04); hair.position.set(0.004, 0.135, -0.004); hair.rotation.x = -0.18; headPivot.add(hair);
+  const quiff = mesh(new THREE.SphereGeometry(0.07, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), M.hair); quiff.scale.set(1.15, 0.42, 1.05); quiff.position.set(-0.012, 0.2, 0.03); headPivot.add(quiff);
+  const beard = mesh(new THREE.SphereGeometry(0.086, 18, 10, 0, Math.PI * 2, Math.PI * 0.58, Math.PI * 0.3), M.hair); beard.scale.set(0.95, 1, 1.02); beard.position.set(0, 0.105, 0.012); headPivot.add(beard);
+  function leg(side) {
+    const p = new THREE.Group(); p.position.set(side * 0.092, HIP, 0); body.add(p);
+    p.add(taper(THIGH, 0.083, 0.064, M.denim));
+    const knee = new THREE.Group(); knee.position.y = -THIGH; p.add(knee);
+    knee.add(taper(SHIN + 0.02, 0.062, 0.06, M.denim)); // coupe droite jusqu'en bas
+    const ankle = new THREE.Group(); ankle.position.y = -SHIN; knee.add(ankle);
+    const s = shoe(); s.position.y = -0.075; s.position.z = -0.03; ankle.add(s);
+    return { p, knee, ankle };
+  }
+  function arm(side) {
+    const p = new THREE.Group(); p.position.set(side * 0.205, 0.44, 0); chest.add(p);
+    const sleeve = taper(0.17, 0.062, 0.056, M.shirt); p.add(sleeve);
+    const up = capsule(0.29, 0.041, M.skin); p.add(up);
+    const el = new THREE.Group(); el.position.y = -0.285; p.add(el);
+    el.add(capsule(0.26, 0.035, M.skin));
+    const hand = mesh(new THREE.SphereGeometry(0.042, 12, 10), M.skin); hand.scale.set(0.6, 1.3, 0.95); hand.position.y = -0.28; el.add(hand);
+    return { p, el, hand };
+  }
+  const L = leg(1), R = leg(-1), AL = arm(1), AR = arm(-1);
+  return { root, body, chest, headPivot, L, R, AL, AR };
 }
-const person = makePerson(PERSON_HEIGHT);
+const person = makePerson();
 scene.add(person.root);
 person.root.position.set(0.05, 0, 0.6);
 
-/* Promenade : il va d'objet en objet, s'arrête, contemple, puis repart */
-const walker = { state: "idle", timer: 1.2, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, look: null, last: -1, wanted: null };
+/* ---------- Comportement : il se promène librement ----------
+   Il choisit lui-même : aller voir un objet, flâner vers un coin de l'espace, s'arrêter et regarder autour,
+   ou se tourner vers le visiteur du site. Vitesse, durées et posture (mains dans les poches ou bras libres) changent à chaque fois. */
+const AREA = { x: 2.4, z: 1.5 };
+const walker = { state: "pause", timer: 1.5, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, maxSpeed: 0.45, pockets: 1, pocketsW: 1,
+  headYaw: 0, headPitch: 0, headTarget: { yaw: 0, pitch: 0 }, glanceT: 0, last: null, wanted: null, faceYaw: null, sway: 0 };
+const rnd = (a, b) => a + Math.random() * (b - a);
+function freeSpot() {
+  for (let i = 0; i < 30; i++) {
+    const p = new THREE.Vector3(rnd(-AREA.x, AREA.x), 0, rnd(-AREA.z, AREA.z));
+    if (p.distanceTo(person.root.position) < 0.9) continue;
+    if (exhibits.every((e) => Math.hypot(p.x - e.group.position.x, p.z - e.group.position.z) > e.radius + 0.55)) return p;
+  }
+  return new THREE.Vector3(rnd(-1, 1), 0, rnd(0.4, 1.2));
+}
 function viewSpot(ex) {
-  const from = person.root.position, c = ex.group.position;
-  const dir = new THREE.Vector3(from.x - c.x, 0, from.z - c.z);
-  if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
-  dir.normalize();
-  const tilt = (Math.random() - 0.5) * 0.9; dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), tilt);
-  return new THREE.Vector3(c.x + dir.x * (ex.radius + 0.42), 0, c.z + dir.z * (ex.radius + 0.42));
+  const c = ex.group.position;
+  let a = Math.atan2(person.root.position.x - c.x, person.root.position.z - c.z) + rnd(-1.1, 1.1);
+  const d = ex.radius + rnd(0.38, 0.6);
+  return new THREE.Vector3(c.x + Math.sin(a) * d, 0, c.z + Math.cos(a) * d);
 }
-function pickNext() {
-  if (!exhibits.length) return null;
-  if (walker.wanted) { const w = walker.wanted; walker.wanted = null; return w; }
-  if (exhibits.length === 1) return exhibits[0];
-  let i; do { i = Math.floor(Math.random() * exhibits.length); } while (i === walker.last);
-  walker.last = i; return exhibits[i];
+function startWalk(goal, target) {
+  walker.goal.copy(goal); walker.target = target || null; walker.state = "walk";
+  walker.maxSpeed = rnd(0.34, 0.56);
+  walker.pockets = Math.random() < 0.45 ? 1 : 0;
 }
-function goTo(ex) { walker.target = ex; walker.goal.copy(viewSpot(ex)); walker.state = "walk"; }
+function decide() {
+  if (walker.wanted) { const w = walker.wanted; walker.wanted = null; walker.last = w; return startWalk(viewSpot(w), w); }
+  const r = Math.random();
+  if (r < 0.42 && exhibits.length) {
+    let pool = exhibits.filter((e) => e !== walker.last); if (!pool.length) pool = exhibits;
+    const ex = pool[Math.floor(Math.random() * pool.length)]; walker.last = ex;
+    return startWalk(viewSpot(ex), ex);
+  }
+  if (r < 0.78) return startWalk(freeSpot(), null);
+  // s'arrêter sur place : regarder autour, parfois vers l'écran
+  walker.state = "pause"; walker.timer = rnd(2.5, 5.5); walker.target = null; walker.pockets = 1;
+  walker.faceYaw = Math.random() < 0.35 ? 0 : null; // 0 = face à la caméra
+}
 const tmpV = new THREE.Vector3();
 function updateWalker(dt) {
   const P = person, pos = P.root.position;
-  let moving = false;
-  if (walker.state === "idle" || walker.state === "look") {
-    walker.timer -= dt;
-    if (walker.wanted && walker.wanted !== walker.target) walker.timer = Math.min(walker.timer, 0);
-    if (walker.timer <= 0) { const n = pickNext(); if (n) goTo(n); }
-  }
   if (walker.state === "walk") {
     tmpV.subVectors(walker.goal, pos); tmpV.y = 0;
     const d = tmpV.length();
-    if (d < 0.04) { walker.state = "look"; walker.timer = 3.5 + Math.random() * 3; }
-    else {
+    if (d < 0.05) {
+      if (walker.target) { walker.state = "look"; walker.timer = rnd(3, 7.5); walker.pockets = Math.random() < 0.6 ? 1 : 0.5; }
+      else { walker.state = "pause"; walker.timer = rnd(1.5, 4); walker.faceYaw = Math.random() < 0.25 ? 0 : null; }
+    } else {
       const dir = tmpV.normalize();
-      // contourner les autres objets
       exhibits.forEach((ex) => {
         if (ex === walker.target) return;
-        const ox = pos.x - ex.group.position.x, oz = pos.z - ex.group.position.z, od = Math.hypot(ox, oz), safe = ex.radius + 0.45;
-        if (od < safe) { dir.x += (ox / od) * (safe - od) * 4; dir.z += (oz / od) * (safe - od) * 4; }
+        const ox = pos.x - ex.group.position.x, oz = pos.z - ex.group.position.z, od = Math.hypot(ox, oz) || 1e-3, safe = ex.radius + 0.42;
+        if (od < safe) { dir.x += (ox / od) * (safe - od) * 5; dir.z += (oz / od) * (safe - od) * 5; }
       });
       dir.normalize();
-      walker.speed = THREE.MathUtils.damp(walker.speed, Math.min(0.5, d * 1.4 + 0.08), 4, dt);
+      walker.speed = THREE.MathUtils.damp(walker.speed, Math.min(walker.maxSpeed, d * 1.3 + 0.06), 3.5, dt);
       pos.x += dir.x * walker.speed * dt; pos.z += dir.z * walker.speed * dt;
-      const yaw = Math.atan2(dir.x, dir.z);
-      P.root.rotation.y = dampAngle(P.root.rotation.y, yaw, 6, dt);
-      moving = true;
+      P.root.rotation.y = dampAngle(P.root.rotation.y, Math.atan2(dir.x, dir.z), 5, dt);
     }
+  } else {
+    walker.speed = THREE.MathUtils.damp(walker.speed, 0, 6, dt);
+    walker.timer -= dt;
+    if (walker.wanted && walker.wanted !== walker.target) walker.timer = Math.min(walker.timer, 0);
+    if (walker.state === "look" && walker.target) {
+      const c = walker.target.group.position;
+      P.root.rotation.y = dampAngle(P.root.rotation.y, Math.atan2(c.x - pos.x, c.z - pos.z), 2.5, dt);
+    } else if (walker.faceYaw !== null) {
+      P.root.rotation.y = dampAngle(P.root.rotation.y, walker.faceYaw, 1.6, dt);
+    }
+    if (walker.timer <= 0) decide();
   }
-  if (!moving) walker.speed = THREE.MathUtils.damp(walker.speed, 0, 6, dt);
-  if (walker.state === "look" && walker.target) {
-    const c = walker.target.group.position, yaw = Math.atan2(c.x - pos.x, c.z - pos.z);
-    P.root.rotation.y = dampAngle(P.root.rotation.y, yaw, 3, dt);
+
+  // regard : la tête vit sa vie (coups d'œil, observation de l'objet, regard vers l'écran)
+  walker.glanceT -= dt;
+  if (walker.glanceT <= 0) {
+    walker.glanceT = rnd(1.2, 3.5);
+    if (walker.state === "look") walker.headTarget = { yaw: rnd(-0.25, 0.25), pitch: rnd(0.32, 0.55) };
+    else if (walker.state === "pause") walker.headTarget = { yaw: rnd(-0.9, 0.9), pitch: rnd(-0.05, 0.15) };
+    else walker.headTarget = { yaw: Math.random() < 0.3 ? rnd(-0.6, 0.6) : rnd(-0.1, 0.1), pitch: rnd(0.02, 0.18) };
   }
-  // pas de marche
+  walker.headYaw = THREE.MathUtils.damp(walker.headYaw, walker.headTarget.yaw, 3, dt);
+  walker.headPitch = THREE.MathUtils.damp(walker.headPitch, walker.headTarget.pitch, 3, dt);
+  P.headPivot.rotation.y = walker.headYaw; P.headPivot.rotation.x = walker.headPitch;
+
+  // marche
   const amp = THREE.MathUtils.clamp(walker.speed / 0.5, 0, 1);
-  walker.phase += dt * (2 + 3.6 * amp);
-  const s = Math.sin(walker.phase) * amp;
-  P.L.p.rotation.x = s * 0.34; P.R.p.rotation.x = -s * 0.34;
-  P.L.knee.rotation.x = Math.max(0, -Math.sin(walker.phase + 0.6)) * 0.45 * amp;
-  P.R.knee.rotation.x = Math.max(0, Math.sin(walker.phase + 0.6)) * 0.45 * amp;
-  P.AL.p.rotation.x = -s * 0.28; P.AR.p.rotation.x = s * 0.28;
-  P.AL.el.rotation.x = -0.25 * amp - 0.05; P.AR.el.rotation.x = -0.25 * amp - 0.05;
-  P.body.position.y = Math.abs(Math.cos(walker.phase)) * 0.025 * amp;
-  // contempler : tête légèrement penchée vers l'objet, mains dans le dos
-  const lookAmt = walker.state === "look" ? 1 : 0;
-  P.headPivot.rotation.x = THREE.MathUtils.damp(P.headPivot.rotation.x, 0.38 * lookAmt, 3, dt);
-  P.headPivot.rotation.z = THREE.MathUtils.damp(P.headPivot.rotation.z, 0.06 * lookAmt * Math.sin(performance.now() / 1700), 2, dt);
-  const back = lookAmt;
-  P.AL.p.rotation.x += 0.35 * back; P.AR.p.rotation.x += 0.35 * back;
-  P.AL.p.rotation.z = THREE.MathUtils.damp(P.AL.p.rotation.z, 0.06 - 0.2 * back, 3, dt);
-  P.AR.p.rotation.z = THREE.MathUtils.damp(P.AR.p.rotation.z, -0.06 + 0.2 * back, 3, dt);
+  walker.phase += dt * (1.6 + 4.4 * amp);
+  const ph = walker.phase, s = Math.sin(ph) * amp;
+  P.L.p.rotation.x = s * 0.42; P.R.p.rotation.x = -s * 0.42;
+  P.L.knee.rotation.x = Math.max(0, -Math.sin(ph + 0.7)) * 0.75 * amp + 0.03;
+  P.R.knee.rotation.x = Math.max(0, Math.sin(ph + 0.7)) * 0.75 * amp + 0.03;
+  P.L.ankle.rotation.x = -P.L.knee.rotation.x * 0.35 + Math.max(0, s) * 0.2;
+  P.R.ankle.rotation.x = -P.R.knee.rotation.x * 0.35 + Math.max(0, -s) * 0.2;
+  P.body.position.y = -Math.abs(Math.sin(ph)) * 0.02 * amp + 0.012 * amp;
+  P.chest.rotation.y = -s * 0.12; P.body.rotation.y = s * 0.05;
+  // au repos : léger transfert de poids d'une jambe sur l'autre
+  walker.sway += dt * 0.35;
+  P.body.rotation.z = (1 - amp) * Math.sin(walker.sway) * 0.012;
+  P.chest.rotation.x = walker.state === "look" ? THREE.MathUtils.damp(P.chest.rotation.x, 0.08, 2, dt) : THREE.MathUtils.damp(P.chest.rotation.x, 0.02, 2, dt);
+
+  // bras : mains dans les poches ou bras qui balancent
+  walker.pocketsW = THREE.MathUtils.damp(walker.pocketsW, walker.pockets, 3, dt);
+  const w = walker.pocketsW;
+  [[P.AL, 1, -1], [P.AR, -1, 1]].forEach(([A, side, sg]) => {
+    const swing = sg * s * 0.4;
+    A.p.rotation.x = THREE.MathUtils.lerp(swing, 0.28, w);
+    A.p.rotation.z = THREE.MathUtils.lerp(side * 0.07, side * 0.2, w);
+    A.el.rotation.x = THREE.MathUtils.lerp(-0.12 - amp * 0.18, -0.95, w);
+    A.el.rotation.z = THREE.MathUtils.lerp(0, -side * 0.28, w);
+    A.hand.visible = w < 0.6;
+  });
 }
 function dampAngle(a, b, l, dt) { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * (1 - Math.exp(-l * dt)); }
 
