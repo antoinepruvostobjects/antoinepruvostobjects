@@ -641,6 +641,58 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 @media (min-width: 1300px) { .cf-in, .cf-bot { margin-inline: auto; } }
 @media (max-width: 800px) { .cf-in { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) { .cf-form { grid-template-columns: minmax(0, 1fr); } }
+
+/* Accueil 3D plein écran, sous l'en-tête translucide */
+.homepage header.top { margin-bottom: calc(-1 * var(--hh, 0px)); }
+.home3d { margin-inline: calc(-1 * var(--gut)); height: 100vh; height: 100svh; min-height: 520px; position: relative; background: #f4f4f2; }
+.home3d iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.homepage footer.cfoot { margin-top: 0; }
+
+/* L'ordinateur : l'Archive affichée sur l'écran de l'iMac */
+.pcpage { background: #ecebe8; }
+.pcpage header.top { background: rgba(236,235,232,.8); }
+.pc { min-height: calc(100vh - var(--hh, 80px)); display: flex; flex-direction: column; align-items: center; justify-content: center; padding-block: 18px 40px; gap: 18px; }
+.pc-quit { align-self: flex-start; color: var(--muted); letter-spacing: .03em; }
+.pc-quit:hover { color: var(--fg); }
+.pc-mon { width: min(100%, 1180px, calc((100vh - var(--hh, 80px) - 230px) * 1.55)); display: flex; flex-direction: column; align-items: center; opacity: 0; transform: scale(1.06); transition: opacity .6s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
+.pc.on .pc-mon { opacity: 1; transform: none; }
+.pc-bezel { width: 100%; background: #0d0d0f; border-radius: 16px 16px 0 0; padding: clamp(8px, 1.3%, 16px); box-shadow: 0 30px 60px -30px rgba(0,0,0,.45); }
+.pc-chin { width: 100%; height: clamp(20px, 4vw, 54px); background: linear-gradient(#cfd0d3, #b9babe); border-radius: 0 0 14px 14px; }
+.pc-neck { width: 18%; height: clamp(26px, 5.5vw, 74px); background: linear-gradient(90deg, #bdbec2, #d8d9dc 50%, #b4b5b9); clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%); }
+.pc-foot { width: 26%; height: 8px; background: #c6c7cb; border-radius: 3px 3px 6px 6px; }
+.pc-screen { position: relative; aspect-ratio: 16 / 10; width: 100%; max-width: 100%; overflow: hidden; border-radius: 4px; background: linear-gradient(160deg, #c9d2dc 0%, #e3ddd3 55%, #d6cbbd 100%);
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpath d='M2 2 L2 24 L8 18.5 L12 27 L15.5 25.5 L11.7 17.3 L19.5 17.3 Z' fill='%23111' stroke='%23fff' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, default;
+  animation: pcwake 1.1s ease both; }
+@keyframes pcwake { 0% { filter: brightness(0); } 40% { filter: brightness(.4); } 100% { filter: none; } }
+.pc-screen a, .pc-screen button { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28' viewBox='0 0 24 28'%3E%3Cpath d='M8 13V4.5a2 2 0 0 1 4 0V12m0-1.5a2 2 0 0 1 4 0V13m0-1a2 2 0 0 1 4 0v6c0 4.5-3 8-7.5 8S6 23.5 4.5 21L2.2 17a2 2 0 0 1 3.4-2.1L8 18' fill='%23fff' stroke='%23111' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 9 2, pointer; }
+.pc-menubar { position: absolute; left: 0; right: 0; top: 0; height: 26px; display: flex; align-items: center; gap: 18px; padding-inline: 14px; background: rgba(255,255,255,.55); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 12.5px; color: #1b1b1d; z-index: 2; }
+.pc-menubar .b { font-weight: 600; }
+.pc-apple { font-size: 10px; }
+.pc-clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+.pc-win { position: absolute; left: 7%; right: 7%; top: 9%; bottom: 15%; background: #fff; border-radius: 10px; box-shadow: 0 0 0 .5px rgba(0,0,0,.18), 0 22px 50px -12px rgba(0,0,0,.35); display: flex; flex-direction: column; overflow: hidden; animation: pcwin .7s .35s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes pcwin { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+.pc-title { flex: none; height: 34px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid #ececec; background: #f6f6f6; font-size: 13px; color: #555; }
+.pc-dots { position: absolute; left: 12px; top: 0; bottom: 0; display: flex; align-items: center; gap: 8px; }
+.pc-dots .d { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.pc-dots .c { background: #ff5f57; } .pc-dots .m { background: #febc2e; } .pc-dots .z { background: #28c840; }
+.pc-body { flex: 1; overflow: auto; padding: 0 clamp(16px, 3%, 34px) 24px; font-size: 14px; overscroll-behavior: contain; }
+.pc-body .pagehead.pc-head { padding-top: 18px; padding-bottom: 14px; }
+.pc-body .pagehead h1 { font-size: 22px; }
+.pc-body .arow { font-size: 15px; padding-block: 11px; }
+.pc-dock { position: absolute; left: 50%; bottom: 2.2%; transform: translateX(-50%); display: flex; gap: 10px; padding: 7px 10px; border-radius: 16px; background: rgba(255,255,255,.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 0 0 .5px rgba(0,0,0,.08); }
+.pc-ic { width: clamp(22px, 3.2vw, 40px); aspect-ratio: 1; border-radius: 22%; display: block; transition: transform .2s ease; }
+.pc-ic:hover { transform: translateY(-5px) scale(1.12); }
+.pc-ic:nth-child(1) { background: linear-gradient(135deg, #f0d7a6, #d2a96b); } .pc-ic:nth-child(2) { background: linear-gradient(135deg, #f4f4f2, #cfd0d3); }
+.pc-ic:nth-child(3) { background: linear-gradient(135deg, #5b8def, #3157c8); } .pc-ic:nth-child(4) { background: linear-gradient(135deg, #73d39a, #2f9e63); } .pc-ic:nth-child(5) { background: linear-gradient(135deg, #3a3a3d, #1b1b1d); }
+.pc-screen .apeek { display: none !important; }
+.pc-body .arow { grid-template-columns: 52px minmax(0, 4fr) minmax(0, 4fr) auto; gap: 14px; }
+.pc-body .arow .ath { display: block; width: 52px; aspect-ratio: 1; overflow: hidden; border-radius: 6px; background: var(--ph); }
+.pc-body .arow .ath img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pc-body .arow:hover { padding-left: 0; background: #f3f5fa; }
+.pc-body .alist:hover .arow, .pc-body .alist:hover .arow .an { color: inherit; }
+.pc-name { padding-inline: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-width: 700px) { .pc-body .arow { grid-template-columns: 52px minmax(0, 1fr) auto; } .pc-body .arow .ath { grid-row: span 2; } .pc-body .arow .ak { grid-column: 2; } .pc-body .arow .ay { grid-row: 1; grid-column: 3; } .pc-screen { aspect-ratio: 3 / 4; } .pc-win { left: 3%; right: 3%; top: 7%; bottom: 13%; } .pc-menubar span:not(.pc-apple):not(.b):not(.pc-clock) { display: none; } }
+@media (prefers-reduced-motion: reduce) { .pc-screen, .pc-win { animation: none; } .pc-mon { transition: none; } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
@@ -1161,7 +1213,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     return wrap;
   }
 
-  function renderArchive() {
+  function renderArchive(box) {
+    var view = box || document.getElementById("view");
     document.title = "Archive | Antoinepruvostobjects";
     var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Archive")); head.appendChild(mk("span", "k", ARCHIVE.length + " projets"));
     view.appendChild(head);
@@ -1184,6 +1237,41 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       peek.style.left = x + "px"; peek.style.top = y + "px";
     });
     view.appendChild(ul);
+  }
+
+  /* Accueil : l'espace d'exposition en 3D, plein écran, sous l'en-tête */
+  function renderHome3D() {
+    document.title = "Antoinepruvostobjects";
+    var sec = mk("section", "home3d");
+    var fr = document.createElement("iframe");
+    fr.src = "musee.html?embed=1"; fr.title = "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir";
+    fr.setAttribute("allow", "fullscreen");
+    sec.appendChild(fr); view.appendChild(sec);
+  }
+
+  /* L'ordinateur : l'Archive s'ouvre comme sur l'écran de l'iMac du bureau, avec une fenêtre et un curseur */
+  function renderComputer() {
+    document.title = "Archive | Antoinepruvostobjects";
+    var room = mk("section", "pc");
+    var quit = mk("a", "pc-quit", "← Quitter l'ordinateur"); quit.href = "#"; room.appendChild(quit);
+    var mon = mk("div", "pc-mon"), bez = mk("div", "pc-bezel"), scr = mk("div", "pc-screen");
+    var bar = mk("div", "pc-menubar"); bar.appendChild(mk("span", "pc-apple", "●")); ["Finder", "Fichier", "Édition", "Présentation", "Fenêtre"].forEach(function (t, i) { bar.appendChild(mk("span", i ? "" : "b", t)); });
+    var clock = mk("span", "pc-clock"); bar.appendChild(clock);
+    function tick() { var d = new Date(); clock.textContent = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + "  " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
+    tick(); var iv = setInterval(function () { if (!clock.isConnected) clearInterval(iv); else tick(); }, 15000);
+    scr.appendChild(bar);
+    var win = mk("div", "pc-win"), tb = mk("div", "pc-title");
+    var dots = mk("span", "pc-dots"); ["c", "m", "z"].forEach(function (c) { var d = mk("a", "d " + c); if (c === "c") { d.href = "#"; d.title = "Fermer"; } dots.appendChild(d); }); tb.appendChild(dots);
+    tb.appendChild(mk("span", "pc-name", "Archive — Antoinepruvostobjects"));
+    win.appendChild(tb);
+    var body = mk("div", "pc-body"); win.appendChild(body); scr.appendChild(win);
+    var dock = mk("div", "pc-dock"); ["#ani", "#hypar", "#archive", "#impression-3d", "#a-propos"].forEach(function (h, i) { var a = mk("a", "pc-ic"); a.href = h === "#archive" ? "#ordinateur" : h; a.title = ["ANI", "Hypar", "Archive", "Impression 3D", "About"][i]; dock.appendChild(a); }); scr.appendChild(dock);
+    bez.appendChild(scr); mon.appendChild(bez); mon.appendChild(mk("div", "pc-chin")); mon.appendChild(mk("div", "pc-neck")); mon.appendChild(mk("div", "pc-foot"));
+    room.appendChild(mon);
+    view.appendChild(room);
+    renderArchive(body);
+    var h = body.querySelector(".pagehead"); if (h) h.classList.add("pc-head");
+    requestAnimationFrame(function () { room.classList.add("on"); });
   }
 
   function renderArchiveProject(p) {
@@ -1298,6 +1386,9 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     view.textContent = "";
     var isObj = id === "ani" || id === "hypar";
     document.body.classList.toggle("fichepage", isObj);
+    var known = /^(ani|hypar|archive|ordinateur|impression-3d|a-propos)$/.test(id) || id.indexOf("projet-") === 0;
+    document.body.classList.toggle("homepage", !known);
+    document.body.classList.toggle("pcpage", id === "ordinateur");
     closeMenu(); closeMob();
     var sect = id.indexOf("projet-") === 0 ? "archive" : id;
     document.querySelectorAll("[data-nav]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-nav") === sect); });
@@ -1305,10 +1396,11 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     if (id === "ani") { document.title = "ANI, tabouret | Antoinepruvostobjects"; view.appendChild(ficheNode(fiche, reveal)); }
     else if (id === "hypar") { document.title = "Hypar, cale-porte | Antoinepruvostobjects"; view.appendChild(hyparNode(hypar)); }
     else if (id === "archive") renderArchive();
+    else if (id === "ordinateur") renderComputer();
     else if (id === "impression-3d") renderPrint();
     else if (id === "a-propos") renderAbout();
     else if (id.indexOf("projet-") === 0 && ARCHIVE.some(function (p) { return "projet-" + p.id === id; })) renderArchiveProject(ARCHIVE.filter(function (p) { return "projet-" + p.id === id; })[0]);
-    else renderHome();
+    else renderHome3D();
     window.scrollTo(0, 0);
   }
   /* Chargement : le logo avance au rythme de ce qui est chargé.
@@ -1352,7 +1444,12 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       requestAnimationFrame(tick);
     })();
   }
-  window.addEventListener("hashchange", function () { loadWithLogo(false); });
+  var lastHash = location.hash;
+  window.addEventListener("hashchange", function () {
+    var from = lastHash; lastHash = location.hash;
+    if (location.hash === "#ordinateur" || from === "#ordinateur" && /^#projet-/.test(location.hash)) { route(); return; } // l'écran s'allume sans écran de chargement
+    loadWithLogo(false);
+  });
   document.getElementById("home-link").addEventListener("click", function (e) {
     e.preventDefault();
     if (location.hash) { history.pushState("", document.title, location.pathname + location.search); loadWithLogo(false); }

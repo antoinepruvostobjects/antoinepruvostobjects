@@ -37,6 +37,9 @@ header .back:hover { color: var(--fg); }
 .load.off { opacity: 0; pointer-events: none; }
 .proto { position: fixed; z-index: 5; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); bottom: max(24px, env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: 12px; letter-spacing: .05em; }
 @media (max-width: 640px) { .proto { display: none; } }
+.embed header, .embed .proto { display: none; }
+.embed .hint { bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+.embed #stage canvas { touch-action: pan-y; }
 </style>
 </head>
 <body>
@@ -71,9 +74,13 @@ const OBJECTS = [
 const PERSON_HEIGHT = 1.83;
 /* Liens : sur le site, on change de page ; ailleurs (aperçu), on ouvre la page du site en ligne dans un nouvel onglet */
 const SITE = "https://antoinepruvostobjects.netlify.app/";
-const ON_SITE = /antoinepruvostobjects/.test(location.hostname);
+const EMBED = /[?&]embed=1/.test(location.search);
+let PARENT = null; try { if (EMBED && window.parent !== window && window.parent.location.host === location.host) PARENT = window.parent; } catch (e) {}
+const ON_SITE = !!PARENT || /antoinepruvostobjects/.test(location.hostname);
+if (EMBED) document.documentElement.classList.add("embed");
 function siteUrl(href) { return ON_SITE ? href : SITE + href.replace(/^\//, ""); }
 function go(href) {
+  if (PARENT) { PARENT.location.hash = href.replace(/^\/?#?/, ""); return; }
   if (ON_SITE) { location.href = href; return; }
   const a = document.createElement("a"); a.href = siteUrl(href); a.target = "_blank"; a.rel = "noopener";
   document.body.appendChild(a); a.click(); a.remove();
@@ -105,6 +112,7 @@ scene.environmentIntensity = 0.55;
 /* Caméra en plongée (~60°), focale longue pour garder une lecture presque « vue de dessus » */
 const camera = new THREE.PerspectiveCamera(11, 1, 0.5, 120);
 const look = new THREE.Vector3(0, 0.5, -0.3);
+if (EMBED) look.z -= 0.25; // un peu plus de marge sous l'en-tête du site
 const CAM_PITCH = THREE.MathUtils.degToRad(62);
 let camDist = 9.5;
 function placeCamera() {
@@ -643,12 +651,13 @@ function release(e) {
   if (!dragging) return; dragging = false; cv.classList.remove("drag");
   if (moved <= 6) {
     const ex = pickAt(e.clientX, e.clientY);
+    if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
     if (ex) { go(ex.def.href); return; }
   }
 }
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
 cv.addEventListener("pointerleave", () => { pointerIn = false; if (!dragging) setHover(null); });
-cv.addEventListener("wheel", (e) => { e.preventDefault(); camDist = THREE.MathUtils.clamp(camDist * Math.exp(e.deltaY * 0.0012), 10, 32); placeCamera(); }, { passive: false });
+cv.addEventListener("wheel", (e) => { if (PARENT && !e.ctrlKey) { PARENT.scrollBy(0, e.deltaY); return; } e.preventDefault(); camDist = THREE.MathUtils.clamp(camDist * Math.exp(e.deltaY * 0.0012), 10, 32); placeCamera(); }, { passive: false });
 
 /* Touches clavier : Tab parcourt les objets, Entrée ouvre */
 let kIndex = -1;
@@ -657,6 +666,26 @@ addEventListener("keydown", (e) => {
   if (e.key === "Tab") { e.preventDefault(); kIndex = (kIndex + (e.shiftKey ? -1 : 1) + exhibits.length) % exhibits.length; const ex = exhibits[kIndex]; setHover(ex); const p = ex.group.position.clone().project(camera); tag.style.left = ((p.x + 1) / 2 * innerWidth) + "px"; tag.style.top = ((1 - p.y) / 2 * innerHeight - 40) + "px"; }
   if (e.key === "Enter" && hovered) go(hovered.def.href);
 });
+
+/* Clic sur le bureau : la caméra plonge vers l'écran de l'iMac, qui s'allume, puis l'Archive s'ouvre « dans » l'ordinateur */
+let zoom = null;
+function zoomToScreen(done) {
+  const scr = deskParts.screen; if (!scr || zoom) return done();
+  deskParts.screenTarget = 1;
+  const c = scr.mesh.getWorldPosition(new THREE.Vector3()), n = new THREE.Vector3(0, 0, 1).applyQuaternion(scr.mesh.getWorldQuaternion(new THREE.Quaternion()));
+  const h = scr.mesh.geometry.parameters.height, d = (h * 0.62) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  zoom = { t: 0, dur: 1.5, p0: camera.position.clone(), l0: look.clone(), p1: c.clone().addScaledVector(n, d), l1: c.clone(), done };
+  setHover(null); document.getElementById("hint").style.opacity = "0";
+}
+function updateZoom(dt) {
+  if (!zoom) return false;
+  zoom.t = Math.min(1, zoom.t + dt / zoom.dur);
+  const e = zoom.t < 0.5 ? 4 * zoom.t ** 3 : 1 - Math.pow(-2 * zoom.t + 2, 3) / 2;
+  camera.position.lerpVectors(zoom.p0, zoom.p1, e);
+  camera.lookAt(new THREE.Vector3().lerpVectors(zoom.l0, zoom.l1, e));
+  if (zoom.t >= 1) { const f = zoom.done; zoom = null; setTimeout(f, 120); setTimeout(() => { frameAll(); }, 900); }
+  return true;
+}
 
 /* ---------- Mise à l'échelle de l'écran ---------- */
 function frameAll() {
@@ -687,6 +716,7 @@ function loop() {
     e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
   });
   updateWalker(dt);
+  updateZoom(dt);
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
