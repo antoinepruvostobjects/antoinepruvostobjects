@@ -23,8 +23,8 @@ window.ARCHIVE = [
           { title: "Conseils d'entretien", text: "Nettoyer avec un chiffon doux légèrement humide, puis essuyer immédiatement avec un chiffon sec. Éviter l'eau stagnante et les produits nettoyants agressifs." }
         ],
         colors: [
-          { name: "Jaune", light: "#f7c948", dark: "#e6a823", swatch: "#f0b92f" },
-          { name: "Naturel", light: "#efd9a8", dark: "#d9b070", swatch: "#e2c694" }
+          { name: "Naturel", light: "#efd9a8", dark: "#d9b070", swatch: "#e2c694" },
+          { name: "Jaune", light: "#f7c948", dark: "#e6a823", swatch: "#f0b92f" }
         ]
       }, title: "Ani", kind: "Tabouret", cover: "ani-1.jpg", featured: true,
       tagline: "Se fondre dans le décor sans se confondre avec lui.",
