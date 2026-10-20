@@ -97,8 +97,8 @@ const stage = document.getElementById("stage");
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+// pas de « tone mapping » ni de brouillard : couleurs franches, sans voile blanc
+renderer.toneMapping = THREE.NoToneMapping;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.VSMShadowMap;
 stage.appendChild(renderer.domElement);
@@ -107,10 +107,9 @@ const cv = renderer.domElement;
 const scene = new THREE.Scene();
 const BG = new THREE.Color(0xf4f4f2);
 scene.background = BG;
-scene.fog = new THREE.Fog(0xf4f4f2, 26, 44);
 const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.55;
+scene.environmentIntensity = 0.38;
 
 /* Caméra en plongée (~60°), focale longue pour garder une lecture presque « vue de dessus » */
 const camera = new THREE.PerspectiveCamera(11, 1, 0.5, 120);
@@ -125,10 +124,11 @@ function placeCamera() {
 
 /* Sol blanc infini qui reçoit les ombres */
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 1, metalness: 0 }));
+ground.material = new THREE.ShadowMaterial({ color: 0x2a261f, opacity: 0.2 }); // le sol prend exactement la couleur du fond, seules les ombres apparaissent
 ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0xe9e7e2, 0.9));
-const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xe9e7e2, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 sun.position.set(-2.6, 6.5, 3.2);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
