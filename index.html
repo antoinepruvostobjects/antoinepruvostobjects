@@ -611,7 +611,7 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 /* Contact : bande sombre en bas de chaque page, coupe droite, coordonnées et formulaire */
 :root { --dk: #2e2e30; --dk2: #3a3a3d; --btn: #3a3a3c; --cf-bg: #2e2e30; --cf-field: #3a3a3d; --cf-fg: #f1f1ef; --cf-mut: rgba(241,241,239,.55); --cf-line: rgba(241,241,239,.14); }
 body { padding-bottom: 0; }
-footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--gut)) 0; padding: clamp(44px, 4.4vw, 72px) var(--gut) max(22px, env(safe-area-inset-bottom, 0px)); background: var(--cf-bg); color: var(--cf-fg); font-size: .95em; }
+footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--gut)) 0; padding: clamp(36px, 3.6vw, 60px) var(--gut) max(22px, env(safe-area-inset-bottom, 0px)); background: var(--cf-bg); color: var(--cf-fg); font-size: .95em; }
 .wrap.main:has(.sband) footer.cfoot { margin-top: 0; }
 .cf-in { max-width: 1100px; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 32px clamp(32px, 6vw, 110px); }
 .cf-info h2 { margin: 0 0 8px; font-size: 1.25em; font-weight: 500; letter-spacing: .03em; }
@@ -621,26 +621,26 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 .cf-list dd { margin: 0; }
 .cf-list a { color: var(--cf-fg); overflow-wrap: anywhere; }
 .cf-list a:hover { text-decoration: underline; text-underline-offset: 4px; }
-.cf-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.cf-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 32px; margin: 0; align-content: start; }
 .cf-wide { grid-column: 1 / -1; }
 .cf-f { display: block; min-width: 0; }
-.cf-f input, .cf-f textarea { display: block; width: 100%; box-sizing: border-box; border: 1px solid transparent; border-radius: 0; background: var(--cf-field); color: var(--cf-fg); font: inherit; font-size: .95em; padding: 13px 15px; letter-spacing: .02em; resize: vertical; }
-.cf-f textarea { min-height: 112px; }
-.cf-f input::placeholder, .cf-f textarea::placeholder { color: var(--cf-mut); font-size: .8em; letter-spacing: .08em; text-transform: uppercase; }
-.cf-f input:focus, .cf-f textarea:focus { outline: none; border-color: rgba(241,241,239,.5); }
-.cf-act { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 4px; }
+.cf-f input, .cf-f textarea { display: block; width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(241,241,239,.28); border-radius: 0; background: transparent; color: var(--cf-fg); font: inherit; font-size: 1em; padding: 8px 0 10px; letter-spacing: .01em; resize: none; transition: border-color .25s ease; }
+.cf-f textarea { min-height: 0; height: auto; line-height: 1.5; }
+.cf-f input::placeholder, .cf-f textarea::placeholder { color: var(--cf-mut); font-size: 1em; letter-spacing: .01em; text-transform: none; }
+.cf-f input:focus, .cf-f textarea:focus { outline: none; border-bottom-color: var(--cf-fg); }
+.cf-act { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 6px; }
 .cf-state { margin: 0; color: var(--cf-mut); font-size: .88em; min-height: 1.2em; }
 .cf-state.ok { color: var(--cf-fg); }
-.cf-send { appearance: none; -webkit-appearance: none; border: 0; border-radius: 0; background: #4a4a4d; color: var(--cf-fg); font: inherit; font-size: .85em; letter-spacing: .1em; text-transform: uppercase; padding: 14px 34px; cursor: pointer; transition: background .25s ease; }
-.cf-send:hover { background: #57575a; }
+.cf-send { appearance: none; -webkit-appearance: none; border: 0; border-bottom: 1px solid rgba(241,241,239,.28); border-radius: 0; background: none; color: var(--cf-fg); font: inherit; font-size: 1em; letter-spacing: .01em; text-transform: none; padding: 0 0 8px; cursor: pointer; display: inline-flex; gap: 22px; transition: border-color .25s ease; }
+.cf-send:hover { background: none; border-bottom-color: var(--cf-fg); }
 .cf-send:disabled { opacity: .5; cursor: default; }
 .cf-send:focus-visible, .cf-top-link:focus-visible, .cf-list a:focus-visible { outline: 2px solid var(--cf-fg); outline-offset: 3px; }
 .cf-hp, .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.cf-bot { max-width: 1100px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(40px, 4vw, 64px); padding-top: 16px; border-top: 1px solid var(--cf-line); color: var(--cf-mut); font-size: .85em; }
+.cf-bot { max-width: 1100px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(32px, 3.4vw, 52px); padding-top: 16px; border-top: 1px solid var(--cf-line); color: var(--cf-mut); font-size: .85em; }
 .cf-top-link { color: var(--cf-fg); letter-spacing: .04em; }
 @media (min-width: 1300px) { .cf-in, .cf-bot { margin-inline: auto; } }
 @media (max-width: 800px) { .cf-in { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 480px) { .cf-form { grid-template-columns: minmax(0, 1fr); } .cf-send { width: 100%; } .cf-act { flex-direction: column-reverse; align-items: stretch; } }
+@media (max-width: 480px) { .cf-form { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 <div id="logo-ov" aria-hidden="true"><video muted playsinline webkit-playsinline preload="auto" src="logo-anim.mp4"></video></div>
@@ -685,8 +685,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
         <p class="cf-hp" aria-hidden="true"><label>Ne pas remplir <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
         <label class="cf-f"><span class="vh">Nom</span><input id="cf-nom" name="nom" type="text" autocomplete="name" placeholder="Nom"></label>
         <label class="cf-f"><span class="vh">E-mail</span><input id="cf-mail" name="email" type="email" autocomplete="email" placeholder="E-mail" required></label>
-        <label class="cf-f cf-wide"><span class="vh">Message</span><textarea id="cf-msg" name="message" rows="4" placeholder="Message" required></textarea></label>
-        <div class="cf-act cf-wide"><p class="cf-state" role="status" aria-live="polite"></p><button type="submit" class="cf-send">Envoyer</button></div>
+        <label class="cf-f cf-wide"><span class="vh">Message</span><textarea id="cf-msg" name="message" rows="3" placeholder="Message" required></textarea></label>
+        <div class="cf-act cf-wide"><p class="cf-state" role="status" aria-live="polite"></p><button type="submit" class="cf-send">Envoyer <span aria-hidden="true">→</span></button></div>
       </form>
     </div>
     <div class="cf-bot"><span>© Antoine Pruvost, 2026</span><a href="#" class="cf-top-link" id="to-top">Retour en haut ↑</a></div>
