@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<script>(function(){var k=function(e){if((e.ctrlKey||e.metaKey)&&/^(\+|-|=|0|_)$/.test(e.key))e.preventDefault()};addEventListener("keydown",k);addEventListener("wheel",function(e){if(e.ctrlKey)e.preventDefault()},{passive:false});["gesturestart","gesturechange","gestureend"].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});var last=0;document.addEventListener("touchend",function(e){var n=Date.now();if(n-last<300&&e.cancelable)e.preventDefault();last=n},{passive:false});document.addEventListener("touchmove",function(e){if(e.touches.length>1&&e.cancelable)e.preventDefault()},{passive:false})})();</script><style>html{touch-action:pan-x pan-y}</style>
 <title>Accueil 3D (prototype) | Antoinepruvostobjects</title>
 <meta name="robots" content="noindex">
 <style>
@@ -412,7 +413,8 @@ async function loadAvatar() {
   model.traverse((n) => {
     if (!n.isMesh) return;
     n.castShadow = true; n.receiveShadow = true; n.frustumCulled = false; n.raycast = () => {}; // le clic passe par la silhouette invisible
-    if (n.material) { n.material.roughness = 0.82; n.material.metalness = 0; n.material.envMapIntensity = 0.75; }
+    // couleurs fidèles à la texture : le personnage échappe au « tone mapping » qui pâlit la peau et grise le jean
+    if (n.material) { n.material.roughness = 0.82; n.material.metalness = 0; n.material.envMapIntensity = 0.6; n.material.toneMapped = false; n.material.color.setScalar(0.8); if (n.material.map) n.material.map.anisotropy = 8; }
   });
   const holder = new THREE.Group(), wrap = new THREE.Group(); wrap.add(model); holder.add(wrap); person.root.add(holder);
   AV.holder = holder;
@@ -779,7 +781,7 @@ function setHover(ex) {
   else tag.classList.remove("on");
 }
 
-/* ---------- Déplacement dans l'espace : glisser pour se promener, molette pour s'approcher ---------- */
+/* ---------- Déplacement dans l'espace : glisser pour se promener ---------- */
 let dragging = false, downX = 0, downY = 0, lastX = 0, lastY = 0, moved = 0;
 const bounds = { x: 3.5, z: 2.5 };
 cv.addEventListener("pointerdown", (e) => { dragging = true; moved = 0; downX = lastX = e.clientX; downY = lastY = e.clientY; cv.setPointerCapture(e.pointerId); });
@@ -808,7 +810,8 @@ function release(e) {
 }
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
 cv.addEventListener("pointerleave", () => { pointerIn = false; if (!dragging) setHover(null); });
-cv.addEventListener("wheel", (e) => { if (PARENT && !e.ctrlKey) { PARENT.scrollBy(0, e.deltaY); return; } e.preventDefault(); camDist = THREE.MathUtils.clamp(camDist * Math.exp(e.deltaY * 0.0012), 10, 32); placeCamera(); }, { passive: false });
+// pas de zoom : la molette fait défiler la page du site
+cv.addEventListener("wheel", (e) => { e.preventDefault(); if (PARENT && !e.ctrlKey) PARENT.scrollBy(0, e.deltaY); }, { passive: false });
 
 /* Touches clavier : Tab parcourt les objets, Entrée ouvre */
 let kIndex = -1;
