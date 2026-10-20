@@ -52,6 +52,8 @@ header .back:hover { color: var(--fg); }
 
 <script src="ani-model.js"></script>
 <script src="hypar-model.js"></script>
+<script src="computer-model.js"></script>
+<script src="chair-model.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from "three";
@@ -63,10 +65,13 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 /* ---------- Les objets exposés : ajouter un objet = ajouter une ligne ici ----------
    x, z : position au sol en mètres ; rot : rotation en degrés ; href : page ouverte au clic */
 const OBJECTS = [
-  { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.05, z: -0.25, rot: 18 },
-  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.05,  z: -0.45, rot: -32 }
+  { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.3, z: 0.25, rot: 18 },
+  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.25,  z: 0.1, rot: -32 }
 ];
 const PERSON_HEIGHT = 1.83;
+/* Le bureau : plateau blanc 140 × 60 cm sur tréteaux en bois, iMac, chaise Setu. Un clic mène à l'Archive. */
+const DESK = { id: "bureau", name: "Mon bureau", kind: "Archive, tous mes projets", year: "", href: "/#archive", x: 0.05, z: -1.05, rot: 0 };
+const ME = { id: "moi", name: "Antoine Pruvost", kind: "Designer, à propos de moi", href: "/#a-propos" };
 
 const stage = document.getElementById("stage");
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -89,7 +94,7 @@ scene.environmentIntensity = 0.55;
 
 /* Caméra en plongée (~60°), focale longue pour garder une lecture presque « vue de dessus » */
 const camera = new THREE.PerspectiveCamera(11, 1, 0.5, 120);
-const look = new THREE.Vector3(0, 0.55, -0.15);
+const look = new THREE.Vector3(0, 0.5, -0.3);
 const CAM_PITCH = THREE.MathUtils.degToRad(62);
 let camDist = 9.5;
 function placeCamera() {
@@ -185,6 +190,46 @@ function loadHypar() {
   });
 }
 
+function loadGLB(name) {
+  return new Promise((res) => {
+    if (!window.__GLB || !window.__GLB[name]) return res(null);
+    new GLTFLoader().parse(b64(window.__GLB[name]), "", (g) => res(g.scene), () => res(null));
+  });
+}
+const deskParts = { chair: null, chairHome: new THREE.Vector3(), out: 0, outTarget: 0, seat: new THREE.Vector3() };
+async function loadDesk() {
+  const [comp, chair] = await Promise.all([loadGLB("computer"), loadGLB("chair")]);
+  const g = new THREE.Group();
+  const white = new THREE.MeshStandardMaterial({ color: 0xf1f0ec, roughness: 0.55 });
+  const birch = woodMaterial("#e9d3a8", "#d3b37f");
+  const TOP = 0.75, W = 1.4, D = 0.6;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(W, 0.025, D), white); top.position.y = TOP - 0.0125; g.add(top);
+  // tréteaux réglables en bois : pieds en A, traverse haute, petite étagère à lattes
+  [-0.48, 0.48].forEach((x0) => {
+    const leg = (x1, z1, x2, z2) => {
+      const a = new THREE.Vector3(x1, TOP - 0.03, z1), b = new THREE.Vector3(x2, 0, z2), len = a.distanceTo(b);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.034, len, 0.045), birch);
+      m.position.copy(a).add(b).multiplyScalar(0.5); m.lookAt(b); m.rotateX(Math.PI / 2); g.add(m);
+    };
+    [-1, 1].forEach((sx) => { leg(x0 + sx * 0.05, -0.2, x0 + sx * 0.17, -0.24); leg(x0 + sx * 0.05, 0.2, x0 + sx * 0.17, 0.24); });
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.5), birch); rail.position.set(x0, TOP - 0.045, 0); g.add(rail);
+    for (let i = -2; i <= 2; i++) { const sl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.012, 0.03), birch); sl.position.set(x0, 0.13, i * 0.085); g.add(sl); }
+  });
+  if (comp) {
+    const rm = []; comp.traverse((n) => { if (n.isMesh) { const b = new THREE.Box3().setFromObject(n); if (b.min.z > 0.5) rm.push(n); } }); rm.forEach((n) => n.parent.remove(n));
+    const c = new THREE.Group(); c.add(comp); comp.rotation.y = -Math.PI / 2; c.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(c), ce = b.getCenter(new THREE.Vector3());
+    comp.position.x -= ce.x; comp.position.z -= ce.z; comp.position.y -= b.min.y;
+    c.position.set(0.05, TOP, -0.06); g.add(c);
+  }
+  if (chair) {
+    const c = new THREE.Group(); c.add(chair); chair.rotation.y = Math.PI; // dossier vers l'avant du bureau, assise face au plateau
+    c.position.set(0.05, 0, 0.42); g.add(c); deskParts.chair = c; deskParts.chairHome.copy(c.position);
+  }
+  addExhibit(DESK, g);
+  const ex = exhibits[exhibits.length - 1]; ex.isDesk = true; ex.radius = 0.62;
+}
+
 /* ---------- Le visiteur : Antoine, 1,83 m, pointure 42 ----------
    T-shirt blanc ou noir, jean brut coupe droite, chaussures bateau en cuir brun à semelle blanche.
    Toutes les cotes sont en mètres. */
@@ -247,13 +292,15 @@ function makePerson() {
 }
 const person = makePerson();
 scene.add(person.root);
-person.root.position.set(0.05, 0, 0.6);
+person.root.traverse((n) => { if (n.isMesh) n.userData.me = true; });
+const MEX = { def: ME, isMe: true };
+person.root.position.set(0.1, 0, 0.75);
 
 /* ---------- Comportement : il se promène librement ----------
    Il choisit lui-même : aller voir un objet, flâner vers un coin de l'espace, s'arrêter et regarder autour,
    ou se tourner vers le visiteur du site. Vitesse, durées et posture (mains dans les poches ou bras libres) changent à chaque fois. */
-const AREA = { x: 2.4, z: 1.5 };
-const walker = { state: "pause", timer: 1.5, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, maxSpeed: 0.45, pockets: 1, pocketsW: 1,
+const AREA = { x: 1.9, z: 1.1 };
+const walker = { steps: null, stepI: 0, stepT: 0, onArrive: null, sitT: 0, sitW: 0, lieT: 0, lieW: 0, typing: false, lastAct: "", atDesk: false, lieYaw: 0, state: "pause", timer: 1.5, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, maxSpeed: 0.45, pockets: 1, pocketsW: 1,
   headYaw: 0, headPitch: 0, headTarget: { yaw: 0, pitch: 0 }, glanceT: 0, last: null, wanted: null, faceYaw: null, sway: 0 };
 const rnd = (a, b) => a + Math.random() * (b - a);
 function freeSpot() {
@@ -270,20 +317,68 @@ function viewSpot(ex) {
   const d = ex.radius + rnd(0.38, 0.6);
   return new THREE.Vector3(c.x + Math.sin(a) * d, 0, c.z + Math.cos(a) * d);
 }
-function startWalk(goal, target) {
+function startWalk(goal, target, onArrive) {
+  walker.onArrive = onArrive || null;
   walker.goal.copy(goal); walker.target = target || null; walker.state = "walk";
   walker.maxSpeed = rnd(0.34, 0.56);
   walker.pockets = Math.random() < 0.45 ? 1 : 0;
 }
-function decide() {
-  if (walker.wanted) { const w = walker.wanted; walker.wanted = null; walker.last = w; return startWalk(viewSpot(w), w); }
-  const r = Math.random();
-  if (r < 0.42 && exhibits.length) {
-    let pool = exhibits.filter((e) => e !== walker.last); if (!pool.length) pool = exhibits;
-    const ex = pool[Math.floor(Math.random() * pool.length)]; walker.last = ex;
-    return startWalk(viewSpot(ex), ex);
+/* Enchaînement d'étapes chronométrées (s'asseoir, travailler, s'allonger…) */
+function runSteps(steps) { walker.steps = steps; walker.stepI = 0; walker.stepT = 0; walker.state = "steps"; if (steps[0].start) steps[0].start(); }
+const deskEx = () => exhibits.find((e) => e.isDesk);
+function seatPoint(out) {
+  const ex = deskEx(), c = deskParts.chair; if (!ex || !c) return null;
+  const p = new THREE.Vector3(deskParts.chairHome.x, 0, deskParts.chairHome.z + 0.22 * out);
+  return ex.inner.localToWorld(p).setY(0);
+}
+function goWork() {
+  const ex = deskEx(); if (!ex || !deskParts.chair) return false;
+  const seat = seatPoint(1), stand = seat.clone().add(new THREE.Vector3(0, 0, 0.48).applyAxisAngle(new THREE.Vector3(0, 1, 0), ex.group.rotation.y));
+  const yaw = ex.group.rotation.y + Math.PI; // face au plateau
+  walker.lastAct = "work"; walker.pockets = 0;
+  startWalk(stand, ex, () => runSteps([
+    { dur: 0.9, start: () => { deskParts.outTarget = 1; walker.atDesk = true; }, fn: (t, dt) => { person.root.rotation.y = dampAngle(person.root.rotation.y, yaw, 6, dt); } },
+    { dur: 0.8, fn: (t) => { person.root.position.lerpVectors(stand, seat, t * t * (3 - 2 * t)); person.root.rotation.y = yaw; } },
+    { dur: 1.2, start: () => (walker.sitT = 1) },
+    { dur: rnd(9, 17), start: () => (walker.typing = true), fn: (t) => { if (Math.random() < 0.004) walker.typing = !walker.typing; } },
+    { dur: 1.1, start: () => { walker.typing = false; walker.sitT = 0; } },
+    { dur: 0.8, fn: (t) => { person.root.position.lerpVectors(seat, stand, t * t * (3 - 2 * t)); } },
+    { dur: 0.7, start: () => (deskParts.outTarget = 0), fn: () => {}, end: () => (walker.atDesk = false) }
+  ]));
+  return true;
+}
+function lieSpot() {
+  for (let i = 0; i < 40; i++) {
+    const p = freeSpot(), yaw = rnd(-0.7, 0.7), head = p.clone().add(new THREE.Vector3(-Math.sin(yaw) * 1.9, 0, -Math.cos(yaw) * 1.9));
+    const clear = (q) => Math.abs(q.x) < AREA.x + 0.3 && Math.abs(q.z) < AREA.z + 0.3 && exhibits.every((e) => Math.hypot(q.x - e.group.position.x, q.z - e.group.position.z) > e.radius + 0.45);
+    const mid = p.clone().lerp(head, 0.5);
+    if (clear(p) && clear(head) && clear(mid)) return { p, yaw };
   }
-  if (r < 0.78) return startWalk(freeSpot(), null);
+  return null;
+}
+function goLie() {
+  const L = lieSpot(); if (!L) return false;
+  walker.lastAct = "lie"; walker.pockets = 0;
+  startWalk(L.p, null, () => runSteps([
+    { dur: 1.0, fn: (t, dt) => { person.root.rotation.y = dampAngle(person.root.rotation.y, L.yaw, 5, dt); } },
+    { dur: 2.0, start: () => (walker.lieT = 1) },
+    { dur: rnd(7, 14) },
+    { dur: 2.0, start: () => (walker.lieT = 0) }
+  ]));
+  return true;
+}
+function decide() {
+  walker.onArrive = null;
+  if (walker.wanted) { const w = walker.wanted; walker.wanted = null; walker.last = w; walker.lastAct = "visit"; return startWalk(viewSpot(w), w); }
+  const r = Math.random();
+  if (r < 0.32) {
+    let pool = exhibits.filter((e) => e !== walker.last && !e.isDesk); if (!pool.length) pool = exhibits.filter((e) => !e.isDesk);
+    if (pool.length) { const ex = pool[Math.floor(Math.random() * pool.length)]; walker.last = ex; walker.lastAct = "visit"; return startWalk(viewSpot(ex), ex); }
+  }
+  if (r < 0.5 && walker.lastAct !== "work" && goWork()) return;
+  if (r < 0.62 && walker.lastAct !== "lie" && goLie()) return;
+  walker.lastAct = "free";
+  if (r < 0.85) return startWalk(freeSpot(), null);
   // s'arrêter sur place : regarder autour, parfois vers l'écran
   walker.state = "pause"; walker.timer = rnd(2.5, 5.5); walker.target = null; walker.pockets = 1;
   walker.faceYaw = Math.random() < 0.35 ? 0 : null; // 0 = face à la caméra
@@ -295,7 +390,8 @@ function updateWalker(dt) {
     tmpV.subVectors(walker.goal, pos); tmpV.y = 0;
     const d = tmpV.length();
     if (d < 0.05) {
-      if (walker.target) { walker.state = "look"; walker.timer = rnd(3, 7.5); walker.pockets = Math.random() < 0.6 ? 1 : 0.5; }
+      if (walker.onArrive) { const f = walker.onArrive; walker.onArrive = null; f(); }
+      else if (walker.target) { walker.state = "look"; walker.timer = rnd(3, 7.5); walker.pockets = Math.random() < 0.6 ? 1 : 0.5; }
       else { walker.state = "pause"; walker.timer = rnd(1.5, 4); walker.faceYaw = Math.random() < 0.25 ? 0 : null; }
     } else {
       const dir = tmpV.normalize();
@@ -308,6 +404,18 @@ function updateWalker(dt) {
       walker.speed = THREE.MathUtils.damp(walker.speed, Math.min(walker.maxSpeed, d * 1.3 + 0.06), 3.5, dt);
       pos.x += dir.x * walker.speed * dt; pos.z += dir.z * walker.speed * dt;
       P.root.rotation.y = dampAngle(P.root.rotation.y, Math.atan2(dir.x, dir.z), 5, dt);
+    }
+  } else if (walker.state === "steps") {
+    walker.speed = THREE.MathUtils.damp(walker.speed, 0, 8, dt);
+    const st = walker.steps[walker.stepI];
+    walker.stepT += dt;
+    const t = Math.min(1, walker.stepT / st.dur);
+    if (st.fn) st.fn(t, dt);
+    if (t >= 1) {
+      if (st.end) st.end();
+      walker.stepI++; walker.stepT = 0;
+      if (walker.stepI >= walker.steps.length) { walker.steps = null; decide(); }
+      else if (walker.steps[walker.stepI].start) walker.steps[walker.stepI].start();
     }
   } else {
     walker.speed = THREE.MathUtils.damp(walker.speed, 0, 6, dt);
@@ -326,7 +434,9 @@ function updateWalker(dt) {
   walker.glanceT -= dt;
   if (walker.glanceT <= 0) {
     walker.glanceT = rnd(1.2, 3.5);
-    if (walker.state === "look") walker.headTarget = { yaw: rnd(-0.25, 0.25), pitch: rnd(0.32, 0.55) };
+    if (walker.sitT) walker.headTarget = { yaw: rnd(-0.12, 0.12), pitch: walker.typing ? rnd(0.2, 0.35) : rnd(-0.05, 0.15) };
+    else if (walker.lieT) walker.headTarget = { yaw: rnd(-0.3, 0.3), pitch: rnd(-0.15, 0.05) };
+    else if (walker.state === "look") walker.headTarget = { yaw: rnd(-0.25, 0.25), pitch: rnd(0.32, 0.55) };
     else if (walker.state === "pause") walker.headTarget = { yaw: rnd(-0.9, 0.9), pitch: rnd(-0.05, 0.15) };
     else walker.headTarget = { yaw: Math.random() < 0.3 ? rnd(-0.6, 0.6) : rnd(-0.1, 0.1), pitch: rnd(0.02, 0.18) };
   }
@@ -361,6 +471,51 @@ function updateWalker(dt) {
     A.el.rotation.z = THREE.MathUtils.lerp(0, -side * 0.28, w);
     A.hand.visible = w < 0.6;
   });
+
+  // assis au bureau : cuisses à l'horizontale, buste penché, mains au clavier
+  walker.sitW = THREE.MathUtils.damp(walker.sitW, walker.sitT, 3.2, dt);
+  const sw = walker.sitW;
+  if (sw > 0.001) {
+    const typ = walker.typing ? Math.sin(performance.now() / 70) * 0.05 : 0;
+    [P.L, P.R].forEach((Lg, i) => {
+      Lg.p.rotation.x = THREE.MathUtils.lerp(Lg.p.rotation.x, -1.52 + (i ? 0.08 : -0.04), sw);
+      Lg.p.rotation.z = THREE.MathUtils.lerp(0, (i ? -1 : 1) * 0.08, sw);
+      Lg.knee.rotation.x = THREE.MathUtils.lerp(Lg.knee.rotation.x, 1.5 + (i ? -0.12 : 0.05), sw);
+      Lg.ankle.rotation.x = THREE.MathUtils.lerp(Lg.ankle.rotation.x, 0.02, sw);
+    });
+    P.body.position.y += -0.47 * sw;
+    P.chest.rotation.x = THREE.MathUtils.lerp(P.chest.rotation.x, walker.typing ? 0.16 : -0.06, sw);
+    [[P.AL, 1], [P.AR, -1]].forEach(([A, side], i) => {
+      A.p.rotation.x = THREE.MathUtils.lerp(A.p.rotation.x, walker.typing ? -0.62 : -0.3, sw);
+      A.p.rotation.z = THREE.MathUtils.lerp(A.p.rotation.z, side * 0.14, sw);
+      A.el.rotation.x = THREE.MathUtils.lerp(A.el.rotation.x, (walker.typing ? -0.92 : -1.15) + (i ? typ : -typ), sw);
+      A.el.rotation.z = THREE.MathUtils.lerp(A.el.rotation.z, -side * 0.22, sw);
+      A.hand.visible = true;
+    });
+  }
+  // allongé au sol, sur le dos, mains derrière la tête : il regarde vers le haut, vers le visiteur du site
+  walker.lieW = THREE.MathUtils.damp(walker.lieW, walker.lieT, 1.9, dt);
+  const lw = walker.lieW;
+  if (lw > 0.001) {
+    const mid = Math.sin(lw * Math.PI); // genoux pliés pendant la descente et la remontée
+    [P.L, P.R].forEach((Lg, i) => {
+      Lg.p.rotation.x = THREE.MathUtils.lerp(Lg.p.rotation.x, -0.9 * mid + (i ? -0.18 : 0) * lw, Math.min(1, lw * 2));
+      Lg.knee.rotation.x = THREE.MathUtils.lerp(Lg.knee.rotation.x, 1.4 * mid + (i ? 0.35 : 0.04) * lw, Math.min(1, lw * 2));
+      Lg.ankle.rotation.x = THREE.MathUtils.lerp(Lg.ankle.rotation.x, -0.2 * lw, lw);
+    });
+    P.body.rotation.x = -Math.PI / 2 * Math.pow(lw, 1.4);
+    P.body.position.y += 0.11 * lw - 0.35 * mid * (1 - lw);
+    P.body.position.z = -0.32 * mid;
+    P.chest.rotation.x = THREE.MathUtils.lerp(P.chest.rotation.x, 0, lw);
+    P.chest.rotation.y = THREE.MathUtils.lerp(P.chest.rotation.y, 0, lw);
+    [[P.AL, 1], [P.AR, -1]].forEach(([A, side]) => {
+      A.p.rotation.x = THREE.MathUtils.lerp(A.p.rotation.x, -2.7, lw);
+      A.p.rotation.z = THREE.MathUtils.lerp(A.p.rotation.z, side * 0.55, lw);
+      A.el.rotation.x = THREE.MathUtils.lerp(A.el.rotation.x, -1.95, lw);
+      A.el.rotation.z = THREE.MathUtils.lerp(A.el.rotation.z, -side * 0.3, lw);
+      A.hand.visible = lw > 0.5 || A.hand.visible;
+    });
+  } else { P.body.rotation.x = 0; P.body.position.z = 0; }
 }
 function dampAngle(a, b, l, dt) { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * (1 - Math.exp(-l * dt)); }
 
@@ -372,8 +527,9 @@ function pickAt(x, y) {
   const r = cv.getBoundingClientRect();
   mouse.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hits = ray.intersectObjects(exhibits.map((e) => e.group), true);
+  const hits = ray.intersectObjects(exhibits.map((e) => e.group).concat([person.root]), true);
   if (!hits.length) return null;
+  if (hits[0].object.userData.me) return MEX;
   const id = hits[0].object.userData.exhibit;
   return exhibits.find((e) => e.def.id === id) || null;
 }
@@ -382,7 +538,7 @@ function setHover(ex) {
   hovered = ex; hoverT = 0;
   exhibits.forEach((e) => (e.target = e === ex ? 1 : 0));
   cv.classList.toggle("hot", !!ex);
-  if (ex) { tag.querySelector("b").textContent = ex.def.name; tag.querySelector("span").textContent = ex.def.kind + ", " + ex.def.year; tag.classList.add("on"); }
+  if (ex) { tag.querySelector("b").textContent = ex.def.name; tag.querySelector("span").textContent = ex.def.kind + (ex.def.year ? ", " + ex.def.year : ""); tag.classList.add("on"); }
   else tag.classList.remove("on");
 }
 
@@ -440,8 +596,10 @@ addEventListener("resize", resize);
 const clock = new THREE.Clock();
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (hovered) { hoverT += dt; if (hoverT > 0.9 && walker.target !== hovered) walker.wanted = hovered; }
+  if (hovered) { hoverT += dt; if (!hovered.isMe && hoverT > 0.9 && walker.target !== hovered && !walker.steps) walker.wanted = hovered; }
+  if (deskParts.chair) { deskParts.out = THREE.MathUtils.damp(deskParts.out, deskParts.outTarget, 4, dt); deskParts.chair.position.z = deskParts.chairHome.z + 0.22 * deskParts.out; deskParts.chair.rotation.y = 0.12 * (1 - deskParts.out) - 0.05; }
   exhibits.forEach((e) => {
+    if (e.isDesk && walker.atDesk) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
     e.inner.position.y = e.baseY + e.lift * 0.09;
     e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
@@ -452,7 +610,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar()]).then(() => {
+Promise.all([loadAni(), loadHypar(), loadDesk()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
