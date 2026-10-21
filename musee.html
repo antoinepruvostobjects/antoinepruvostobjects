@@ -259,7 +259,7 @@ function makeScreen(w, h) {
 async function loadDesk() {
   const [comp, chair] = await Promise.all([loadGLB("computer"), loadGLB("chair")]);
   const g = new THREE.Group();
-  const white = new THREE.MeshStandardMaterial({ color: 0xf1f0ec, roughness: 0.55 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xc0bfba, roughness: 0.72 }); // blanc de bureau mat, un peu cassé, qui ne sature pas à la lumière
   const birch = woodMaterial("#e7d9c1", "#cfb894");
   const TOP = 0.75, W = 1.4, D = 0.6;
   const top = new THREE.Mesh(new THREE.BoxGeometry(W, 0.025, D), white); top.position.y = TOP - 0.0125; g.add(top);
