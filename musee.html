@@ -20,8 +20,7 @@
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
 #stage { position: fixed; inset: 0; }
-#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
-#stage canvas.drag { cursor: grabbing; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
 #stage canvas.hot { cursor: pointer; }
 header { position: fixed; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
   padding: max(clamp(18px, 2.6vw, 48px), env(safe-area-inset-top, 0px)) max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)) 0 max(clamp(20px, 5vw, 120px), env(safe-area-inset-left, 0px)); pointer-events: none; }
@@ -50,7 +49,7 @@ header .back:hover { color: var(--fg); }
 </header>
 <div id="stage" aria-label="Espace d'exposition en 3D : survolez un objet pour le soulever, cliquez pour ouvrir sa fiche"></div>
 <div class="tag" id="tag" aria-hidden="true"><b></b><span></span></div>
-<p class="hint" id="hint">Survolez un objet · cliquez pour l'ouvrir · faites glisser pour vous déplacer</p>
+<p class="hint" id="hint">Survolez un objet · cliquez pour l'ouvrir</p>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
 
@@ -861,13 +860,7 @@ cv.addEventListener("pointermove", (e) => {
   pointerIn = true;
   if (dragging) {
     const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
-    if (moved > 6) {
-      cv.classList.add("drag");
-      const scale = (camDist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2) / cv.clientHeight;
-      look.x = THREE.MathUtils.clamp(look.x - dx * scale, -bounds.x, bounds.x);
-      look.z = THREE.MathUtils.clamp(look.z - dy * scale / Math.sin(CAM_PITCH), -bounds.z, bounds.z);
-      placeCamera(); setHover(null); return;
-    }
+    if (moved > 6) { setHover(null); return; } // l'espace est fixe : il tient toujours dans l'écran
   }
   setHover(pickAt(e.clientX, e.clientY));
   tag.style.left = e.clientX + "px"; tag.style.top = (e.clientY - 8) + "px";
@@ -914,13 +907,26 @@ function updateZoom(dt) {
 }
 
 /* ---------- Mise à l'échelle de l'écran ---------- */
+const LOOK0 = look.clone();
+const CONTENT_W = 3.8;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
+const _ray = new THREE.Raycaster(), _gp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
+function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); return _ray.ray.intersectPlane(_gp, _hit) ? _hit.clone() : null; }
 function frameAll() {
   const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
   camera.aspect = w / h; camera.updateProjectionMatrix();
-  const span = Math.max(5.2, 3.6 / camera.aspect + 2); // largeur de sol à montrer, en mètres
+  look.copy(LOOK0);
   const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  camDist = THREE.MathUtils.clamp((span / 2) / (halfH * camera.aspect), 12, 32);
-  placeCamera();
+  const span = Math.max(5.2, 3.6 / camera.aspect + 2);               // ordinateur : largeur de sol montrée
+  const fitW = (CONTENT_W / 2) / (halfH * camera.aspect);             // téléphone : tous les objets tiennent dans la largeur
+  camDist = THREE.MathUtils.clamp(Math.max((span / 2) / (halfH * camera.aspect) * (camera.aspect < 1 ? 0 : 1), fitW), 12, 70);
+  placeCamera(); camera.updateMatrixWorld(true);
+  // la zone où il se promène = ce que l'écran montre, moins une marge (il ne sort jamais du cadre)
+  const fl = groundAt(-1, 0.86), fr = groundAt(1, 0.86), nl = groundAt(-1, -0.92);
+  if (fl && fr && nl) {
+    const halfW = Math.min(Math.abs(fl.x - look.x), Math.abs(fr.x - look.x), Math.abs(nl.x - look.x));
+    AREA.x = THREE.MathUtils.clamp(halfW - 0.4, 0.6, 1.9);
+    AREA.z = THREE.MathUtils.clamp(Math.min(nl.z - 0.15, -(fl.z + 1.0)), 0.5, 1.1);
+  }
 }
 function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); frameAll(); }
 addEventListener("resize", resize);
