@@ -58,6 +58,7 @@ header .back:hover { color: var(--fg); }
 <script src="computer-model.js"></script>
 <script src="chair-model.js"></script>
 <script src="parcels-model.js"></script>
+<script src="printer-model.js"></script>
 <script src="avatar-model.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
@@ -72,7 +73,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
    x, z : position au sol en mètres ; rot : rotation en degrés ; href : page ouverte au clic */
 const OBJECTS = [
   { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.08, z: 0.3, rot: 18 },
-  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.25,  z: 0.1, rot: -32 }
+  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.0,  z: 0.42, rot: -32 }
 ];
 const PERSON_HEIGHT = 1.83;
 const WITH_POSES = false; // passer à true quand les animations assis / allongé seront prêtes
@@ -419,6 +420,27 @@ async function loadParcels() {
   const tissue = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.9, side: THREE.DoubleSide }));
   tissue.position.set(-0.008, 0, -0.02); tissue.castShadow = true; o.add(tissue);
   addExhibit(PARCEL, g);
+}
+
+/* ---------- L'imprimante 3D sur sa petite table blanche (façon IKEA Lack) : un clic mène au devis d'impression ---------- */
+const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.62, z: -0.25, rot: -12 };
+async function loadPrinter() {
+  const pr = await loadGLB("printer"); if (!pr) return;
+  const g = new THREE.Group();
+  const white = new THREE.MeshStandardMaterial({ color: 0xf1f0ec, roughness: 0.55 });
+  const TW = 0.55, TH = 0.45, TT = 0.05, LG = 0.05;                     // plateau 55 × 55 cm, 45 cm de haut, pieds de 5 cm
+  const top = new THREE.Mesh(new RoundedBoxGeometry(TW, TT, TW, 2, 0.004), white); top.position.y = TH - TT / 2; g.add(top);
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+    const leg = new THREE.Mesh(new RoundedBoxGeometry(LG, TH - TT, LG, 2, 0.003), white);
+    leg.position.set(sx * (TW / 2 - LG / 2), (TH - TT) / 2, sz * (TW / 2 - LG / 2)); g.add(leg);
+  });
+  // imprimante : 49 cm de large, posée au centre du plateau, porte vers l'avant
+  pr.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(pr), sc = 0.49 / (b.max.x - b.min.x), ce = b.getCenter(new THREE.Vector3());
+  pr.scale.setScalar(sc); pr.position.set(-ce.x * sc, TH - b.min.y * sc, -ce.z * sc);
+  pr.traverse((n) => { if (n.isMesh && n.material) { n.material.roughness = 0.5; n.material.metalness = 0; n.material.envMapIntensity = 0.7; } });
+  g.add(pr);
+  addExhibit(PRINTER, g);
 }
 
 /* ---------- Le visiteur : Antoine, 1,83 m, pointure 42 ----------
@@ -1065,7 +1087,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadAvatar()]).then(() => {
+Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
