@@ -1247,7 +1247,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "31"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "32"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);
@@ -1261,6 +1261,14 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     };
     window.addEventListener("scroll", window.__home3dScroll, { passive: true });
     fr.addEventListener("load", window.__home3dScroll);
+    // le doigt posé ailleurs sur la page compte aussi : les objets se soulèvent tant qu'il touche l'écran
+    if (!window.__home3dFinger) {
+      window.__home3dFinger = function (e) {
+        var f = document.querySelector(".home3d iframe");
+        try { if (f && f.contentWindow && f.contentWindow.__finger) f.contentWindow.__finger(e.touches.length > 0); } catch (x) {}
+      };
+      ["touchstart", "touchend", "touchcancel"].forEach(function (t) { document.addEventListener(t, window.__home3dFinger, { passive: true }); });
+    }
   }
 
   /* L'ordinateur : l'Archive s'ouvre comme sur l'écran de l'iMac du bureau, avec une fenêtre et un curseur */

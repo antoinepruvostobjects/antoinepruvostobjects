@@ -770,7 +770,7 @@ function sdist(o, px, pz) {
   return { d: l - o.r, nx: dx / l, nz: dz / l };
 }
 let scrollP = 0, scrollT = 0;
-window.__scroll = (p) => { if (Math.abs(p - scrollT) > 1e-4 && typeof levitate === "function") levitate(); scrollT = p; };
+window.__scroll = (p) => { scrollT = p; };
 const viewZone = () => (scrollP > 0.5 ? 1 : 0);
 const walker = { steps: null, stepI: 0, stepT: 0, onArrive: null, sitT: 0, sitW: 0, lieT: 0, lieW: 0, typing: false, lastAct: "", atDesk: false, lieYaw: 0, state: "pause", timer: 1.5, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, maxSpeed: 0.45, pockets: 1, pocketsW: 1,
   headYaw: 0, headPitch: 0, headTarget: { yaw: 0, pitch: 0 }, glanceT: 0, last: null, wanted: null, faceYaw: null, sway: 0 };
@@ -1220,10 +1220,55 @@ const TOUCH = matchMedia("(hover: none)").matches;
 if (TOUCH) document.getElementById("intro-sub").textContent = "Touchez un objet pour le découvrir, une seconde fois pour l'ouvrir";
 let introOn = true;
 /* Sur téléphone : dès que le doigt touche ou fait défiler l'écran, tous les objets cliquables se soulèvent un instant */
-let levitateUntil = 0;
+/* tant que le doigt reste posé ils flottent, cernés d'un contour ; dès qu'on le lève, ils se reposent */
+let levitateUntil = 0, fingerDown = false;
 function levitate(ms) { if (TOUCH) levitateUntil = Math.max(levitateUntil, performance.now() + (ms || 1400)); }
-document.addEventListener("touchstart", () => levitate(), { passive: true });
-document.addEventListener("touchmove", () => levitate(), { passive: true });
+window.__finger = (down) => { fingerDown = !!down; };
+document.addEventListener("touchstart", (e) => { fingerDown = true; }, { passive: true });
+document.addEventListener("touchend", (e) => { fingerDown = e.touches.length > 0; }, { passive: true });
+document.addEventListener("touchcancel", (e) => { fingerDown = e.touches.length > 0; }, { passive: true });
+/* contour : un trait foncé dessiné autour des objets soulevés (seulement pendant qu'ils flottent).
+   On dessine la silhouette des objets dans une image à part, puis on trace autour d'elle un liseré par-dessus la scène. */
+const OUT_LAYER = 7;
+const outFx = { rt: null, white: new THREE.MeshBasicMaterial({ color: 0xffffff }), quad: null, cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1) };
+function outlineFx() {
+  if (outFx.quad) return outFx;
+  outFx.rt = new THREE.WebGLRenderTarget(1, 1, { samples: 4 });
+  outFx.mat = new THREE.ShaderMaterial({
+    uniforms: { tMask: { value: outFx.rt.texture }, px: { value: new THREE.Vector2() }, rad: { value: 4 }, col: { value: new THREE.Color(0x2b2724) }, amt: { value: 0 } },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+    fragmentShader: `varying vec2 vUv; uniform sampler2D tMask; uniform vec2 px; uniform float rad; uniform vec3 col; uniform float amt;
+      void main(){
+        float c = texture2D(tMask, vUv).r, m = 0.0;
+        for (int i = 0; i < 24; i++) { float a = float(i) * 0.2618; vec2 d = vec2(cos(a), sin(a)) * px;
+          m = max(m, texture2D(tMask, vUv + d * rad).r); m = max(m, texture2D(tMask, vUv + d * rad * 0.5).r); }
+        float o = clamp(m - c, 0.0, 1.0) * amt;
+        if (o < 0.004) discard;
+        gl_FragColor = vec4(col, o);
+      }`,
+    transparent: true, depthTest: false, depthWrite: false,
+  });
+  outFx.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), outFx.mat); outFx.quad.frustumCulled = false;
+  outFx.scene = new THREE.Scene(); outFx.scene.add(outFx.quad);
+  return outFx;
+}
+function setOutlined(e, on) {
+  if (!!e.outlined === on) return; e.outlined = on;
+  e.inner.traverse((n) => { if (n.isMesh) on ? n.layers.enable(OUT_LAYER) : n.layers.disable(OUT_LAYER); });
+}
+function renderOutline(lifted) {
+  const fx = outlineFx(), sz = renderer.getDrawingBufferSize(new THREE.Vector2());
+  if (fx.rt.width !== sz.x || fx.rt.height !== sz.y) fx.rt.setSize(sz.x, sz.y);
+  const bg = scene.background, ov = scene.overrideMaterial, ac = renderer.autoClear, cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
+  const su = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
+  scene.background = null; scene.overrideMaterial = fx.white; camera.layers.set(OUT_LAYER);
+  renderer.setRenderTarget(fx.rt); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
+  renderer.setRenderTarget(null); camera.layers.set(0); scene.background = bg; scene.overrideMaterial = ov; renderer.setClearColor(cc, ca); renderer.shadowMap.autoUpdate = su;
+  fx.mat.uniforms.px.value.set(1 / sz.x, 1 / sz.y);
+  fx.mat.uniforms.rad.value = 1.6 * renderer.getPixelRatio();
+  fx.mat.uniforms.amt.value = Math.min(1, Math.max(...lifted.map((e) => e.lift))) * 0.85;
+  renderer.autoClear = false; renderer.render(fx.scene, fx.cam); renderer.autoClear = ac;
+}
 function hideIntro() { if (!introOn) return; introOn = false; document.getElementById("intro").classList.add("off"); }
 addEventListener("wheel", hideIntro, { passive: true });
 let workshopLoading = true; // l'atelier est chargé dès le départ (on l'aperçoit déjà sur téléphone)
@@ -1236,12 +1281,12 @@ function loop() {
     deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
   }
   if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
-  const lev = TOUCH && performance.now() < levitateUntil;
+  const lev = TOUCH && (fingerDown || performance.now() < levitateUntil);
   exhibits.forEach((e) => {
     if (TOUCH) e.target = lev || e === hovered ? 1 : 0;
     if (e.isDesk && walker.atDesk) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
-    e.inner.position.y = e.baseY + e.lift * 0.09;
+    e.inner.position.y = e.baseY + e.lift * (TOUCH ? 0.16 : 0.09);
     e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
   });
   updateWalker(dt);
@@ -1257,6 +1302,11 @@ function loop() {
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
+  if (TOUCH) {
+    exhibits.forEach((e) => { if (!e.isMe) setOutlined(e, e.lift > 0.15); });
+    const lifted = exhibits.filter((e) => e.outlined);
+    if (lifted.length) renderOutline(lifted);
+  }
   requestAnimationFrame(loop);
 }
 
