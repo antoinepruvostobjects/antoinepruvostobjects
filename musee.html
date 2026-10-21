@@ -73,7 +73,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
    x, z : position au sol en mètres ; rot : rotation en degrés ; href : page ouverte au clic */
 const OBJECTS = [
   { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.08, z: 0.3, rot: 18 },
-  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 1.0,  z: 0.42, rot: -32 }
+  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 0.86,  z: 0.5, rot: -32 }
 ];
 const PERSON_HEIGHT = 1.83;
 const WITH_POSES = false; // passer à true quand les animations assis / allongé seront prêtes
@@ -423,7 +423,7 @@ async function loadParcels() {
 }
 
 /* ---------- L'imprimante 3D sur sa petite table blanche (façon IKEA Lack) : un clic mène au devis d'impression ---------- */
-const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.4, z: -1.08, rot: 0 };
+const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.68, z: 0.02, rot: -90 };
 async function loadPrinter() {
   const pr = await loadGLB("printer"); if (!pr) return;
   const g = new THREE.Group();
