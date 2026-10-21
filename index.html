@@ -637,7 +637,6 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 .cf-send:hover { background: none; border-bottom-color: var(--cf-fg); }
 .cf-send:disabled { opacity: .5; cursor: default; }
 .cf-send:focus-visible, .cf-top-link:focus-visible, .cf-list a:focus-visible { outline: 2px solid var(--cf-fg); outline-offset: 3px; }
-.cf-tally { display: block; width: 100%; height: 330px; border: 0; margin: -8px 0 0; background: transparent; }
 .cf-hp, .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .cf-bot { max-width: 1100px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(32px, 3.4vw, 52px); padding-top: 16px; border-top: 1px solid var(--cf-line); color: var(--cf-mut); font-size: .85em; }
 .cf-top-link { color: var(--cf-fg); letter-spacing: .04em; }
@@ -735,10 +734,16 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
           <div><dt>Instagram</dt><dd><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">@ap_for_design</a></dd></div>
         </dl>
       </div>
-      <div class="cf-form-wrap">
-        <!-- Formulaire Tally « Contact » : les messages arrivent par e-mail à Antoine -->
-        <iframe class="cf-tally" title="Formulaire de contact" loading="lazy" data-tally-src="https://tally.so/embed/bZ5xK0?hideTitle=1&transparentBackground=1&dynamicHeight=1&alignLeft=1"></iframe>
-      </div>
+      <form class="cf-form" name="contact" method="POST" action="https://formsubmit.co/antoine.pruvost.ap@gmail.com">
+        <input type="hidden" name="_subject" value="Nouveau message depuis le site Antoinepruvostobjects">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <p class="cf-hp" aria-hidden="true"><label>Ne pas remplir <input name="_honey" tabindex="-1" autocomplete="off"></label></p>
+        <label class="cf-f"><span class="vh">Nom</span><input id="cf-nom" name="nom" type="text" autocomplete="name" placeholder="Nom"></label>
+        <label class="cf-f"><span class="vh">E-mail</span><input id="cf-mail" name="email" type="email" autocomplete="email" placeholder="E-mail" required></label>
+        <label class="cf-f cf-wide"><span class="vh">Message</span><textarea id="cf-msg" name="message" rows="3" placeholder="Message" required></textarea></label>
+        <div class="cf-act cf-wide"><p class="cf-state" role="status" aria-live="polite"></p><button type="submit" class="cf-send">Envoyer <span aria-hidden="true">→</span></button></div>
+      </form>
     </div>
     <div class="cf-bot"><span>© Antoine Pruvost, 2026</span><a href="#" class="cf-top-link" id="to-top">Retour en haut ↑</a></div>
   </footer>
@@ -1356,18 +1361,22 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 
   /* Menu Objects */
   function closeMenu() {}
-  /* Formulaire de contact Tally : chargé quand on approche du bas de page ; le script de Tally ajuste la hauteur */
+  /* Formulaire de contact : envoyé par FormSubmit, qui transmet le message par e-mail à Antoine, sans quitter la page */
   (function () {
-    var fr = document.querySelector(".cf-tally"); if (!fr) return;
-    var done = false;
-    var load = function () {
-      if (done) return; done = true;
-      var sc = document.createElement("script"); sc.src = "https://tally.so/widgets/embed.js"; sc.async = true;
-      sc.onload = function () { if (window.Tally) window.Tally.loadEmbeds(); };
-      sc.onerror = function () { fr.src = fr.getAttribute("data-tally-src"); };
-      document.body.appendChild(sc);
-    };
-    if ("IntersectionObserver" in window) { var io = new IntersectionObserver(function (en) { if (en[0].isIntersecting) { load(); io.disconnect(); } }, { rootMargin: "600px" }); io.observe(fr); } else load();
+    var f = document.querySelector(".cf-form"); if (!f) return;
+    var st = f.querySelector(".cf-state"), bt = f.querySelector(".cf-send");
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!f.reportValidity()) return;
+      bt.disabled = true; st.className = "cf-state"; st.textContent = "Envoi…";
+      var data = {}; new FormData(f).forEach(function (v, k) { data[k] = v; });
+      if (data._honey) return;
+      fetch("https://formsubmit.co/ajax/antoine.pruvost.ap@gmail.com", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok || String(j.success) === "false") throw new Error(j.message || r.status); }); })
+        .then(function () { f.reset(); st.className = "cf-state ok"; st.textContent = "Merci, votre message est bien envoyé."; })
+        .catch(function () { st.textContent = "L'envoi n'a pas fonctionné. Écrivez-moi directement à " + MAIL + "."; })
+        .then(function () { bt.disabled = false; });
+    });
     document.getElementById("to-top").addEventListener("click", function (e) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); });
   })();
   /* Menu téléphone */
