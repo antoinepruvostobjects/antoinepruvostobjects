@@ -496,38 +496,7 @@ async function loadAvatar() {
     AV.stsDur = stsClip.duration;
     const hp = stsClip.tracks.find((t) => t.name === hipsName + ".position"), n = hp.values.length;
     AV.standOff = (hp.values[n - 1] - hp.values[2]) * S;          // le bassin avance de l'assise à la position debout
-    AV.mode = "loco"; AV.cw = { loco: 1, sit: 0, type: 0, stand: 0, rest: 0, rest2: 0, turn: 0 }; AV.snap = false;
-    mixer.update(0); model.updateMatrixWorld(true);
-  }
-  // virage en marchant (capture « Left Turn ») : on en extrait le déplacement et la rotation du bassin,
-  // qu'on applique au personnage entier ; le bassin reste ainsi dans l'axe et les pieds ne glissent pas
-  const turnSrc = find("turn_left");
-  if (turnSrc && AV.acts) {
-    const T1 = Math.min(turnSrc.duration, 1.1), FPS = 30, L = Math.round(T1 * FPS);
-    const pI = turnSrc.tracks.find((t) => t.name === hipsName + ".position").createInterpolant();
-    const qI = turnSrc.tracks.find((t) => t.name === hipsName + ".quaternion").createInterpolant();
-    const yawOf = (q) => Math.atan2(2 * (q[3] * q[1] + q[0] * q[2]), 1 - 2 * (q[1] * q[1] + q[0] * q[0]));
-    const p0 = Array.from(pI.evaluate(0)), yaw0 = yawOf(Array.from(qI.evaluate(0)));
-    const rx = [], rz = [], ry = []; let prev = yaw0, acc = 0;
-    const tracks = turnSrc.tracks.map((tr) => {
-      const it = tr.createInterpolant(), n = tr.getValueSize(), times = new Float32Array(L + 1), vals = new Float32Array((L + 1) * n);
-      for (let k = 0; k <= L; k++) { times[k] = k / FPS; const r = it.evaluate(k / FPS); for (let c = 0; c < n; c++) vals[k * n + c] = r[c]; }
-      if (tr.name === hipsName + ".quaternion") for (let k = 0; k <= L; k++) {
-        const q = new THREE.Quaternion().fromArray(vals, k * 4), y = yawOf(q.toArray());
-        let dy = y - prev; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); acc += dy; prev = y; ry[k] = acc;
-        q.premultiply(new THREE.Quaternion().setFromAxisAngle(AX.y, -y)).toArray(vals, k * 4);   // bassin remis face à l'avant
-      }
-      if (tr.name === hipsName + ".position") for (let k = 0; k <= L; k++) {
-        const dx = vals[k * 3] - p0[0], dz = vals[k * 3 + 2] - p0[2], c = Math.cos(-yaw0), s2 = Math.sin(-yaw0);
-        rx[k] = (dx * c + dz * s2) * S; rz[k] = (-dx * s2 + dz * c) * S;                     // déplacement, en mètres, départ face à +Z
-        vals[k * 3] = p0[0] * 0; vals[k * 3 + 2] = 0;
-      }
-      return new tr.constructor(tr.name, times, vals);
-    });
-    const clipT = new THREE.AnimationClip("virage", L / FPS, tracks);
-    const a = mixer.clipAction(clipT); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.play(); a.setEffectiveWeight(0); a.paused = true;
-    AV.acts.turn = a; AV.cw.turn = 0;
-    AV.turn = { L, FPS, dur: L / FPS, rx, rz, ry, angle: ry[L] };
+    AV.mode = "loco"; AV.cw = { loco: 1, sit: 0, type: 0, stand: 0, rest: 0, rest2: 0 }; AV.snap = false;
     mixer.update(0); model.updateMatrixWorld(true);
   }
   AV.base = bones.map((b) => b.quaternion.clone());
@@ -550,12 +519,12 @@ function updateAvatar(dt) {
   const ww = THREE.MathUtils.clamp(walker.speed / 0.16, 0, 1) * (1 - sw) * (1 - lw);
   let L = 1;
   if (AV.acts) {
-    const m = AV.mode, tg = { loco: m === "loco" ? 1 : 0, sit: m === "sit" || m === "seated" ? 1 : 0, type: m === "type" ? 1 : 0, stand: m === "stand" ? 1 : 0, rest: m === "rest" && AV.acts.rest ? 1 : 0, rest2: m === "rest2" && AV.acts.rest2 ? 1 : 0, turn: m === "turn" ? 1 : 0 };
+    const m = AV.mode, tg = { loco: m === "loco" ? 1 : 0, sit: m === "sit" || m === "seated" ? 1 : 0, type: m === "type" ? 1 : 0, stand: m === "stand" ? 1 : 0, rest: m === "rest" && AV.acts.rest ? 1 : 0, rest2: m === "rest2" && AV.acts.rest2 ? 1 : 0 };
     if ((m === "rest" && !AV.acts.rest) || (m === "rest2" && !AV.acts.rest2)) tg.sit = 1;
-    for (const k in tg) AV.cw[k] = AV.snap ? tg[k] : THREE.MathUtils.damp(AV.cw[k], tg[k], /rest/.test(k) || /rest/.test(m) ? 1.6 : k === "turn" || m === "turn" ? 9 : 4, dt);
+    for (const k in tg) AV.cw[k] = AV.snap ? tg[k] : THREE.MathUtils.damp(AV.cw[k], tg[k], /rest/.test(k) || /rest/.test(m) ? 1.6 : 4, dt);
     AV.snap = false;
-    const tot = AV.cw.loco + AV.cw.sit + AV.cw.type + AV.cw.stand + AV.cw.rest + AV.cw.rest2 + (AV.cw.turn || 0) || 1;
-    ["sit", "type", "stand", "rest", "rest2", "turn"].forEach((k) => AV.acts[k] && AV.acts[k].setEffectiveWeight(AV.cw[k] / tot));
+    const tot = AV.cw.loco + AV.cw.sit + AV.cw.type + AV.cw.stand + AV.cw.rest + AV.cw.rest2 || 1;
+    ["sit", "type", "stand", "rest", "rest2"].forEach((k) => AV.acts[k] && AV.acts[k].setEffectiveWeight(AV.cw[k] / tot));
     L = AV.cw.loco / tot;
   }
   AV.walk.setEffectiveWeight(ww * L); AV.idle.setEffectiveWeight((1 - ww) * L);
@@ -725,20 +694,6 @@ function decide() {
   walker.faceYaw = Math.random() < 0.35 ? 0 : null; // 0 = face à la caméra
 }
 const tmpV = new THREE.Vector3();
-/* Grand virage à gauche (plus de 70°) : on joue la capture de mouvement, si la place le permet */
-function tryTurn(dir, d) {
-  if (!AV.turn || walker.steps || d < 2.0) return false;
-  const want = Math.atan2(dir.x, dir.z), y = person.root.rotation.y;
-  const delta = Math.atan2(Math.sin(want - y), Math.cos(want - y));
-  if (delta < 1.2 || delta > 2.3) return false;
-  const T = AV.turn, c = Math.cos(y), s2 = Math.sin(y), p = person.root.position;
-  const ex = p.x + T.rx[T.L] * c + T.rz[T.L] * s2, ez = p.z - T.rx[T.L] * s2 + T.rz[T.L] * c;
-  if (Math.abs(ex) > AREA.x + 0.2 || Math.abs(ez) > AREA.z + 0.2) return false;
-  if (exhibits.some((e) => Math.hypot(ex - e.group.position.x, ez - e.group.position.z) < e.radius + 0.4)) return false;
-  walker.turn = { t: 0, ts: 0.85, x: p.x, z: p.z, yaw: y };
-  walker.state = "turn"; AV.acts.turn.reset(); AV.acts.turn.play(); AV.acts.turn.paused = true; avMode("turn");
-  return true;
-}
 function updateWalker(dt) {
   const P = person, pos = P.root.position;
   if (walker.state === "walk") {
@@ -756,20 +711,10 @@ function updateWalker(dt) {
         if (od < safe) { dir.x += (ox / od) * (safe - od) * 5; dir.z += (oz / od) * (safe - od) * 5; }
       });
       dir.normalize();
-      if (tryTurn(dir, d)) return;
       walker.speed = THREE.MathUtils.damp(walker.speed, Math.min(walker.maxSpeed, d * 1.3 + 0.06), 3.5, dt);
       pos.x += dir.x * walker.speed * dt; pos.z += dir.z * walker.speed * dt;
       P.root.rotation.y = dampAngle(P.root.rotation.y, Math.atan2(dir.x, dir.z), 5, dt);
     }
-  } else if (walker.state === "turn") {
-    // virage capturé : le corps entier suit le déplacement du bassin
-    const T = AV.turn, tr = walker.turn; tr.t = Math.min(T.dur, tr.t + dt * tr.ts);
-    const k = Math.min(T.L, tr.t * T.FPS), k0 = Math.floor(k), k1 = Math.min(T.L, k0 + 1), f = k - k0;
-    const lx = T.rx[k0] + (T.rx[k1] - T.rx[k0]) * f, lz = T.rz[k0] + (T.rz[k1] - T.rz[k0]) * f, ly = T.ry[k0] + (T.ry[k1] - T.ry[k0]) * f;
-    const c = Math.cos(tr.yaw), s2 = Math.sin(tr.yaw);
-    pos.set(tr.x + lx * c + lz * s2, 0, tr.z - lx * s2 + lz * c); P.root.rotation.y = tr.yaw + ly;
-    AV.acts.turn.time = tr.t;
-    if (tr.t >= T.dur) { walker.state = "walk"; walker.speed = walker.maxSpeed * 0.8; avMode("loco"); }
   } else if (walker.state === "steps") {
     walker.speed = THREE.MathUtils.damp(walker.speed, 0, 8, dt);
     const st = walker.steps[walker.stepI];
