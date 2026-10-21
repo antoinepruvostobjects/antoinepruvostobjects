@@ -275,28 +275,32 @@ async function loadDesk() {
     for (let i = -2; i <= 2; i++) { const sl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.012, 0.03), birch); sl.position.set(x0, 0.13, i * 0.085); g.add(sl); }
   });
   if (comp) {
-    const rm = []; comp.traverse((n) => { if (n.isMesh) { const b = new THREE.Box3().setFromObject(n); if (b.min.z > 0.5) rm.push(n); } }); rm.forEach((n) => n.parent.remove(n));
-    // matières de l'iMac : coque en aluminium gris clair, clavier et souris blancs, dalle et cadre noirs
+    // iMac 24" (2021) : modèle SketchUp converti, face écran vers l'avant (+Z), avec clavier et souris.
+    // Coque en aluminium gris clair, cadre et dalle noirs, clavier et souris blancs.
     const iAlu = new THREE.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 0.6, roughness: 0.3, envMapIntensity: 1.8 });
     const iWhite = new THREE.MeshStandardMaterial({ color: 0xf3f3f1, metalness: 0, roughness: 0.45 });
     const iBlack = new THREE.MeshStandardMaterial({ color: 0x0b0b0c, metalness: 0, roughness: 0.25 });
+    let screenMesh = null;
     comp.traverse((n) => {
-      if (!n.isMesh || !n.material || !n.material.color) return;
-      const l = n.material.color.r;
-      n.material = l > 0.9 ? iWhite : l > 0.3 ? iAlu : l > 0.12 ? iAlu : iBlack;
+      if (!n.isMesh || !n.material) return;
+      const m = n.material, nm = m.name || "", c = m.color;
+      if (/Screen/.test(nm)) { screenMesh = n; return; }
+      if (/Body_Dark/.test(nm)) n.material = iWhite;                       // cadre avant blanc, comme l'iMac 24" argent
+      else if (/Sockets_Dark|cam/.test(nm) || c.r + c.g + c.b < 0.3) n.material = iBlack;
+      else if (/Mouse|Sockets_Light|material_0/.test(nm) || (c.r > 0.75 && Math.abs(c.r - c.b) < 0.05)) n.material = iWhite;
+      else n.material = iAlu;
     });
-    const c = new THREE.Group(); c.add(comp); comp.rotation.y = -Math.PI / 2; c.updateMatrixWorld(true);
+    const c = new THREE.Group(); c.add(comp); c.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(c), ce = b.getCenter(new THREE.Vector3());
     comp.position.x -= ce.x; comp.position.z -= ce.z; comp.position.y -= b.min.y;
-    c.position.set(0.05, TOP, -0.06); g.add(c);
-    // la dalle de l'écran : on la recouvre d'une surface noire brillante qui s'allume pendant le travail
+    c.position.set(0.05, TOP, -0.04); g.add(c);
+    // la dalle : une surface noire brillante posée sur l'écran du modèle, qui s'allume pendant le travail
     g.updateMatrixWorld(true);
-    let body = null, bh = 0;
-    c.traverse((n) => { if (!n.isMesh) return; const b = new THREE.Box3().setFromObject(n), h = b.max.y - b.min.y; if (h > bh && b.max.y - TOP > 0.4) { bh = h; body = b; } });
-    if (body) {
-      const bw = body.max.x - body.min.x, sw = bw * 0.918, sh = sw * 9 / 16;
+    if (screenMesh) {
+      const sb = new THREE.Box3().setFromObject(screenMesh); g.worldToLocal(sb.min); g.worldToLocal(sb.max);
+      const sw = (sb.max.x - sb.min.x) * 0.985, sh = (sb.max.y - sb.min.y) * 0.98;
       const scr = makeScreen(sw, sh);
-      scr.mesh.position.set((body.min.x + body.max.x) / 2, body.max.y - bw * 0.04 - sh / 2, body.max.z + 0.0015);
+      scr.mesh.position.set((sb.min.x + sb.max.x) / 2, (sb.min.y + sb.max.y) / 2, sb.max.z + 0.0015);
       g.add(scr.mesh); deskParts.screen = scr;
     }
   }
