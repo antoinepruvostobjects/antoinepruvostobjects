@@ -76,7 +76,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
    x, z : position au sol en mètres ; rot : rotation en degrés ; href : page ouverte au clic */
 const OBJECTS = [
   { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.08, z: 0.3, rot: 18 },
-  { id: "hypar", name: "Hypar", kind: "Cale-porte · fibre de verre, fait main", year: 2026, href: "/#hypar", x: 0.12, z: 3.4 + 0.02, y: 0.9, rot: -24 }
+  { id: "hypar", name: "Hypar", kind: "Cale-porte · fibre de verre, fait main", year: 2026, href: "/#hypar", x: -0.16, z: 3.4 - 0.08, y: 0.9, rot: 66 }
 ];
 const PERSON_HEIGHT = 1.83;
 const ZONE_DZ = 3.4; // l'atelier est 3,4 m devant le studio : on y descend en faisant défiler la page
@@ -467,8 +467,9 @@ function wornTopTexture() {
 async function loadWorkshop() {
   const Z = ZONE_DZ;
   // table de travail en bois, usée, au centre de l'atelier
-  const T = new THREE.Group(); T.position.set(0.1, 0, Z); scene.add(T);
-  const TW = 1.7, TD = 0.85, TH = 0.9, TT = 0.06;
+  // parallèle à l'établi aux machines, avec une allée d'un mètre entre les deux
+  const T = new THREE.Group(); T.position.set(0.2, 0, Z - 0.1); scene.add(T); tableRef.g = T;
+  const TW = 1.2, TD = 1.2, TH = 0.9, TT = 0.07;   // table d'atelier carrée, 120 × 120 cm, plateau épais
   const topMat = new THREE.MeshStandardMaterial({ map: wornTopTexture(), roughness: 0.75 });
   const legMat = woodMaterial("#b48c60", "#8d6a44");
   const top = new THREE.Mesh(new RoundedBoxGeometry(TW, TT, TD, 2, 0.006), [legMat, legMat, topMat, legMat, legMat, legMat].map((m) => m)); top.position.y = TH - TT / 2; T.add(top);
@@ -476,20 +477,20 @@ async function loadWorkshop() {
   [-1, 1].forEach((sz) => { const r = new THREE.Mesh(new THREE.BoxGeometry(TW - 0.18, 0.07, 0.03), legMat); r.position.set(0, 0.16, sz * (TD / 2 - 0.09)); T.add(r); });
   const shelf = new THREE.Mesh(new THREE.BoxGeometry(TW - 0.2, 0.025, TD - 0.2), legMat); shelf.position.y = 0.2; T.add(shelf);
   // sur la table : le moule d'Hypar, un rouleau de mat de verre, un pot de résine et son pinceau, une cale à poncer
-  const mould = new THREE.Group(); mould.position.set(-0.5, TH, -0.12); mould.rotation.y = 0.18; T.add(mould);
+  const mould = new THREE.Group(); mould.position.set(0.22, TH, 0.24); mould.rotation.y = 0.18; T.add(mould);
   const mm = new THREE.MeshStandardMaterial({ color: 0x3c4a52, roughness: 0.35 });
   const mb = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.09, 0.26, 2, 0.01), mm); mb.position.y = 0.045; mould.add(mb);
   const cav = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.06, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0x1f272c, roughness: 0.2 })); cav.scale.z = 0.7; cav.position.y = 0.082; mould.add(cav);
-  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.5, 28), new THREE.MeshStandardMaterial({ color: 0xeeece4, roughness: 0.95 })); roll.rotation.z = Math.PI / 2; roll.rotation.y = 0.3; roll.position.set(0.5, TH + 0.075, -0.22); T.add(roll);
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.5, 28), new THREE.MeshStandardMaterial({ color: 0xeeece4, roughness: 0.95 })); roll.rotation.z = Math.PI / 2; roll.rotation.y = 0.3; roll.position.set(0.05, TH + 0.075, -0.38); T.add(roll);
   const core = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.505, 16), new THREE.MeshStandardMaterial({ color: 0x9a7a52 })); core.rotation.copy(roll.rotation); core.position.copy(roll.position); T.add(core);
-  const can = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.12, 24), new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 0.7, roughness: 0.35 })); can.position.set(0.62, TH + 0.06, 0.18); T.add(can);
+  const can = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.12, 24), new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 0.7, roughness: 0.35 })); can.position.set(0.4, TH + 0.06, -0.12); T.add(can);
   const lab = new THREE.Mesh(new THREE.CylinderGeometry(0.0555, 0.0555, 0.06, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0xd94a2a, roughness: 0.6 })); lab.position.copy(can.position); T.add(lab);
-  const brush = new THREE.Group(); brush.position.set(0.48, TH + 0.012, 0.22); brush.rotation.y = -0.5; T.add(brush);
+  const brush = new THREE.Group(); brush.position.set(0.3, TH + 0.012, -0.02); brush.rotation.y = -0.9; T.add(brush);
   const bh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.012, 0.022), new THREE.MeshStandardMaterial({ color: 0xa47b4f, roughness: 0.7 })); brush.add(bh);
   const bb = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.05), new THREE.MeshStandardMaterial({ color: 0x3a2e22, roughness: 0.9 })); bb.position.x = 0.1; brush.add(bb);
-  const sand = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.035, 0.07, 2, 0.006), new THREE.MeshStandardMaterial({ color: 0xc89d6a, roughness: 0.95 })); sand.position.set(-0.15, TH + 0.018, 0.25); sand.rotation.y = 0.4; T.add(sand);
+  const sand = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.035, 0.07, 2, 0.006), new THREE.MeshStandardMaterial({ color: 0xc89d6a, roughness: 0.95 })); sand.position.set(-0.08, TH + 0.018, 0.34); sand.rotation.y = 0.4; T.add(sand);
   T.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
-  DECOR_OBST.push({ x: T.position.x, z: Z, hw: TW / 2, hd: TD / 2 });                // la table, en rectangle exact
+  tableRef.o = { x: T.position.x, z: Z - 0.1, hw: TW / 2, hd: TD / 2 }; DECOR_OBST.push(tableRef.o);   // la table, en carré exact
   // l'établi aux machines, le long du bord gauche
   const wb = await loadGLB("workbench");
   if (wb) {
@@ -786,7 +787,7 @@ function freeSpot() {
 }
 function viewSpot(ex) {
   const c = ex.group.position;
-  if (ex.def.y) return clearGoal(new THREE.Vector3(c.x + rnd(-0.3, 0.3), 0, c.z + 1.0));   // objet posé sur la table d'atelier : il se met devant
+  if (ex.def.y) return clearGoal(new THREE.Vector3(c.x - 0.62, 0, c.z + rnd(-0.3, 0.3)));   // objet posé sur la table d'atelier : il se met dans l'allée, face à lui
   let a = Math.atan2(person.root.position.x - c.x, person.root.position.z - c.z) + rnd(-1.1, 1.1);
   const d = ex.radius + rnd(0.38, 0.6);
   return clearGoal(new THREE.Vector3(c.x + Math.sin(a) * d, 0, c.z + Math.cos(a) * d), ex);
@@ -1156,13 +1157,14 @@ const LOOK0 = look.clone();
 let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
 /* Sur téléphone (écran en hauteur), les objets des bords se rapprochent du centre : la scène est moins large, donc vue de plus près */
-const PHONE_X = { colis: -1.36, ani: -0.8, impression: 1.36 }, BENCH_X = { wide: -1.72, phone: -1.4 }, CONTENT_W_PHONE = 3.7;
-const benchRef = { g: null, o: null };
+const PHONE_X = { colis: -1.36, ani: -0.8, impression: 1.36, hypar: 0.16 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_DX = 1.92, CONTENT_W_PHONE = 3.7;
+const benchRef = { g: null, o: null }, tableRef = { g: null, o: null };
 let phoneLayout = false;
 function applyLayout() {
   exhibits.forEach((e) => { const px = PHONE_X[e.def.id]; if (px !== undefined) e.group.position.x = phoneLayout ? px : e.def.x; });
   const bx = phoneLayout ? BENCH_X.phone : BENCH_X.wide;
   if (benchRef.g) benchRef.g.position.x = bx; if (benchRef.o) benchRef.o.x = bx;
+  if (tableRef.g) tableRef.g.position.x = bx + TABLE_DX; if (tableRef.o) tableRef.o.x = bx + TABLE_DX;
 }
 const _ray = new THREE.Raycaster(), _gp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
 function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); return _ray.ray.intersectPlane(_gp, _hit) ? _hit.clone() : null; }
@@ -1203,7 +1205,7 @@ function frameAll() {
     AREA.x = THREE.MathUtils.clamp(halfW - 0.4, 0.6, 1.9);
     AREA.z = THREE.MathUtils.clamp(Math.min(nl.z - 0.15, -(fl.z + 1.0)), 0.5, 1.1);
   }
-  look.z = lookZ0 + scrollP * ZONE_DZ; placeCamera();
+  look.z = THREE.MathUtils.lerp(lookZ0, LOOK0.z + ZONE_DZ, scrollP); placeCamera();
 }
 function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); frameAll(); }
 addEventListener("resize", resize);
@@ -1248,7 +1250,7 @@ function loop() {
   if (!workshopLoading && (scrollT > 0.02 || clock.elapsedTime > 6)) { workshopLoading = true; fetchGLTF("workbench"); loadWorkshop().then(() => exhibits.forEach((e) => { if (e.baseY === undefined) e.baseY = e.inner.position.y; })); }
   if (!zoom) {
     const prev = scrollP; scrollP = THREE.MathUtils.damp(scrollP, scrollT, 5, dt);
-    if (Math.abs(scrollP - prev) > 1e-5) { look.z = lookZ0 + scrollP * ZONE_DZ; placeCamera(); }
+    if (Math.abs(scrollP - prev) > 1e-5) { look.z = THREE.MathUtils.lerp(lookZ0, LOOK0.z + ZONE_DZ, scrollP); placeCamera(); }
     const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
   }
   updateZoom(dt);
