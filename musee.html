@@ -43,9 +43,6 @@ header .back:hover { color: var(--fg); }
 .intro b { display: block; font-weight: 500; font-size: clamp(16px, .5vw + 12px, 22px); letter-spacing: .02em; color: var(--fg); }
 .intro span { display: block; margin-top: 4px; font-size: 13px; letter-spacing: .03em; color: var(--muted); }
 .intro.off { opacity: 0; transform: translateY(6px); }
-.flag { position: fixed; z-index: 5; transform: translate(-50%, -100%); padding: 5px 9px; background: rgba(255,255,255,.9); border: 1px solid #e2e2df; color: var(--fg); font-size: 12px; letter-spacing: .04em; white-space: nowrap; cursor: pointer; text-decoration: none; transition: opacity .3s ease; }
-.flag::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 12px; background: #c9c9c5; }
-.flag:hover { background: #fff; border-color: #c9c9c5; }
 .zhint { position: fixed; z-index: 5; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); bottom: max(22px, env(safe-area-inset-bottom, 0px)); margin: 0; color: var(--muted); font-size: 13px; letter-spacing: .05em; pointer-events: none; transition: opacity .5s ease; opacity: 0; }
 .embed .zhint { opacity: 1; }
 .embed #stage canvas { touch-action: pan-y; }
@@ -61,7 +58,6 @@ header .back:hover { color: var(--fg); }
 <p class="hint" id="hint" hidden>Survolez un objet · cliquez pour l'ouvrir</p>
 <p class="zhint" id="zhint">L'atelier ↓</p>
 <div class="intro" id="intro"><b>Antoine Pruvost, designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
-<a class="flag" id="flag" href="/#ani" aria-label="ANI, bientôt disponible : être informé de la sortie">ANI · bientôt disponible</a>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
 
@@ -493,7 +489,7 @@ async function loadWorkshop() {
   const bb = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.05), new THREE.MeshStandardMaterial({ color: 0x3a2e22, roughness: 0.9 })); bb.position.x = 0.1; brush.add(bb);
   const sand = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.035, 0.07, 2, 0.006), new THREE.MeshStandardMaterial({ color: 0xc89d6a, roughness: 0.95 })); sand.position.set(-0.15, TH + 0.018, 0.25); sand.rotation.y = 0.4; T.add(sand);
   T.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
-  DECOR_OBST.push({ x: T.position.x - 0.45, z: Z, r: 0.55 }, { x: T.position.x + 0.45, z: Z, r: 0.55 });
+  DECOR_OBST.push({ x: T.position.x, z: Z, hw: TW / 2, hd: TD / 2 });                // la table, en rectangle exact
   // l'établi aux machines, le long du bord gauche
   const wb = await loadGLB("workbench");
   if (wb) {
@@ -502,7 +498,7 @@ async function loadWorkshop() {
     wb.position.set(-c.x, -b.min.y, -c.z);
     g.position.set(-1.72, 0, Z - 0.1); g.rotation.y = 0; scene.add(g);
     g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; if (n.material) n.material.envMapIntensity = 0.7; } });
-    [-0.8, 0, 0.8].forEach((dz) => DECOR_OBST.push({ x: -1.72, z: Z - 0.1 + dz, r: 0.48 }));
+    DECOR_OBST.push({ x: -1.72, z: Z - 0.1, hw: (b.max.x - b.min.x) / 2, hd: (b.max.z - b.min.z) / 2 });
   }
 }
 
@@ -762,8 +758,18 @@ function updateAvatar(dt) {
 const AREA = { x: 1.9, z: 1.1 };
 const DECOR_OBST = []; // obstacles décoratifs (établi, table d'atelier) : { x, z, r }
 const obstacles = () => exhibits.filter((e) => !e.def.y).map((e) => ({ x: e.group.position.x, z: e.group.position.z, r: e.radius, ex: e })).concat(DECOR_OBST);
+/* distance à la surface d'un obstacle (cercle ou rectangle) et direction pour s'en éloigner */
+function sdist(o, px, pz) {
+  if (o.hw) {
+    const dx = px - o.x, dz = pz - o.z, qx = Math.abs(dx) - o.hw, qz = Math.abs(dz) - o.hd;
+    if (qx > 0 || qz > 0) { const ex = Math.max(qx, 0), ez = Math.max(qz, 0), d = Math.hypot(ex, ez) || 1e-3; return { d, nx: Math.sign(dx) * ex / d, nz: Math.sign(dz) * ez / d }; }
+    return qx > qz ? { d: qx, nx: Math.sign(dx) || 1, nz: 0 } : { d: qz, nx: 0, nz: Math.sign(dz) || 1 };
+  }
+  const dx = px - o.x, dz = pz - o.z, l = Math.hypot(dx, dz) || 1e-3;
+  return { d: l - o.r, nx: dx / l, nz: dz / l };
+}
 let scrollP = 0, scrollT = 0;
-window.__scroll = (p) => { scrollT = p; };
+window.__scroll = (p) => { if (Math.abs(p - scrollT) > 1e-4 && typeof levitate === "function") levitate(); scrollT = p; };
 const viewZone = () => (scrollP > 0.5 ? 1 : 0);
 const walker = { steps: null, stepI: 0, stepT: 0, onArrive: null, sitT: 0, sitW: 0, lieT: 0, lieW: 0, typing: false, lastAct: "", atDesk: false, lieYaw: 0, state: "pause", timer: 1.5, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, maxSpeed: 0.45, pockets: 1, pocketsW: 1,
   headYaw: 0, headPitch: 0, headTarget: { yaw: 0, pitch: 0 }, glanceT: 0, last: null, wanted: null, faceYaw: null, sway: 0 };
@@ -774,7 +780,7 @@ function freeSpot() {
     const zc = (Math.random() < 0.8 ? viewZone() : 1 - viewZone()) * ZONE_DZ;
     const p = new THREE.Vector3(rnd(-AREA.x, AREA.x), 0, zc + rnd(-AREA.z, AREA.z));
     if (p.distanceTo(person.root.position) < 0.9) continue;
-    if (obstacles().every((o) => Math.hypot(p.x - o.x, p.z - o.z) > o.r + 0.55)) return p;
+    if (obstacles().every((o) => sdist(o, p.x, p.z).d > 0.55)) return p;
   }
   return new THREE.Vector3(rnd(-1, 1), 0, rnd(0.4, 1.2));
 }
@@ -789,8 +795,8 @@ function viewSpot(ex) {
 function clearGoal(p, except) {
   for (let k = 0; k < 3; k++) obstacles().forEach((o) => {
     if (except && o.ex === except) return;
-    const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz) || 1e-3, need = o.r + 0.45;
-    if (d < need) { p.x = o.x + dx / d * need; p.z = o.z + dz / d * need; }
+    const q = sdist(o, p.x, p.z);
+    if (q.d < 0.45) { p.x += q.nx * (0.45 - q.d); p.z += q.nz * (0.45 - q.d); }
   });
   return p;
 }
@@ -918,12 +924,12 @@ function updateWalker(dt) {
       const gx = dir.x, gz = dir.z;
       obstacles().forEach((ob) => {
         if (ob.ex && ob.ex === walker.target) return;
-        const ox = pos.x - ob.x, oz = pos.z - ob.z, od = Math.hypot(ox, oz) || 1e-3, safe = ob.r + 0.42;
-        if (od < safe + 0.25) {
-          const k = Math.max(0, safe + 0.25 - od);
+        const q = sdist(ob, pos.x, pos.z), safe = 0.42;
+        if (q.d < safe + 0.25) {
+          const k = Math.max(0, safe + 0.25 - q.d);
           // on contourne : un peu d'écart, et surtout une poussée tangente du côté qui mène au but
-          let tx = -oz / od, tz = ox / od; if (tx * gx + tz * gz < 0) { tx = -tx; tz = -tz; }
-          dir.x += (ox / od) * Math.max(0, safe - od) * 5 + tx * k * 3; dir.z += (oz / od) * Math.max(0, safe - od) * 5 + tz * k * 3;
+          let tx = -q.nz, tz = q.nx; if (tx * gx + tz * gz < 0) { tx = -tx; tz = -tz; }
+          dir.x += q.nx * Math.max(0, safe - q.d) * 5 + tx * k * 3; dir.z += q.nz * Math.max(0, safe - q.d) * 5 + tz * k * 3;
         }
       });
       dir.normalize();
@@ -938,6 +944,8 @@ function updateWalker(dt) {
       }
       walker.speed = THREE.MathUtils.damp(walker.speed, Math.min(walker.maxSpeed, d * 1.3 + 0.06), 3.5, dt);
       pos.x += dir.x * walker.speed * dt; pos.z += dir.z * walker.speed * dt;
+      // jamais à travers un meuble : s'il s'en approche trop, il est repoussé à sa surface (25 cm, l'épaisseur du corps)
+      obstacles().forEach((ob) => { if (ob.ex && ob.ex === walker.target) return; const q = sdist(ob, pos.x, pos.z); if (q.d < 0.25) { pos.x += q.nx * (0.25 - q.d); pos.z += q.nz * (0.25 - q.d); } });
       P.root.rotation.y = dampAngle(P.root.rotation.y, Math.atan2(dir.x, dir.z), 5, dt);
     }
   } else if (walker.state === "steps") {
@@ -1158,6 +1166,13 @@ function frameAll() {
   const fitD = 1.78 / halfH;                                         // profondeur : du fond (iMac) jusqu'au personnage devant
   camDist = THREE.MathUtils.clamp(Math.max((span / 2) / (halfH * camera.aspect) * (camera.aspect < 1 ? 0 : 1), fitW, fitD), 12, 70);
   placeCamera(); camera.updateMatrixWorld(true);
+  // le haut du bureau (l'écran de l'iMac) ne doit jamais passer sous l'en-tête blanc du site : on recule la caméra s'il le faut
+  const topPx = EMBED ? 96 : 70, farPt = new THREE.Vector3(DESK.x, 1.25, DESK.z - 0.42);
+  for (let i = 0; i < 40; i++) {
+    const v = farPt.clone().project(camera), y = (1 - v.y) / 2 * h;
+    if (y >= topPx || camDist >= 70) break;
+    camDist *= 1.03; placeCamera(); camera.updateMatrixWorld(true);
+  }
   // la zone où il se promène = ce que l'écran montre, moins une marge (il ne sort jamais du cadre)
   const fl = groundAt(-1, 0.86), fr = groundAt(1, 0.86), nl = groundAt(-1, -0.92);
   if (fl && fr && nl) {
@@ -1175,19 +1190,13 @@ const clock = new THREE.Clock();
 const TOUCH = matchMedia("(hover: none)").matches;
 if (TOUCH) document.getElementById("intro-sub").textContent = "Touchez un objet pour le découvrir, une seconde fois pour l'ouvrir";
 let introOn = true;
+/* Sur téléphone : dès que le doigt touche ou fait défiler l'écran, tous les objets cliquables se soulèvent un instant */
+let levitateUntil = 0;
+function levitate(ms) { if (TOUCH) levitateUntil = Math.max(levitateUntil, performance.now() + (ms || 1400)); }
+document.addEventListener("touchstart", () => levitate(), { passive: true });
+document.addEventListener("touchmove", () => levitate(), { passive: true });
 function hideIntro() { if (!introOn) return; introOn = false; document.getElementById("intro").classList.add("off"); }
 addEventListener("wheel", hideIntro, { passive: true });
-/* Étiquette fixe au-dessus des cartons : ANI arrive bientôt */
-const flag = document.getElementById("flag"), flagPos = new THREE.Vector3();
-flag.addEventListener("click", (e) => { e.preventDefault(); go("/#ani"); });
-function updateFlag() {
-  const ex = exhibits.find((x) => x.def.id === "colis"); if (!ex) { flag.style.opacity = "0"; return; }
-  flagPos.set(ex.group.position.x, 1.12 + ex.lift * 0.09, ex.group.position.z - 0.1).project(camera);
-  const r = cv.getBoundingClientRect(), x = r.left + (flagPos.x + 1) / 2 * r.width, y = r.top + (1 - flagPos.y) / 2 * r.height;
-  const vis = flagPos.z < 1 && y > 70 && y < r.height - 10 && !zoom;
-  flag.style.opacity = vis ? (hovered && hovered.def.id === "colis" ? "0" : "1") : "0"; flag.style.pointerEvents = vis ? "auto" : "none";
-  const hw = flag.offsetWidth / 2 + 8; flag.style.left = Math.min(r.width - hw, Math.max(hw, x)) + "px"; flag.style.top = (y - 12) + "px";
-}
 let workshopLoading = false;
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -1197,7 +1206,9 @@ function loop() {
     deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
   }
   if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
+  const lev = TOUCH && performance.now() < levitateUntil;
   exhibits.forEach((e) => {
+    if (TOUCH) e.target = lev || e === hovered ? 1 : 0;
     if (e.isDesk && walker.atDesk) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
     e.inner.position.y = e.baseY + e.lift * 0.09;
@@ -1213,7 +1224,6 @@ function loop() {
     const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
   }
   updateZoom(dt);
-  updateFlag();
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
@@ -1226,7 +1236,8 @@ Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), l
   document.getElementById("load").classList.add("off");
   setTimeout(hideIntro, 12000);
   // au chargement, les objets cliquables se soulèvent un à un, pour montrer qu'ils s'ouvrent
-  const seq = exhibits.filter((e) => !e.def.y && !e.isMe);
+  if (TOUCH) setTimeout(() => levitate(1800), 900);
+  const seq = TOUCH ? [] : exhibits.filter((e) => !e.def.y && !e.isMe);
   seq.forEach((e, i) => { setTimeout(() => { if (!hovered) e.target = 1; }, 900 + i * 420); setTimeout(() => { if (hovered !== e) e.target = 0; }, 1500 + i * 420); });
   loop();
 });
