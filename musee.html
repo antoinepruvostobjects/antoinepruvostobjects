@@ -1153,6 +1153,7 @@ function updateZoom(dt) {
 
 /* ---------- Mise à l'échelle de l'écran ---------- */
 const LOOK0 = look.clone();
+let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
 const _ray = new THREE.Raycaster(), _gp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
 function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); return _ray.ray.intersectPlane(_gp, _hit) ? _hit.clone() : null; }
@@ -1176,6 +1177,15 @@ function frameAll() {
     if (y >= topPx || camDist >= 70) break;
     camDist *= 1.03; placeCamera(); camera.updateMatrixWorld(true);
   }
+  // téléphone (écran en hauteur) : la scène tient en largeur, il resterait un grand vide au-dessus du bureau ; on remonte le cadrage
+  if (camera.aspect < 1) {
+    for (let i = 0; i < 80; i++) {
+      const v = farPt.clone().project(camera), y = (1 - v.y) / 2 * h;
+      if (y <= topPx + 6) break;
+      look.z += 0.04; placeCamera(); camera.updateMatrixWorld(true);
+    }
+  }
+  lookZ0 = look.z;
   // la zone où il se promène = ce que l'écran montre, moins une marge (il ne sort jamais du cadre)
   const fl = groundAt(-1, 0.86), fr = groundAt(1, 0.86), nl = groundAt(-1, -0.92);
   if (fl && fr && nl) {
@@ -1183,7 +1193,7 @@ function frameAll() {
     AREA.x = THREE.MathUtils.clamp(halfW - 0.4, 0.6, 1.9);
     AREA.z = THREE.MathUtils.clamp(Math.min(nl.z - 0.15, -(fl.z + 1.0)), 0.5, 1.1);
   }
-  look.z = LOOK0.z + scrollP * ZONE_DZ; placeCamera();
+  look.z = lookZ0 + scrollP * ZONE_DZ; placeCamera();
 }
 function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); frameAll(); }
 addEventListener("resize", resize);
@@ -1228,7 +1238,7 @@ function loop() {
   if (!workshopLoading && (scrollT > 0.02 || clock.elapsedTime > 6)) { workshopLoading = true; fetchGLTF("workbench"); loadWorkshop().then(() => exhibits.forEach((e) => { if (e.baseY === undefined) e.baseY = e.inner.position.y; })); }
   if (!zoom) {
     const prev = scrollP; scrollP = THREE.MathUtils.damp(scrollP, scrollT, 5, dt);
-    if (Math.abs(scrollP - prev) > 1e-5) { look.z = LOOK0.z + scrollP * ZONE_DZ; placeCamera(); }
+    if (Math.abs(scrollP - prev) > 1e-5) { look.z = lookZ0 + scrollP * ZONE_DZ; placeCamera(); }
     const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
   }
   updateZoom(dt);
