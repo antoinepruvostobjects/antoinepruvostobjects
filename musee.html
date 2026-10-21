@@ -423,7 +423,7 @@ async function loadParcels() {
 }
 
 /* ---------- L'imprimante 3D sur sa petite table blanche (façon IKEA Lack) : un clic mène au devis d'impression ---------- */
-const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.62, z: -0.25, rot: -12 };
+const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.13, z: -1.08, rot: 0 };
 async function loadPrinter() {
   const pr = await loadGLB("printer"); if (!pr) return;
   const g = new THREE.Group();
