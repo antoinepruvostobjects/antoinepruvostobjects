@@ -39,6 +39,9 @@ header .back:hover { color: var(--fg); }
 @media (max-width: 640px) { .proto { display: none; } }
 .embed header, .embed .proto { display: none; }
 .embed .hint { bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+.zhint { position: fixed; z-index: 5; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); bottom: max(22px, env(safe-area-inset-bottom, 0px)); margin: 0; color: var(--muted); font-size: 13px; letter-spacing: .05em; pointer-events: none; transition: opacity .5s ease; opacity: 0; }
+.embed .zhint { opacity: 1; }
+@media (max-width: 640px) { .zhint { bottom: 54px; right: 50%; transform: translateX(50%); } }
 .embed #stage canvas { touch-action: pan-y; }
 </style>
 </head>
@@ -50,6 +53,7 @@ header .back:hover { color: var(--fg); }
 <div id="stage" aria-label="Espace d'exposition en 3D : survolez un objet pour le soulever, cliquez pour ouvrir sa fiche"></div>
 <div class="tag" id="tag" aria-hidden="true"><b></b><span></span></div>
 <p class="hint" id="hint">Survolez un objet · cliquez pour l'ouvrir</p>
+<p class="zhint" id="zhint">L'atelier ↓</p>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
 
@@ -59,6 +63,7 @@ header .back:hover { color: var(--fg); }
 <script src="chair-model.js"></script>
 <script src="parcels-model.js"></script>
 <script src="printer-model.js"></script>
+<script src="workshop-model.js"></script>
 <script src="avatar-model.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
@@ -73,9 +78,10 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
    x, z : position au sol en mètres ; rot : rotation en degrés ; href : page ouverte au clic */
 const OBJECTS = [
   { id: "ani",   name: "ANI",   kind: "Tabouret",   year: 2026, href: "/#ani",   x: -1.08, z: 0.3, rot: 18 },
-  { id: "hypar", name: "Hypar", kind: "Cale-porte", year: 2026, href: "/#hypar", x: 0.86,  z: 0.5, rot: -32 }
+  { id: "hypar", name: "Hypar", kind: "Cale-porte · fibre de verre, fait main", year: 2026, href: "/#hypar", x: 0.12, z: 3.4 + 0.02, y: 0.9, rot: -24 }
 ];
 const PERSON_HEIGHT = 1.83;
+const ZONE_DZ = 3.4; // l'atelier est 3,4 m devant le studio : on y descend en faisant défiler la page
 const WITH_POSES = false; // passer à true quand les animations assis / allongé seront prêtes
 /* Liens : sur le site, on change de page ; ailleurs (aperçu), on ouvre la page du site en ligne dans un nouvel onglet */
 const SITE = "https://antoinepruvostobjects.pages.dev/";
@@ -183,7 +189,7 @@ function addExhibit(def, inner) {
   const box = new THREE.Box3().setFromObject(inner);
   inner.position.x -= (box.min.x + box.max.x) / 2; inner.position.z -= (box.min.z + box.max.z) / 2; inner.position.y -= box.min.y;
   group.add(inner);
-  group.position.set(def.x, 0, def.z);
+  group.position.set(def.x, def.y || 0, def.z);
   group.rotation.y = THREE.MathUtils.degToRad(def.rot || 0);
   scene.add(group);
   const size = box.getSize(new THREE.Vector3());
@@ -443,6 +449,56 @@ async function loadPrinter() {
   addExhibit(PRINTER, g);
 }
 
+/* ---------- L'atelier, plus bas dans la page : la table de travail usée avec Hypar, et l'établi aux machines ---------- */
+function wornTopTexture() {
+  return canvasTex(1024, 512, (x, w, h) => {
+    x.fillStyle = "#b08a5e"; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 9; i++) { x.fillStyle = `rgba(${150 + Math.random() * 40},${110 + Math.random() * 30},${70 + Math.random() * 20},.55)`; x.fillRect(0, i * h / 9, w, h / 9 - 2); x.fillStyle = "rgba(60,40,20,.35)"; x.fillRect(0, (i + 1) * h / 9 - 2, w, 2); }
+    for (let i = 0; i < 2600; i++) { const y = Math.random() * h, len = 40 + Math.random() * 260; x.strokeStyle = `rgba(80,55,30,${Math.random() * 0.12})`; x.lineWidth = 1; x.beginPath(); x.moveTo(Math.random() * w, y); x.lineTo(Math.random() * w + len, y + (Math.random() - 0.5) * 3); x.stroke(); }
+    // l'usure : taches de résine, auréoles, traits de crayon, coups de cutter
+    for (let i = 0; i < 6; i++) { const cx = Math.random() * w, cy = Math.random() * h, r = 10 + Math.random() * 36; const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, "rgba(200,170,120,.22)"); g.addColorStop(0.8, "rgba(170,135,90,.16)"); g.addColorStop(1, "rgba(120,90,50,0)"); x.fillStyle = g; x.beginPath(); x.ellipse(cx, cy, r, r * (0.6 + Math.random() * 0.5), Math.random() * 3, 0, Math.PI * 2); x.fill(); }
+    for (let i = 0; i < 6; i++) { const cx = Math.random() * w, cy = Math.random() * h, r = 20 + Math.random() * 14; x.strokeStyle = "rgba(70,45,25,.35)"; x.lineWidth = 3; x.beginPath(); x.arc(cx, cy, r, Math.random() * 2, 5 + Math.random()); x.stroke(); }
+    for (let i = 0; i < 60; i++) { const cx = Math.random() * w, cy = Math.random() * h, a = Math.random() * 3, l = 10 + Math.random() * 70; x.strokeStyle = i % 3 ? "rgba(50,35,20,.35)" : "rgba(90,90,100,.35)"; x.lineWidth = i % 3 ? 1 : 1.6; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(a) * l, cy + Math.sin(a) * l); x.stroke(); }
+  });
+}
+async function loadWorkshop() {
+  const Z = ZONE_DZ;
+  // table de travail en bois, usée, au centre de l'atelier
+  const T = new THREE.Group(); T.position.set(0.1, 0, Z); scene.add(T);
+  const TW = 1.7, TD = 0.85, TH = 0.9, TT = 0.06;
+  const topMat = new THREE.MeshStandardMaterial({ map: wornTopTexture(), roughness: 0.75 });
+  const legMat = woodMaterial("#b48c60", "#8d6a44");
+  const top = new THREE.Mesh(new RoundedBoxGeometry(TW, TT, TD, 2, 0.006), [legMat, legMat, topMat, legMat, legMat, legMat].map((m) => m)); top.position.y = TH - TT / 2; T.add(top);
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.08, TH - TT, 0.08), legMat); l.position.set(sx * (TW / 2 - 0.09), (TH - TT) / 2, sz * (TD / 2 - 0.09)); T.add(l); });
+  [-1, 1].forEach((sz) => { const r = new THREE.Mesh(new THREE.BoxGeometry(TW - 0.18, 0.07, 0.03), legMat); r.position.set(0, 0.16, sz * (TD / 2 - 0.09)); T.add(r); });
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(TW - 0.2, 0.025, TD - 0.2), legMat); shelf.position.y = 0.2; T.add(shelf);
+  // sur la table : le moule d'Hypar, un rouleau de mat de verre, un pot de résine et son pinceau, une cale à poncer
+  const mould = new THREE.Group(); mould.position.set(-0.5, TH, -0.12); mould.rotation.y = 0.18; T.add(mould);
+  const mm = new THREE.MeshStandardMaterial({ color: 0x3c4a52, roughness: 0.35 });
+  const mb = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.09, 0.26, 2, 0.01), mm); mb.position.y = 0.045; mould.add(mb);
+  const cav = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.06, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0x1f272c, roughness: 0.2 })); cav.scale.z = 0.7; cav.position.y = 0.082; mould.add(cav);
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.5, 28), new THREE.MeshStandardMaterial({ color: 0xeeece4, roughness: 0.95 })); roll.rotation.z = Math.PI / 2; roll.rotation.y = 0.3; roll.position.set(0.5, TH + 0.075, -0.22); T.add(roll);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.505, 16), new THREE.MeshStandardMaterial({ color: 0x9a7a52 })); core.rotation.copy(roll.rotation); core.position.copy(roll.position); T.add(core);
+  const can = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.12, 24), new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: 0.7, roughness: 0.35 })); can.position.set(0.62, TH + 0.06, 0.18); T.add(can);
+  const lab = new THREE.Mesh(new THREE.CylinderGeometry(0.0555, 0.0555, 0.06, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0xd94a2a, roughness: 0.6 })); lab.position.copy(can.position); T.add(lab);
+  const brush = new THREE.Group(); brush.position.set(0.48, TH + 0.012, 0.22); brush.rotation.y = -0.5; T.add(brush);
+  const bh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.012, 0.022), new THREE.MeshStandardMaterial({ color: 0xa47b4f, roughness: 0.7 })); brush.add(bh);
+  const bb = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.05), new THREE.MeshStandardMaterial({ color: 0x3a2e22, roughness: 0.9 })); bb.position.x = 0.1; brush.add(bb);
+  const sand = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.035, 0.07, 2, 0.006), new THREE.MeshStandardMaterial({ color: 0xc89d6a, roughness: 0.95 })); sand.position.set(-0.15, TH + 0.018, 0.25); sand.rotation.y = 0.4; T.add(sand);
+  T.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+  DECOR_OBST.push({ x: T.position.x - 0.45, z: Z, r: 0.62 }, { x: T.position.x + 0.45, z: Z, r: 0.62 });
+  // l'établi aux machines, le long du bord gauche
+  const wb = await loadGLB("workbench");
+  if (wb) {
+    const g = new THREE.Group(); g.add(wb); wb.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(wb), c = b.getCenter(new THREE.Vector3());
+    wb.position.set(-c.x, -b.min.y, -c.z);
+    g.position.set(-1.72, 0, Z - 0.1); g.rotation.y = 0; scene.add(g);
+    g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; if (n.material) n.material.envMapIntensity = 0.7; } });
+    [-0.8, 0, 0.8].forEach((dz) => DECOR_OBST.push({ x: -1.72, z: Z - 0.1 + dz, r: 0.48 }));
+  }
+}
+
 /* ---------- Le visiteur : Antoine, 1,83 m, pointure 42 ----------
    T-shirt blanc ou noir, jean brut coupe droite, chaussures bateau en cuir brun à semelle blanche.
    Toutes les cotes sont en mètres. */
@@ -698,19 +754,27 @@ function updateAvatar(dt) {
    Il choisit lui-même : aller voir un objet, flâner vers un coin de l'espace, s'arrêter et regarder autour,
    ou se tourner vers le visiteur du site. Vitesse, durées et posture (mains dans les poches ou bras libres) changent à chaque fois. */
 const AREA = { x: 1.9, z: 1.1 };
+const DECOR_OBST = []; // obstacles décoratifs (établi, table d'atelier) : { x, z, r }
+const obstacles = () => exhibits.filter((e) => !e.def.y).map((e) => ({ x: e.group.position.x, z: e.group.position.z, r: e.radius, ex: e })).concat(DECOR_OBST);
+let scrollP = 0, scrollT = 0;
+window.__scroll = (p) => { scrollT = p; };
+const viewZone = () => (scrollP > 0.5 ? 1 : 0);
 const walker = { steps: null, stepI: 0, stepT: 0, onArrive: null, sitT: 0, sitW: 0, lieT: 0, lieW: 0, typing: false, lastAct: "", atDesk: false, lieYaw: 0, state: "pause", timer: 1.5, target: null, goal: new THREE.Vector3(), phase: 0, speed: 0, maxSpeed: 0.45, pockets: 1, pocketsW: 1,
   headYaw: 0, headPitch: 0, headTarget: { yaw: 0, pitch: 0 }, glanceT: 0, last: null, wanted: null, faceYaw: null, sway: 0 };
 const rnd = (a, b) => a + Math.random() * (b - a);
 function freeSpot() {
   for (let i = 0; i < 30; i++) {
-    const p = new THREE.Vector3(rnd(-AREA.x, AREA.x), 0, rnd(-AREA.z, AREA.z));
+    // il va le plus souvent là où regarde le visiteur : le studio en haut, l'atelier en bas
+    const zc = (Math.random() < 0.8 ? viewZone() : 1 - viewZone()) * ZONE_DZ;
+    const p = new THREE.Vector3(rnd(-AREA.x, AREA.x), 0, zc + rnd(-AREA.z, AREA.z));
     if (p.distanceTo(person.root.position) < 0.9) continue;
-    if (exhibits.every((e) => Math.hypot(p.x - e.group.position.x, p.z - e.group.position.z) > e.radius + 0.55)) return p;
+    if (obstacles().every((o) => Math.hypot(p.x - o.x, p.z - o.z) > o.r + 0.55)) return p;
   }
   return new THREE.Vector3(rnd(-1, 1), 0, rnd(0.4, 1.2));
 }
 function viewSpot(ex) {
   const c = ex.group.position;
+  if (ex.def.y) return new THREE.Vector3(c.x + rnd(-0.3, 0.3), 0, c.z + 0.85);   // objet posé sur la table d'atelier : il se met devant
   let a = Math.atan2(person.root.position.x - c.x, person.root.position.z - c.z) + rnd(-1.1, 1.1);
   const d = ex.radius + rnd(0.38, 0.6);
   return new THREE.Vector3(c.x + Math.sin(a) * d, 0, c.z + Math.cos(a) * d);
@@ -836,9 +900,9 @@ function updateWalker(dt) {
       else { walker.state = "pause"; walker.timer = rnd(1.5, 4); walker.faceYaw = Math.random() < 0.25 ? 0 : null; }
     } else {
       const dir = tmpV.normalize();
-      exhibits.forEach((ex) => {
-        if (ex === walker.target) return;
-        const ox = pos.x - ex.group.position.x, oz = pos.z - ex.group.position.z, od = Math.hypot(ox, oz) || 1e-3, safe = ex.radius + 0.42;
+      obstacles().forEach((ob) => {
+        if (ob.ex && ob.ex === walker.target) return;
+        const ox = pos.x - ob.x, oz = pos.z - ob.z, od = Math.hypot(ox, oz) || 1e-3, safe = ob.r + 0.42;
         if (od < safe) { dir.x += (ox / od) * (safe - od) * 5; dir.z += (oz / od) * (safe - od) * 5; }
       });
       dir.normalize();
@@ -1060,6 +1124,7 @@ function frameAll() {
     AREA.x = THREE.MathUtils.clamp(halfW - 0.4, 0.6, 1.9);
     AREA.z = THREE.MathUtils.clamp(Math.min(nl.z - 0.15, -(fl.z + 1.0)), 0.5, 1.1);
   }
+  look.z = LOOK0.z + scrollP * ZONE_DZ; placeCamera();
 }
 function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); frameAll(); }
 addEventListener("resize", resize);
@@ -1082,13 +1147,18 @@ function loop() {
   });
   updateWalker(dt);
   updateAvatar(dt);
+  if (!zoom) {
+    const prev = scrollP; scrollP = THREE.MathUtils.damp(scrollP, scrollT, 5, dt);
+    if (Math.abs(scrollP - prev) > 1e-5) { look.z = LOOK0.z + scrollP * ZONE_DZ; placeCamera(); }
+    const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
+  }
   updateZoom(dt);
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()]).then(() => {
+Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadWorkshop(), loadAvatar()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
