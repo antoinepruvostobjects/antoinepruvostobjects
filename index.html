@@ -582,6 +582,14 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 .menubtn { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; letter-spacing: inherit; }
 .menubtn:hover, .menubtn[aria-expanded="true"], .aboutlink:hover, .aboutlink.on { color: var(--fg); }
 .menubtn:focus-visible, .aboutlink:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+/* trois traits superposés ; ils se croisent en « × » quand le menu est ouvert */
+.menubtn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-right: -6px; }
+.burger { position: relative; display: block; width: 20px; height: 12px; }
+.burger i { position: absolute; left: 0; right: 0; height: 1.5px; border-radius: 1px; background: currentColor; transition: transform .3s ease, opacity .2s ease, top .3s ease; }
+.burger i:nth-child(1) { top: 0; } .burger i:nth-child(2) { top: 5.25px; } .burger i:nth-child(3) { top: 10.5px; }
+.menubtn[aria-expanded="true"] .burger i:nth-child(1) { top: 5.25px; transform: rotate(45deg); }
+.menubtn[aria-expanded="true"] .burger i:nth-child(2) { opacity: 0; }
+.menubtn[aria-expanded="true"] .burger i:nth-child(3) { top: 5.25px; transform: rotate(-45deg); }
 .mcard { position: absolute; top: 100%; left: max(12px, calc(var(--gut) / 3)); right: max(12px, calc(var(--gut) / 3)); background: #fff; border-radius: 6px; box-shadow: 0 1px 2px rgba(20,20,18,.06), 0 24px 60px -20px rgba(20,20,18,.28); --ms: clamp(17px, .5vw + 13px, 22px); font-size: var(--ms); letter-spacing: .01em; animation: mcin .35s cubic-bezier(.2,.7,.2,1); }
 .mcard[hidden] { display: none !important; }
 @keyframes mcin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
@@ -702,7 +710,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   <div class="wrap bar">
     <a class="name" href="#" id="home-link">Antoinepruvostobjects</a>
     <div class="meta">
-      <button type="button" class="menubtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu"><span class="ml">Menu</span></button>
+      <button type="button" class="menubtn" id="mob-btn" aria-expanded="false" aria-controls="mob-menu" aria-label="Ouvrir le menu"><span class="burger" aria-hidden="true"><i></i><i></i><i></i></span></button>
     </div>
   </div>
   <nav class="mcard" id="mob-menu" hidden aria-label="Menu">
@@ -1398,9 +1406,9 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   })();
   /* Menu téléphone */
   var mb = document.getElementById("mob-btn"), mm = document.getElementById("mob-menu");
-  var ml = mb.querySelector(".ml");
-  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); ml.textContent = "Menu"; }
-  mb.addEventListener("click", function (e) { e.stopPropagation(); var pk = document.querySelector(".apeek"); if (pk) pk.classList.remove("on"); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); ml.textContent = open ? "Fermer" : "Menu"; });
+  
+  function closeMob() { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); mb.setAttribute("aria-label", "Ouvrir le menu"); }
+  mb.addEventListener("click", function (e) { e.stopPropagation(); var pk = document.querySelector(".apeek"); if (pk) pk.classList.remove("on"); var open = mm.hidden; mm.hidden = !open; mb.setAttribute("aria-expanded", open ? "true" : "false"); mb.setAttribute("aria-label", open ? "Fermer le menu" : "Ouvrir le menu"); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !mm.hidden) { closeMob(); mb.focus(); } });
   mm.addEventListener("click", function (e) { var a = e.target.closest("a"); if (!a) return; var h = a.getAttribute("href"); if (h === location.hash || (h === "#" && !location.hash)) e.preventDefault(); closeMob(); });
   document.addEventListener("click", function (e) { if (!mm.hidden && !mm.contains(e.target) && !mb.contains(e.target)) closeMob(); });
