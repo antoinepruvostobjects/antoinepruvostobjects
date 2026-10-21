@@ -737,7 +737,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       </div>
       <div class="cf-form-wrap">
         <!-- Formulaire Tally « Contact » : les messages arrivent par e-mail à Antoine -->
-        <iframe class="cf-tally" title="Formulaire de contact" loading="lazy" data-src="https://tally.so/embed/bZ5xK0?hideTitle=1&transparentBackground=1&dynamicHeight=1&alignLeft=1"></iframe>
+        <iframe class="cf-tally" title="Formulaire de contact" loading="lazy" data-tally-src="https://tally.so/embed/bZ5xK0?hideTitle=1&transparentBackground=1&dynamicHeight=1&alignLeft=1"></iframe>
       </div>
     </div>
     <div class="cf-bot"><span>© Antoine Pruvost, 2026</span><a href="#" class="cf-top-link" id="to-top">Retour en haut ↑</a></div>
@@ -1356,15 +1356,18 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 
   /* Menu Objects */
   function closeMenu() {}
-  /* Formulaire de contact Tally : chargé quand on approche du bas de page, hauteur ajustée à son contenu */
+  /* Formulaire de contact Tally : chargé quand on approche du bas de page ; le script de Tally ajuste la hauteur */
   (function () {
     var fr = document.querySelector(".cf-tally"); if (!fr) return;
-    var load = function () { if (!fr.src) fr.src = fr.getAttribute("data-src"); };
+    var done = false;
+    var load = function () {
+      if (done) return; done = true;
+      var sc = document.createElement("script"); sc.src = "https://tally.so/widgets/embed.js"; sc.async = true;
+      sc.onload = function () { if (window.Tally) window.Tally.loadEmbeds(); };
+      sc.onerror = function () { fr.src = fr.getAttribute("data-tally-src"); };
+      document.body.appendChild(sc);
+    };
     if ("IntersectionObserver" in window) { var io = new IntersectionObserver(function (en) { if (en[0].isIntersecting) { load(); io.disconnect(); } }, { rootMargin: "600px" }); io.observe(fr); } else load();
-    window.addEventListener("message", function (e) {
-      if (e.origin !== "https://tally.so" || e.source !== fr.contentWindow || typeof e.data !== "string") return;
-      try { var d = JSON.parse(e.data); if (d.event === "Tally.FormPageHeight" && d.payload && d.payload.height) fr.style.height = d.payload.height + "px"; } catch (er) {}
-    });
     document.getElementById("to-top").addEventListener("click", function (e) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); });
   })();
   /* Menu téléphone */
