@@ -1167,7 +1167,10 @@ function frameAll() {
   camDist = THREE.MathUtils.clamp(Math.max((span / 2) / (halfH * camera.aspect) * (camera.aspect < 1 ? 0 : 1), fitW, fitD), 12, 70);
   placeCamera(); camera.updateMatrixWorld(true);
   // le haut du bureau (l'écran de l'iMac) ne doit jamais passer sous l'en-tête blanc du site : on recule la caméra s'il le faut
-  const topPx = EMBED ? 96 : 70, farPt = new THREE.Vector3(DESK.x, 1.25, DESK.z - 0.42);
+  // hauteur réelle de l'en-tête du site (elle grandit sur les grands écrans), plus une marge d'air
+  let headerB = 70;
+  try { const hd = PARENT && PARENT.document.querySelector("header.top"); if (hd) headerB = hd.getBoundingClientRect().height; else { const own = document.querySelector("header"); if (own && getComputedStyle(own).display !== "none") headerB = own.getBoundingClientRect().bottom; } } catch (e) {}
+  const topPx = headerB + Math.max(28, h * 0.05), farPt = new THREE.Vector3(DESK.x, 1.25, DESK.z - 0.42);
   for (let i = 0; i < 40; i++) {
     const v = farPt.clone().project(camera), y = (1 - v.y) / 2 * h;
     if (y >= topPx || camDist >= 70) break;
