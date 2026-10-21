@@ -496,9 +496,9 @@ async function loadWorkshop() {
     const g = new THREE.Group(); g.add(wb); wb.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(wb), c = b.getCenter(new THREE.Vector3());
     wb.position.set(-c.x, -b.min.y, -c.z);
-    g.position.set(-1.72, 0, Z - 0.1); g.rotation.y = 0; scene.add(g);
+    g.position.set(-1.72, 0, Z - 0.1); g.rotation.y = 0; scene.add(g); benchRef.g = g;
     g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; if (n.material) n.material.envMapIntensity = 0.7; } });
-    DECOR_OBST.push({ x: -1.72, z: Z - 0.1, hw: (b.max.x - b.min.x) / 2, hd: (b.max.z - b.min.z) / 2 });
+    benchRef.o = { x: -1.72, z: Z - 0.1, hw: (b.max.x - b.min.x) / 2, hd: (b.max.z - b.min.z) / 2 }; DECOR_OBST.push(benchRef.o); applyLayout();
   }
 }
 
@@ -1155,6 +1155,15 @@ function updateZoom(dt) {
 const LOOK0 = look.clone();
 let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
+/* Sur téléphone (écran en hauteur), les objets des bords se rapprochent du centre : la scène est moins large, donc vue de plus près */
+const PHONE_X = { colis: -1.36, ani: -0.8, impression: 1.36 }, BENCH_X = { wide: -1.72, phone: -1.4 }, CONTENT_W_PHONE = 3.7;
+const benchRef = { g: null, o: null };
+let phoneLayout = false;
+function applyLayout() {
+  exhibits.forEach((e) => { const px = PHONE_X[e.def.id]; if (px !== undefined) e.group.position.x = phoneLayout ? px : e.def.x; });
+  const bx = phoneLayout ? BENCH_X.phone : BENCH_X.wide;
+  if (benchRef.g) benchRef.g.position.x = bx; if (benchRef.o) benchRef.o.x = bx;
+}
 const _ray = new THREE.Raycaster(), _gp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
 function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); return _ray.ray.intersectPlane(_gp, _hit) ? _hit.clone() : null; }
 function frameAll() {
@@ -1163,7 +1172,8 @@ function frameAll() {
   look.copy(LOOK0);
   const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const span = Math.max(5.2, 3.6 / camera.aspect + 2);               // ordinateur : largeur de sol montrée
-  const fitW = (CONTENT_W / 2) / (halfH * camera.aspect);             // téléphone : tous les objets tiennent dans la largeur
+  phoneLayout = camera.aspect < 1; applyLayout();
+  const fitW = ((phoneLayout ? CONTENT_W_PHONE : CONTENT_W) / 2) / (halfH * camera.aspect);             // téléphone : tous les objets tiennent dans la largeur
   const fitD = 1.78 / halfH;                                         // profondeur : du fond (iMac) jusqu'au personnage devant
   camDist = THREE.MathUtils.clamp(Math.max((span / 2) / (halfH * camera.aspect) * (camera.aspect < 1 ? 0 : 1), fitW, fitD), 12, 70);
   placeCamera(); camera.updateMatrixWorld(true);
