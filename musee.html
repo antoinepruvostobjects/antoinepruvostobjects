@@ -92,7 +92,7 @@ function go(href) {
 }
 document.querySelectorAll("header a").forEach((a) => { if (!ON_SITE) { a.href = SITE; a.target = "_blank"; a.rel = "noopener"; } });
 /* Le bureau : plateau blanc 140 × 60 cm sur tréteaux en bois, iMac, chaise Setu. Un clic mène à l'Archive. */
-const DESK = { id: "bureau", name: "Mon bureau", kind: "Archive, tous mes projets", year: "", href: "/#archive", x: 0.05, z: -1.05, rot: 0 };
+const DESK = { id: "bureau", name: "Mon bureau", kind: "Archive, tous mes projets", year: "", href: "/#archive", x: 0.05, z: -1.4, rot: 0 };
 const ME = { id: "moi", name: "Antoine Pruvost", kind: "Designer, à propos de moi", href: "/#a-propos" };
 
 const stage = document.getElementById("stage");
@@ -115,8 +115,8 @@ scene.environmentIntensity = 0.38;
 
 /* Caméra en plongée (~60°), focale longue pour garder une lecture presque « vue de dessus » */
 const camera = new THREE.PerspectiveCamera(11, 1, 0.5, 120);
-const look = new THREE.Vector3(0, 0.5, -0.3);
-if (EMBED) look.z -= 0.25; // un peu plus de marge sous l'en-tête du site
+const look = new THREE.Vector3(0, 0.5, -0.5);
+if (EMBED) look.z -= 0.12; // un peu plus de marge sous l'en-tête du site
 const CAM_PITCH = THREE.MathUtils.degToRad(62);
 let camDist = 9.5;
 function placeCamera() {
@@ -1050,7 +1050,8 @@ function frameAll() {
   const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const span = Math.max(5.2, 3.6 / camera.aspect + 2);               // ordinateur : largeur de sol montrée
   const fitW = (CONTENT_W / 2) / (halfH * camera.aspect);             // téléphone : tous les objets tiennent dans la largeur
-  camDist = THREE.MathUtils.clamp(Math.max((span / 2) / (halfH * camera.aspect) * (camera.aspect < 1 ? 0 : 1), fitW), 12, 70);
+  const fitD = 1.78 / halfH;                                         // profondeur : du fond (iMac) jusqu'au personnage devant
+  camDist = THREE.MathUtils.clamp(Math.max((span / 2) / (halfH * camera.aspect) * (camera.aspect < 1 ? 0 : 1), fitW, fitD), 12, 70);
   placeCamera(); camera.updateMatrixWorld(true);
   // la zone où il se promène = ce que l'écran montre, moins une marge (il ne sort jamais du cadre)
   const fl = groundAt(-1, 0.86), fr = groundAt(1, 0.86), nl = groundAt(-1, -0.92);
