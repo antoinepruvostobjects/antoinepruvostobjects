@@ -39,9 +39,15 @@ header .back:hover { color: var(--fg); }
 @media (max-width: 640px) { .proto { display: none; } }
 .embed header, .embed .proto { display: none; }
 .embed .hint { bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+.intro { position: fixed; z-index: 6; left: max(clamp(20px, 5vw, 120px), env(safe-area-inset-left, 0px)); bottom: max(clamp(22px, 4vh, 48px), env(safe-area-inset-bottom, 0px)); margin: 0; max-width: min(22em, 62vw); pointer-events: none; transition: opacity .8s ease, transform .8s ease; }
+.intro b { display: block; font-weight: 500; font-size: clamp(16px, .5vw + 12px, 22px); letter-spacing: .02em; color: var(--fg); }
+.intro span { display: block; margin-top: 4px; font-size: 13px; letter-spacing: .03em; color: var(--muted); }
+.intro.off { opacity: 0; transform: translateY(6px); }
+.flag { position: fixed; z-index: 5; transform: translate(-50%, -100%); padding: 5px 9px; background: rgba(255,255,255,.9); border: 1px solid #e2e2df; color: var(--fg); font-size: 12px; letter-spacing: .04em; white-space: nowrap; cursor: pointer; text-decoration: none; transition: opacity .3s ease; }
+.flag::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 12px; background: #c9c9c5; }
+.flag:hover { background: #fff; border-color: #c9c9c5; }
 .zhint { position: fixed; z-index: 5; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); bottom: max(22px, env(safe-area-inset-bottom, 0px)); margin: 0; color: var(--muted); font-size: 13px; letter-spacing: .05em; pointer-events: none; transition: opacity .5s ease; opacity: 0; }
 .embed .zhint { opacity: 1; }
-@media (max-width: 640px) { .zhint { bottom: 54px; right: 50%; transform: translateX(50%); } }
 .embed #stage canvas { touch-action: pan-y; }
 </style>
 </head>
@@ -52,23 +58,19 @@ header .back:hover { color: var(--fg); }
 </header>
 <div id="stage" aria-label="Espace d'exposition en 3D : survolez un objet pour le soulever, cliquez pour ouvrir sa fiche"></div>
 <div class="tag" id="tag" aria-hidden="true"><b></b><span></span></div>
-<p class="hint" id="hint">Survolez un objet · cliquez pour l'ouvrir</p>
+<p class="hint" id="hint" hidden>Survolez un objet · cliquez pour l'ouvrir</p>
 <p class="zhint" id="zhint">L'atelier ↓</p>
+<div class="intro" id="intro"><b>Antoine Pruvost, designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
+<a class="flag" id="flag" href="/#ani" aria-label="ANI, bientôt disponible : être informé de la sortie">ANI · bientôt disponible</a>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
 
-<script src="ani-model.js"></script>
 <script src="hypar-model.js"></script>
-<script src="computer-model.js"></script>
-<script src="chair-model.js"></script>
-<script src="parcels-model.js"></script>
-<script src="printer-model.js"></script>
-<script src="workshop-model.js"></script>
-<script src="avatar-model.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -196,9 +198,9 @@ function addExhibit(def, inner) {
   exhibits.push({ def, group, inner, radius: Math.max(size.x, size.z) / 2, height: size.y, lift: 0, target: 0 });
 }
 function loadAni() {
-  return new Promise((res) => {
-    if (!window.__GLB || !window.__GLB.ani) return res();
-    new GLTFLoader().parse(b64(window.__GLB.ani), "", (gltf) => {
+  return fetchGLTF("ani").then((gltf) => new Promise((res) => {
+    if (!gltf) return res();
+    {
       const wood = woodMaterial("#e9dbc2", "#d2bb98");
       gltf.scene.traverse((n) => {
         if (!n.isMesh) return;
@@ -206,8 +208,8 @@ function loadAni() {
         n.material = /ball/.test(nm) ? alu : /screw/.test(nm) ? inox : wood;
       });
       addExhibit(OBJECTS[0], gltf.scene); res();
-    }, () => res());
-  });
+    }
+  }));
 }
 function loadHypar() {
   return new Promise((res) => {
@@ -219,12 +221,17 @@ function loadHypar() {
   });
 }
 
-function loadGLB(name) {
-  return new Promise((res) => {
-    if (!window.__GLB || !window.__GLB[name]) return res(null);
-    new GLTFLoader().parse(b64(window.__GLB[name]), "", (g) => res(g.scene), () => res(null));
-  });
+/* Modèles 3D : fichiers .glb compressés (meshopt), servis tels quels par le site ; chargés une seule fois */
+const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const gltfCache = {};
+function fetchGLTF(name) {
+  if (!gltfCache[name]) gltfCache[name] = fetch("models/" + name + ".glb")
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then((buf) => new Promise((res) => gltfLoader.parse(buf, "", res, () => res(null))))
+    .catch(() => null);
+  return gltfCache[name];
 }
+function loadGLB(name) { return fetchGLTF(name).then((g) => (g ? g.scene : null)); }
 const deskParts = { chair: null, chairHome: new THREE.Vector3(), out: 0, outTarget: 0, swivel: 0, seat: new THREE.Vector3(), screen: null, screenOn: 0, screenTarget: 0 };
 
 /* Écran de l'iMac : noir au repos ; quand Antoine travaille, il s'allume sur un logiciel de modélisation 3D */
@@ -602,8 +609,7 @@ function sampleClip(clip, t0, t1, fps, hipsName, seam) {
   const c = new THREE.AnimationClip(seam ? "marche" : "repos", L / fps, tracks); c.travel = travel; return c;
 }
 async function loadAvatar() {
-  if (!window.__GLB || !window.__GLB.avatar) return;
-  const g = await new Promise((res) => new GLTFLoader().parse(b64(window.__GLB.avatar), "", res, () => res(null)));
+  const g = await fetchGLTF("avatar");
   if (!g || !g.animations.length) return;
   const model = g.scene, find = (n) => g.animations.find((a) => a.name === n), clip = find("walk") || g.animations[0];
   const bone = (n) => model.getObjectByName("mixamorig" + n);
@@ -1085,10 +1091,21 @@ cv.addEventListener("pointermove", (e) => {
   setHover(pickAt(e.clientX, e.clientY));
   tag.style.left = e.clientX + "px"; tag.style.top = (e.clientY - 8) + "px";
 });
+let tapped = null, tappedAt = 0;
 function release(e) {
   if (!dragging) return; dragging = false; cv.classList.remove("drag");
+  hideIntro();
   if (moved <= 6) {
     const ex = pickAt(e.clientX, e.clientY);
+    // au doigt : un premier toucher montre le nom de l'objet, un second l'ouvre
+    if (e.pointerType === "touch") {
+      if (!ex) { tapped = null; setHover(null); return; }
+      if (tapped !== ex || performance.now() - tappedAt > 5000) {
+        tapped = ex; tappedAt = performance.now(); setHover(ex);
+        tag.style.left = e.clientX + "px"; tag.style.top = (e.clientY - 18) + "px"; return;
+      }
+      tapped = null;
+    }
     if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
     if (ex) { go(ex.def.href); return; }
   }
@@ -1155,6 +1172,23 @@ addEventListener("resize", resize);
 
 /* ---------- Boucle ---------- */
 const clock = new THREE.Clock();
+const TOUCH = matchMedia("(hover: none)").matches;
+if (TOUCH) document.getElementById("intro-sub").textContent = "Touchez un objet pour le découvrir, une seconde fois pour l'ouvrir";
+let introOn = true;
+function hideIntro() { if (!introOn) return; introOn = false; document.getElementById("intro").classList.add("off"); }
+addEventListener("wheel", hideIntro, { passive: true });
+/* Étiquette fixe au-dessus des cartons : ANI arrive bientôt */
+const flag = document.getElementById("flag"), flagPos = new THREE.Vector3();
+flag.addEventListener("click", (e) => { e.preventDefault(); go("/#ani"); });
+function updateFlag() {
+  const ex = exhibits.find((x) => x.def.id === "colis"); if (!ex) { flag.style.opacity = "0"; return; }
+  flagPos.set(ex.group.position.x, 1.12 + ex.lift * 0.09, ex.group.position.z - 0.1).project(camera);
+  const r = cv.getBoundingClientRect(), x = r.left + (flagPos.x + 1) / 2 * r.width, y = r.top + (1 - flagPos.y) / 2 * r.height;
+  const vis = flagPos.z < 1 && y > 70 && y < r.height - 10 && !zoom;
+  flag.style.opacity = vis ? (hovered && hovered.def.id === "colis" ? "0" : "1") : "0"; flag.style.pointerEvents = vis ? "auto" : "none";
+  const hw = flag.offsetWidth / 2 + 8; flag.style.left = Math.min(r.width - hw, Math.max(hw, x)) + "px"; flag.style.top = (y - 12) + "px";
+}
+let workshopLoading = false;
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (hovered) { hoverT += dt; if (!hovered.isMe && hoverT > 0.9 && walker.target !== hovered && !walker.steps) walker.wanted = hovered; }
@@ -1171,22 +1205,29 @@ function loop() {
   });
   updateWalker(dt);
   updateAvatar(dt);
+  // l'atelier n'est chargé que lorsqu'on commence à descendre (ou après quelques secondes sur place)
+  if (!workshopLoading && (scrollT > 0.02 || clock.elapsedTime > 6)) { workshopLoading = true; fetchGLTF("workbench"); loadWorkshop().then(() => exhibits.forEach((e) => { if (e.baseY === undefined) e.baseY = e.inner.position.y; })); }
   if (!zoom) {
     const prev = scrollP; scrollP = THREE.MathUtils.damp(scrollP, scrollT, 5, dt);
     if (Math.abs(scrollP - prev) > 1e-5) { look.z = LOOK0.z + scrollP * ZONE_DZ; placeCamera(); }
     const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
   }
   updateZoom(dt);
+  updateFlag();
+  if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadWorkshop(), loadAvatar()]).then(() => {
+Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
-  setTimeout(() => { document.getElementById("hint").style.opacity = "0"; }, 7000);
+  setTimeout(hideIntro, 12000);
+  // au chargement, les objets cliquables se soulèvent un à un, pour montrer qu'ils s'ouvrent
+  const seq = exhibits.filter((e) => !e.def.y && !e.isMe);
+  seq.forEach((e, i) => { setTimeout(() => { if (!hovered) e.target = 1; }, 900 + i * 420); setTimeout(() => { if (hovered !== e) e.target = 0; }, 1500 + i * 420); });
   loop();
 });
 </script>
