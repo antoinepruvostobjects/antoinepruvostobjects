@@ -1184,6 +1184,10 @@ function frameAll() {
 }
 function resize() { renderer.setSize(stage.clientWidth, stage.clientHeight, false); frameAll(); }
 addEventListener("resize", resize);
+// Safari peut donner une taille nulle au premier calcul (iframe pas encore mise en page) : on recadre dès que la taille change
+let lastW = 0, lastH = 0;
+function watchSize() { const w = stage.clientWidth, h = stage.clientHeight; if (w && h && (w !== lastW || h !== lastH)) { lastW = w; lastH = h; resize(); } }
+if ("ResizeObserver" in window) new ResizeObserver(watchSize).observe(stage);
 
 /* ---------- Boucle ---------- */
 const clock = new THREE.Clock();
@@ -1200,6 +1204,7 @@ addEventListener("wheel", hideIntro, { passive: true });
 let workshopLoading = false;
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
+  watchSize();
   if (hovered) { hoverT += dt; if (!hovered.isMe && hoverT > 0.9 && walker.target !== hovered && !walker.steps) walker.wanted = hovered; }
   if (deskParts.chair) {
     if (!walker.atDesk) { deskParts.out = THREE.MathUtils.damp(deskParts.out, 0, 3, dt); deskParts.swivel = THREE.MathUtils.damp(deskParts.swivel, 0, 3, dt); }
