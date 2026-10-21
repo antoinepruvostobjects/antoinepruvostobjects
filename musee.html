@@ -1214,7 +1214,7 @@ document.addEventListener("touchstart", () => levitate(), { passive: true });
 document.addEventListener("touchmove", () => levitate(), { passive: true });
 function hideIntro() { if (!introOn) return; introOn = false; document.getElementById("intro").classList.add("off"); }
 addEventListener("wheel", hideIntro, { passive: true });
-let workshopLoading = false;
+let workshopLoading = true; // l'atelier est chargé dès le départ (on l'aperçoit déjà sur téléphone)
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   watchSize();
@@ -1248,7 +1248,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()]).then(() => {
+Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadWorkshop(), loadAvatar()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");

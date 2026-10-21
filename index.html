@@ -38,8 +38,6 @@ header.top {
   background: var(--bar);
   -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px);
 }
-/* Sur l'accueil 3D, le bandeau est blanc plein avec un filet, pour bien se détacher de l'espace gris clair */
-.homepage header.top { background: #fff; box-shadow: 0 1px 0 #e6e6e3; }
 header.top .bar {
   display: flex; justify-content: space-between; align-items: baseline; gap: 4px 24px; flex-wrap: wrap;
   padding-block: clamp(18px, 2.6vw, 56px) clamp(16px, 2.4vw, 48px);
@@ -1249,7 +1247,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "28"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "29"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);
