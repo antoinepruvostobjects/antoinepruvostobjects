@@ -653,7 +653,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 /* Accueil 3D plein écran, sous l'en-tête translucide */
 .homepage header.top { margin-bottom: calc(-1 * var(--hh, 0px)); }
 /* l'espace 3D reste à l'écran pendant qu'on descend : le studio d'abord, puis l'atelier */
-.home3d { margin-inline: calc(-1 * var(--gut)); height: 210vh; height: 210svh; position: relative; background: #f4f4f2; }
+.home3d { margin-inline: calc(-1 * var(--gut)); height: 100vh; height: 100svh; position: relative; background: #f4f4f2; }
 .home3d iframe { position: sticky; top: 0; width: 100%; height: 100vh; height: 100svh; min-height: 520px; border: 0; display: block; }
 .homepage footer.cfoot { margin-top: 0; }
 
@@ -1255,7 +1255,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "35"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "36"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);

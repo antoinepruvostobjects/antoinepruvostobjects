@@ -60,12 +60,10 @@ header .back:hover { color: var(--fg); }
 <div id="stage" aria-label="Espace d'exposition en 3D : survolez un objet pour le soulever, cliquez pour ouvrir sa fiche"></div>
 <div class="tag" id="tag" aria-hidden="true"><b></b><span></span></div>
 <p class="hint" id="hint" hidden>Survolez un objet · cliquez pour l'ouvrir</p>
-<p class="zhint" id="zhint">L'atelier ↓</p>
 <div class="intro" id="intro"><b>Antoine Pruvost, designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
 
-<script src="hypar-model.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from "three";
@@ -83,7 +81,7 @@ const OBJECTS = [
   { id: "hypar", name: "Hypar", kind: "Cale-porte · fibre de verre, fait main", year: 2026, href: "/#hypar", x: 1.49, z: 3.4 - 0.62, y: 0.9, rot: 66 }
 ];
 const PERSON_HEIGHT = 1.83;
-const ZONE_DZ = 3.4; // l'atelier est 3,4 m devant le studio : on y descend en faisant défiler la page
+const ZONE_DZ = 0; // plus d'atelier : tout l'espace tient sur un seul écran (le défilement ne déplace plus la caméra)
 const WITH_POSES = false; // passer à true quand les animations assis / allongé seront prêtes
 /* Liens : sur le site, on change de page ; ailleurs (aperçu), on ouvre la page du site en ligne dans un nouvel onglet */
 const SITE = "https://antoinepruvostobjects.pages.dev/";
@@ -1153,11 +1151,12 @@ const LOOK0 = look.clone();
 let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
 /* Sur téléphone (écran en hauteur), les objets des bords se rapprochent du centre : la scène est moins large, donc vue de plus près */
-const PHONE_X = { colis: -1.36, ani: -0.8, impression: 1.36, hypar: 1.11 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.7;
+/* et la scène s'étire en profondeur pour remplir l'écran en hauteur */
+const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: 2.05, ani: 2.4, impression: 2.0 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.3;
 const benchRef = { g: null, o: null }, tableRef = { g: null, o: null };
 let phoneLayout = false;
 function applyLayout() {
-  exhibits.forEach((e) => { const px = PHONE_X[e.def.id]; if (px !== undefined) e.group.position.x = phoneLayout ? px : e.def.x; });
+  exhibits.forEach((e) => { const px = PHONE_X[e.def.id], pz = PHONE_Z[e.def.id]; if (px !== undefined) e.group.position.x = phoneLayout ? px : e.def.x; if (pz !== undefined) e.group.position.z = phoneLayout ? pz : e.def.z; });
   const bx = phoneLayout ? BENCH_X.phone : BENCH_X.wide;
   if (benchRef.g) benchRef.g.position.x = bx; if (benchRef.o) benchRef.o.x = bx;
   const tx = phoneLayout ? TABLE_X.phone : TABLE_X.wide; if (tableRef.g) tableRef.g.position.x = tx; if (tableRef.o) tableRef.o.x = tx;
@@ -1306,7 +1305,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadHypar(), loadDesk(), loadParcels(), loadPrinter(), loadWorkshop(), loadAvatar()]).then(() => {
+Promise.all([loadAni(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()]).then(() => {
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
