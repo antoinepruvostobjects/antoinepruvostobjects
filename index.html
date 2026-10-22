@@ -696,9 +696,10 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 .pc-body .arow { font-size: 15px; padding-block: 11px; }
 .pc-dock { position: absolute; left: 50%; bottom: 2.2%; transform: translateX(-50%); display: flex; gap: 10px; padding: 7px 10px; border-radius: 16px; background: rgba(255,255,255,.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 0 0 .5px rgba(0,0,0,.08); }
 .pc-ic { width: clamp(22px, 3.2vw, 40px); aspect-ratio: 1; border-radius: 22%; display: block; transition: transform .2s ease; }
-.pc-ic:hover { transform: translateY(-5px) scale(1.12); }
-.pc-ic:nth-child(1) { background: linear-gradient(135deg, #f0d7a6, #d2a96b); } .pc-ic:nth-child(2) { background: linear-gradient(135deg, #f4f4f2, #cfd0d3); }
-.pc-ic:nth-child(3) { background: linear-gradient(135deg, #5b8def, #3157c8); } .pc-ic:nth-child(4) { background: linear-gradient(135deg, #73d39a, #2f9e63); } .pc-ic:nth-child(5) { background: linear-gradient(135deg, #3a3a3d, #1b1b1d); }
+.pc-link:hover { transform: translateY(-5px) scale(1.12); }
+.pc-ic.d1 { background: linear-gradient(135deg, #f0d7a6, #d2a96b); } .pc-ic.d2 { background: linear-gradient(135deg, #f4f4f2, #cfd0d3); } .pc-ic.d5 { background: linear-gradient(135deg, #5b8def, #3157c8); }
+.pc-ig { overflow: hidden; } .pc-ig img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.pc-3d { background: linear-gradient(135deg, #3a3a3d, #1b1b1d); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: clamp(9px, 1.15vw, 15px); letter-spacing: .02em; text-decoration: none; }
 .pc-screen .apeek { display: none !important; }
 .pc-body .arow { grid-template-columns: 52px minmax(0, 4fr) minmax(0, 4fr) auto; gap: 14px; }
 .pc-body .arow .ath { display: block; width: 52px; aspect-ratio: 1; overflow: hidden; border-radius: 6px; background: var(--ph); }
@@ -1307,7 +1308,14 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     tb.appendChild(mk("span", "pc-name", "Archive — Antoinepruvostobjects"));
     win.appendChild(tb);
     var body = mk("div", "pc-body"); win.appendChild(body); scr.appendChild(win);
-    var dock = mk("div", "pc-dock"); ["#ani", "#hypar", "#archive", "#impression-3d", "#a-propos"].forEach(function (h, i) { var a = mk("a", "pc-ic"); a.href = h === "#archive" ? "#ordinateur" : h; a.title = ["ANI", "Hypar", "Archive", "Impression 3D", "About"][i]; dock.appendChild(a); }); scr.appendChild(dock);
+    /* le dock : Instagram et l'impression 3D sont de vrais liens, les autres icônes sont du décor */
+    var dock = mk("div", "pc-dock");
+    dock.appendChild(mk("span", "pc-ic d1")); dock.appendChild(mk("span", "pc-ic d2"));
+    var ig = mk("a", "pc-ic pc-link pc-ig"); ig.href = "https://www.instagram.com/ap_for_design/"; ig.target = "_blank"; ig.rel = "noopener"; ig.title = "Instagram"; ig.setAttribute("aria-label", "Instagram @ap_for_design");
+    var igi = img("instagram.png", ""); ig.appendChild(igi); dock.appendChild(ig);
+    var p3 = mk("a", "pc-ic pc-link pc-3d", "3D"); p3.href = "#impression-3d"; p3.title = "Impression 3D"; p3.setAttribute("aria-label", "Impression 3D"); dock.appendChild(p3);
+    dock.appendChild(mk("span", "pc-ic d5"));
+    scr.appendChild(dock);
     bez.appendChild(scr); mon.appendChild(bez); mon.appendChild(mk("div", "pc-chin")); mon.appendChild(mk("div", "pc-neck")); mon.appendChild(mk("div", "pc-foot"));
     room.appendChild(mon);
     view.appendChild(room);
