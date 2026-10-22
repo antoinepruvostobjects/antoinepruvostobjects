@@ -504,11 +504,42 @@ async function loadArco() {
 /* ---------- La nuit : le soir (de 20 h à 7 h, heure du visiteur), l'espace s'assombrit ;
    restent allumés l'Arco au-dessus d'ANI, l'écran de l'iMac et l'imprimante 3D ---------- */
 const QS = new URLSearchParams(location.search + (PARENT ? "&" + PARENT.location.search.slice(1) : ""));
-const HOUR = new Date().getHours();
-const NIGHT = QS.has("nuit") ? true : QS.has("jour") ? false : (HOUR >= 20 || HOUR < 7);
+/* lever et coucher du soleil du jour, là où se trouve le visiteur (estimé d'après son fuseau horaire, sans rien lui demander) */
+function sunTimes(date, lat, lng) {
+  const rad = Math.PI / 180, dayMs = 864e5, J1970 = 2440588, J2000 = 2451545;
+  const d = date.valueOf() / dayMs - 0.5 + J1970 - J2000, lw = -lng * rad, phi = lat * rad;
+  const n = Math.round(d - 0.0009 - lw / (2 * Math.PI)), ds = 0.0009 + lw / (2 * Math.PI) + n;
+  const M = rad * (357.5291 + 0.98560028 * ds), C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+  const L = M + C + rad * 102.9372 + Math.PI, dec = Math.asin(Math.sin(L) * Math.sin(rad * 23.4397));
+  const Jnoon = J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+  const cosw = (Math.sin(rad * -0.833) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec));
+  if (cosw >= 1) return { polar: "night" }; if (cosw <= -1) return { polar: "day" };
+  const Jset = J2000 + 0.0009 + (Math.acos(cosw) + lw) / (2 * Math.PI) + n + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L), Jrise = 2 * Jnoon - Jset;
+  const toDate = (j) => new Date((j + 0.5 - J1970) * dayMs);
+  return { rise: toDate(Jrise), set: toDate(Jset) };
+}
+const TZ_POS = { "Europe/Paris": [48.86, 2.35], "Europe/Brussels": [50.85, 4.35], "Europe/Luxembourg": [49.61, 6.13], "Europe/Zurich": [47.37, 8.54], "Europe/Monaco": [43.73, 7.42],
+  "Europe/London": [51.5, -0.13], "Europe/Dublin": [53.35, -6.26], "Europe/Amsterdam": [52.37, 4.9], "Europe/Berlin": [52.52, 13.4], "Europe/Madrid": [40.42, -3.7], "Europe/Lisbon": [38.72, -9.14],
+  "Europe/Rome": [41.9, 12.5], "Europe/Vienna": [48.21, 16.37], "Europe/Copenhagen": [55.68, 12.57], "Europe/Stockholm": [59.33, 18.07], "Europe/Oslo": [59.91, 10.75], "Europe/Athens": [37.98, 23.73],
+  "America/New_York": [40.71, -74.0], "America/Toronto": [43.65, -79.38], "America/Montreal": [45.5, -73.57], "America/Chicago": [41.88, -87.63], "America/Los_Angeles": [34.05, -118.24],
+  "Asia/Tokyo": [35.68, 139.69], "Asia/Shanghai": [31.23, 121.47], "Asia/Dubai": [25.2, 55.27], "Australia/Sydney": [-33.87, 151.21] };
+function visitorPos() {
+  let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+  if (TZ_POS[tz]) return TZ_POS[tz];
+  const jan = new Date(new Date().getFullYear(), 0, 1).getTimezoneOffset();   // heure d'hiver : un fuseau = 15° de longitude
+  return [tz.indexOf("Australia") === 0 || tz.indexOf("America/Argentina") === 0 ? -35 : 45, -jan / 4];
+}
+function isDark(now) {
+  const [lat, lng] = visitorPos(), t = sunTimes(now || new Date(), lat, lng);
+  if (t.polar) return t.polar === "night";
+  return now < t.rise || now > t.set;
+}
+let NIGHT = QS.has("nuit") ? true : QS.has("jour") ? false : isDark(new Date());
 const night = { done: false, screenL: null, printL: null };
+if (!QS.has("nuit") && !QS.has("jour")) setInterval(() => { if (!NIGHT && isDark(new Date())) { NIGHT = true; applyNight(); } }, 60000);   // le soleil se couche pendant la visite
 function applyNight() {
   if (!NIGHT) return;
+  if (outFx.mat) outFx.mat.uniforms.col.value.set(0xe9e4da);
   document.documentElement.classList.add("night");
   try { const sec = PARENT && PARENT.document.querySelector(".home3d"); if (sec) sec.style.background = "#17181b"; } catch (e) {}
   if (!night.done) {
