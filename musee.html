@@ -18,6 +18,9 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html.night { --bg: #17181b; }
+html.night .intro { background: rgba(23, 24, 27, 0.6); } html.night .intro b { color: #ecebe8; } html.night .intro span { color: #9a9a9e; }
+html.night .tag { color: #ecebe8; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
 #stage { position: fixed; inset: 0; }
 #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
@@ -135,7 +138,7 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshSta
 ground.material = new THREE.ShadowMaterial({ color: 0x2a261f, opacity: 0.2 }); // le sol prend exactement la couleur du fond, seules les ombres apparaissent
 ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0xe9e7e2, 0.7));
+const hemi = new THREE.HemisphereLight(0xffffff, 0xe9e7e2, 0.7); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 sun.position.set(-2.6, 6.5, 3.2);
 sun.castShadow = true;
@@ -435,6 +438,7 @@ async function loadParcels() {
 
 /* ---------- L'imprimante 3D sur sa petite table blanche (façon IKEA Lack) : un clic mène au devis d'impression ---------- */
 const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.68, z: 0.02, rot: -90 };
+const printerGlow = { g: null, lights: [] };
 async function loadPrinter() {
   const pr = await loadGLB("printer"); if (!pr) return;
   const g = new THREE.Group();
@@ -451,7 +455,83 @@ async function loadPrinter() {
   pr.scale.setScalar(sc); pr.position.set(-ce.x * sc, TH - b.min.y * sc, -ce.z * sc);
   pr.traverse((n) => { if (n.isMesh && n.material) { n.material.roughness = 0.5; n.material.metalness = 0; n.material.envMapIntensity = 0.7; } });
   g.add(pr);
+  // la nuit : la LED intérieure se voit à travers les vitres — la porte (devant, +z), la vitre du dessus devant l'AMS
+  // et la fenêtre du côté gauche (+x) ; rien derrière ni à droite. Des vitres aux coins arrondis, une lueur douce comme l'écran de l'iMac
+  pr.updateMatrixWorld(true);
+  const pb = new THREE.Box3().setFromObject(pr), dx = pb.max.x - pb.min.x, dz = pb.max.z - pb.min.z, cx = (pb.min.x + pb.max.x) / 2, cz = (pb.min.z + pb.max.z) / 2;
+  const tz = pb.max.z - dz * 0.14, rc = new THREE.Raycaster(new THREE.Vector3(cx, pb.max.y + 1, tz), new THREE.Vector3(0, -1, 0));
+  const hit = rc.intersectObject(pr, true)[0], ty = hit ? hit.point.y : pb.min.y + (pb.max.y - pb.min.y) * 0.7, H = ty - pb.min.y;   // hauteur du corps (sans l'AMS)
+  const glowM = new THREE.MeshBasicMaterial({ color: 0xbfd4ff, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false });
+  const glow = new THREE.Group(); glow.visible = false; g.add(glow); printerGlow.g = glow;
+  const pane = (w, h, r) => {
+    const sh = new THREE.Shape(), x = -w / 2, y = -h / 2;
+    sh.moveTo(x + r, y); sh.lineTo(x + w - r, y); sh.quadraticCurveTo(x + w, y, x + w, y + r); sh.lineTo(x + w, y + h - r); sh.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    sh.lineTo(x + r, y + h); sh.quadraticCurveTo(x, y + h, x, y + h - r); sh.lineTo(x, y + r); sh.quadraticCurveTo(x, y, x + r, y);
+    return new THREE.Mesh(new THREE.ShapeGeometry(sh, 6), glowM);
+  };
+  const fh = H * 0.82, f = pane(dx * 0.86, fh, 0.018); f.position.set(cx + dx * 0.02, pb.min.y + H * 0.03 + fh / 2, pb.max.z + 0.003); glow.add(f);          // porte vitrée
+  const sw = dz * 0.6, shh = H * 0.48, sd = pane(sw, shh, 0.018); sd.rotation.y = Math.PI / 2;
+  sd.position.set(pb.max.x + 0.003, pb.min.y + H * 0.4 + shh / 2, pb.max.z - dz * 0.6); glow.add(sd);                                                // fenêtre du côté gauche
+  const tp = pane(dx * 0.86, dz * 0.24, 0.015); tp.rotation.x = -Math.PI / 2; tp.position.set(cx, ty + 0.003, pb.max.z - dz * 0.15); glow.add(tp);   // vitre du dessus, devant l'AMS
+  // la lumière qui sort, comme celle de l'écran de l'iMac : devant, à gauche et vers le haut, pas sur la table
+  const lf = new THREE.PointLight(0xc6d8ff, 0, 1.6, 2); lf.position.set(cx, pb.min.y + H * 0.6, pb.max.z + 0.16); g.add(lf);
+  const ll = new THREE.PointLight(0xc6d8ff, 0, 1.1, 2); ll.position.set(pb.max.x + 0.12, pb.min.y + H * 0.68, pb.max.z - dz * 0.55); g.add(ll);
+  const lt = new THREE.PointLight(0xc6d8ff, 0, 1.0, 2); lt.position.set(cx, ty + 0.18, pb.max.z - dz * 0.1); g.add(lt);
+  printerGlow.lights = [[lf, 0.6], [ll, 0.18], [lt, 0.14]];
   addExhibit(PRINTER, g);
+}
+
+/* ---------- La lampe Arco (Castiglioni) : base en marbre derrière les cartons, l'arc vient au-dessus d'ANI ----------
+   La nuit, c'est elle qui éclaire ANI d'un cercle de lumière chaude */
+const ARCO = { wide: { x: -1.85, z: -1.45 }, phone: { x: -1.42, z: -1.55 }, reach: 1.87 };
+const arcoRef = { g: null, o: null, spot: null, bulb: null };
+async function loadArco() {
+  const gltf = await fetchGLTF("arco"); if (!gltf) return;
+  const o = gltf.scene, inoxA = new THREE.MeshStandardMaterial({ color: 0xe4e6e8, metalness: 0.85, roughness: 0.3, envMapIntensity: 1.6 });
+  const marble = new THREE.MeshStandardMaterial({ color: 0xf2f0ec, roughness: 0.35, metalness: 0 });
+  o.traverse((n) => { if (n.isMesh) { n.material = /MARBRE/i.test(n.material.name || "") ? marble : inoxA; n.castShadow = true; n.receiveShadow = true; } });
+  o.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(o); o.position.set(-0.11, -b.min.y, -0.09);
+  const g = new THREE.Group(); g.add(o); scene.add(g); arcoRef.g = g;
+  // sous l'abat-jour : une ampoule (visible la nuit) et un spot qui éclaire le sol en dessous
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 12), new THREE.MeshBasicMaterial({ color: 0xfff1d6 })); bulb.position.set(ARCO.reach, 1.43, 0); bulb.visible = false; g.add(bulb); arcoRef.bulb = bulb;
+  const spot = new THREE.SpotLight(0xffd7a3, 0, 0, 1.12, 1, 2); spot.position.set(ARCO.reach, 1.38, 0);
+  spot.target.position.set(ARCO.reach, 0, 0); g.add(spot); g.add(spot.target); arcoRef.spot = spot;
+  arcoRef.o = { x: 0, z: 0, r: 0.22 }; DECOR_OBST.push(arcoRef.o);
+  applyLayout(); applyNight();
+}
+
+/* ---------- La nuit : le soir (de 20 h à 7 h, heure du visiteur), l'espace s'assombrit ;
+   restent allumés l'Arco au-dessus d'ANI, l'écran de l'iMac et l'imprimante 3D ---------- */
+const QS = new URLSearchParams(location.search + (PARENT ? "&" + PARENT.location.search.slice(1) : ""));
+const HOUR = new Date().getHours();
+const NIGHT = QS.has("nuit") ? true : QS.has("jour") ? false : (HOUR >= 20 || HOUR < 7);
+const night = { done: false, screenL: null, printL: null };
+function applyNight() {
+  if (!NIGHT) return;
+  document.documentElement.classList.add("night");
+  try { const sec = PARENT && PARENT.document.querySelector(".home3d"); if (sec) sec.style.background = "#17181b"; } catch (e) {}
+  if (!night.done) {
+    night.done = true;
+    scene.background = new THREE.Color(0x17181b);
+    ground.material = new THREE.MeshStandardMaterial({ color: 0x55565b, roughness: 1, metalness: 0 });
+    hemi.color.set(0x8796b8); hemi.groundColor.set(0x16171a); hemi.intensity = 0.07;
+    sun.color.set(0x9fb2d6); sun.intensity = 0.07;
+    scene.environmentIntensity = 0.025;
+  }
+  // le reflet de la pièce (l'environnement) baisse aussi, matière par matière ; l'écran de l'iMac garde sa lumière propre
+  const seen = new Set();
+  scene.traverse((n) => { if (!n.isMesh || !n.material) return; (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => {
+    if (seen.has(m) || m.userData.nightEnv) return; seen.add(m); m.userData.nightEnv = 1; if (m.envMapIntensity !== undefined) m.envMapIntensity *= 0.1; }); });
+  if (arcoRef.spot && !arcoRef.spot.intensity) {
+    arcoRef.spot.intensity = 6.5;
+    // l'Arco éclaire presque toute la pièce : une lumière chaude et diffuse autour de l'abat-jour, en plus du cercle au sol
+    const fill = new THREE.PointLight(0xffd9ab, 3.2, 9, 2); fill.position.set(ARCO.reach, 1.25, 0); arcoRef.g.add(fill); arcoRef.spot.castShadow = true; arcoRef.spot.shadow.mapSize.set(1024, 1024); arcoRef.spot.shadow.bias = -0.0005; arcoRef.spot.shadow.radius = 4;
+    arcoRef.bulb.visible = true;
+  }
+  const d = exhibits.find((e) => e.isDesk);
+  if (d && !night.screenL) { const l = new THREE.PointLight(0xbcd0ff, 0.45, 2.2, 2); l.position.set(0.05, 1.05, 0.12); d.group.add(l); night.screenL = l; }
+  if (printerGlow.g && !night.printL) { printerGlow.g.visible = true; printerGlow.lights.forEach(([l, i]) => (l.intensity = i)); night.printL = true; }
 }
 
 /* ---------- L'atelier, plus bas dans la page : la table de travail usée avec Hypar, et l'établi aux machines ---------- */
@@ -1178,6 +1258,12 @@ function applyLayout() {
   const bx = phoneLayout ? BENCH_X.phone : BENCH_X.wide;
   if (benchRef.g) benchRef.g.position.x = bx; if (benchRef.o) benchRef.o.x = bx;
   const tx = phoneLayout ? TABLE_X.phone : TABLE_X.wide; if (tableRef.g) tableRef.g.position.x = tx; if (tableRef.o) tableRef.o.x = tx;
+  // l'Arco : sa base au fond à gauche, l'arc orienté vers ANI pour que l'abat-jour soit juste au-dessus
+  const ani = exhibits.find((e) => e.def.id === "ani");
+  if (arcoRef.g && ani) {
+    const p = phoneLayout ? ARCO.phone : ARCO.wide, dx = ani.group.position.x - p.x, dz = ani.group.position.z - p.z;
+    arcoRef.g.position.set(p.x, 0, p.z); arcoRef.g.rotation.y = -Math.atan2(dz, dx); arcoRef.o.x = p.x; arcoRef.o.z = p.z;
+  }
 }
 const _ray = new THREE.Raycaster(), _gp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
 function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); return _ray.ray.intersectPlane(_gp, _hit) ? _hit.clone() : null; }
@@ -1258,7 +1344,7 @@ function outlineFx() {
   if (outFx.quad) return outFx;
   outFx.rt = new THREE.WebGLRenderTarget(1, 1, { samples: 4 });
   outFx.mat = new THREE.ShaderMaterial({
-    uniforms: { tMask: { value: outFx.rt.texture }, px: { value: new THREE.Vector2() }, rad: { value: 4 }, col: { value: new THREE.Color(0x2b2724) }, amt: { value: 0 } },
+    uniforms: { tMask: { value: outFx.rt.texture }, px: { value: new THREE.Vector2() }, rad: { value: 4 }, col: { value: new THREE.Color(NIGHT ? 0xe9e4da : 0x2b2724) }, amt: { value: 0 } },
     vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
     fragmentShader: `varying vec2 vUv; uniform sampler2D tMask; uniform vec2 px; uniform float rad; uniform vec3 col; uniform float amt;
       void main(){
@@ -1304,7 +1390,7 @@ function loop() {
     if (!walker.atDesk) { deskParts.out = THREE.MathUtils.damp(deskParts.out, 0, 3, dt); deskParts.swivel = THREE.MathUtils.damp(deskParts.swivel, 0, 3, dt); }
     deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
   }
-  if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
+  if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, NIGHT ? Math.max(0.85, deskParts.screenTarget) : deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
   const lev = TOUCH && (fingerDown || performance.now() < levitateUntil);
   exhibits.forEach((e) => {
     if (TOUCH) e.target = !e.def.decor && (lev || e === hovered) ? 1 : 0;   // les cartons sont du décor : ils ne se soulèvent pas
@@ -1334,7 +1420,8 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-Promise.all([loadAni(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()]).then(() => {
+Promise.all([loadAni(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar(), loadArco()]).then(() => {
+  applyNight();
   exhibits.forEach((e) => (e.baseY = e.inner.position.y));
   resize();
   document.getElementById("load").classList.add("off");
