@@ -1106,15 +1106,7 @@ function release(e) {
   hideIntro();
   if (moved <= 6) {
     const ex = pickAt(e.clientX, e.clientY);
-    // au doigt : un premier toucher montre le nom de l'objet, un second l'ouvre
-    if (e.pointerType === "touch") {
-      if (!ex) { tapped = null; setHover(null); return; }
-      if (tapped !== ex || performance.now() - tappedAt > 5000) {
-        tapped = ex; tappedAt = performance.now(); setHover(ex);
-        tag.style.left = e.clientX + "px"; tag.style.top = (e.clientY - 18) + "px"; return;
-      }
-      tapped = null;
-    }
+    // au doigt comme à la souris : un seul toucher ouvre l'objet
     if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
     if (ex) { go(ex.def.href); return; }
   }
@@ -1217,7 +1209,7 @@ if ("ResizeObserver" in window) new ResizeObserver(watchSize).observe(stage);
 /* ---------- Boucle ---------- */
 const clock = new THREE.Clock();
 const TOUCH = matchMedia("(hover: none)").matches;
-if (TOUCH) document.getElementById("intro-sub").textContent = "Touchez un objet pour le découvrir, une seconde fois pour l'ouvrir";
+if (TOUCH) document.getElementById("intro-sub").textContent = "Touchez un objet pour l'ouvrir";
 let introOn = true;
 /* Sur téléphone : dès que le doigt touche ou fait défiler l'écran, tous les objets cliquables se soulèvent un instant */
 /* tant que le doigt reste posé ils flottent, cernés d'un contour ; dès qu'on le lève, ils se reposent */
