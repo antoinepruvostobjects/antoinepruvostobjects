@@ -60,7 +60,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "hypar", year: 2026, title: "Hypar", kind: "Cale-porte", cover: "hypar-01.jpg", pos: "50% 58%",
+      id: "hypar", client: "La Cambre", year: 2026, title: "Hypar", kind: "Cale-porte", cover: "hypar-01.jpg", pos: "50% 58%",
       tagline: "Quand les mathématiques deviennent pratiques.",
       specs: [["Domaine", "Objet domestique, géométrie"], ["Enquête", "66 personnes"], ["Outils", "Code, Fusion 360"], ["Matériaux", "Impression 3D ; prototypes en fibre et résine"]],
       sections: [
@@ -88,7 +88,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "imal", year: 2026, title: "Imal", kind: "Caisse de rangement", cover: "imal-01.jpg", pos: "50% 93%",
+      id: "imal", client: "Projet scolaire", year: 2026, title: "Imal", kind: "Caisse de rangement", cover: "imal-01.jpg", pos: "50% 93%",
       tagline: "Le vide comme élément de structure.",
       specs: [["Cadre", "Workshop d'une semaine"], ["Procédé", "Usinage CNC"], ["Domaine", "Objet utilitaire, économie de matière"]],
       sections: [
@@ -169,7 +169,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "bilume", year: 2024, cover: "bilume-cover.jpg", pos: "50% 50%", title: "Bilume", kind: "Lampe de bureau",
+      id: "bilume", client: "Projet scolaire", year: 2024, cover: "bilume-cover.jpg", pos: "50% 50%", title: "Bilume", kind: "Lampe de bureau",
       tagline: "Une lampe de bureau articulée qui offre deux ambiances lumineuses.",
       specs: [["Matériau", "Profilés d'aluminium de 15 × 15 mm"], ["Construction", "Socle en croix par emboîtement"], ["Stabilité", "Plus de 500 g intégrés dans les pieds"], ["Assemblage", "Deux vis ; livraison à plat"]],
       sections: [
@@ -189,7 +189,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "iom", year: 2024, cover: "iom-07.jpg", pos: "50% 50%", title: "Iom", kind: "Tabouret et marchepied",
+      id: "iom", client: "Projet scolaire", year: 2024, cover: "iom-07.jpg", pos: "50% 50%", title: "Iom", kind: "Tabouret et marchepied",
       tagline: "Un tabouret compact en bouleau multiplis, à la fois assise et marchepied.",
       specs: [["Matériau", "Bouleau multiplis"], ["Composition", "Cinq pièces"], ["Fabrication", "Usinage CNC 5 axes"], ["Assemblage", "Huit inserts et huit vis ; démontable"]],
       sections: [
@@ -208,7 +208,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "citybreeze", year: 2024, cover: "citybreeze-16.jpg", pos: "50% 50%", title: "CityBreeze", kind: "Éolienne urbaine",
+      id: "citybreeze", client: "Projet scolaire", year: 2024, cover: "citybreeze-16.jpg", pos: "50% 50%", title: "CityBreeze", kind: "Éolienne urbaine",
       tagline: "Une éolienne pensée pour les angles des bâtiments.",
       specs: [["Implantation", "Angles des bâtiments ; couloirs de vent"], ["Aérodynamique", "Profil NACA 4412 ; pales inclinées à 6°"], ["Structure de la maquette", "Tubes d'acier cintrés et soudés ; plaques d'acier de 2 mm pliées et découpées"], ["Prototypage", "Impression 3D ; découpe laser pour la structure des pales"]],
       sections: [
@@ -226,7 +226,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "tubea", year: 2024, cover: "tubea-cover.jpg", pos: "50% 50%", title: "Tubéa", kind: "Sac en chambres à air",
+      id: "tubea", client: "Projet scolaire", year: 2024, cover: "tubea-cover.jpg", pos: "50% 50%", title: "Tubéa", kind: "Sac en chambres à air",
       tagline: "Un sac tressé en chambres à air recyclées.",
       specs: [["Matériau", "Chambres à air recyclées"], ["Construction", "Tressage structurant"], ["Usage", "Transport des essentiels du quotidien"], ["Portage", "Sangle gonflée pour le confort"]],
       sections: [
