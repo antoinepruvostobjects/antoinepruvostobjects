@@ -1686,6 +1686,13 @@ window.__mountViewer = function (o) {
     flyS.tx = f.rect.x + f.rect.w / 2 - er.left - flyS.s * (x0 + x1) / 2;
     flyS.ty = f.rect.y + f.rect.h / 2 - er.top - flyS.s * (y0 + y1) / 2;
     host.style.transformOrigin = "0 0"; host.style.willChange = "transform"; applyFly(0);
+    // la nuit : le décor derrière se floute et s'assombrit pendant le vol (mise au point sur le tabouret)
+    var bgEl = document.querySelector(".flybg");
+    if (bgEl) {
+      var dd = (flyS.dur / 1000).toFixed(2);
+      bgEl.style.transition = "filter " + dd + "s ease, transform " + dd + "s ease, opacity .9s ease";
+      requestAnimationFrame(function () { requestAnimationFrame(function () { bgEl.style.filter = "blur(16px) brightness(.5)"; bgEl.style.transform = "scale(1.06)"; }); });
+    }
     var g = document.querySelector(".flyghost");
     if (g) requestAnimationFrame(function () { requestAnimationFrame(function () { g.style.opacity = "0"; setTimeout(function () { g.remove(); }, 300); }); });
   }
