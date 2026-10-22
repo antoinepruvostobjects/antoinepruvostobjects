@@ -1227,6 +1227,25 @@ function release(e) {
 }
 /* ANI s'envole vers sa fiche : la page ANI s'ouvre aussitôt et reprend le tabouret là où il était à l'écran,
    avec le même angle de vue, puis l'amène à sa place (le parent reçoit sa position et son orientation) */
+/* le tabouret seul, détouré (fond transparent), tel qu'on le voit à l'écran : il reste net pendant que le décor se floute */
+function aniCutout(ani, x0, y0, x1, y1) {
+  const dpr = renderer.getPixelRatio(), W = cv.width, H = cv.height, pad = 4;
+  const rt = new THREE.WebGLRenderTarget(W, H, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
+  ani.inner.traverse((n) => { if (n.isMesh) n.layers.enable(6); });
+  const bgc = scene.background, cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha(), su = renderer.shadowMap.autoUpdate;
+  scene.background = null; renderer.shadowMap.autoUpdate = false;
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); camera.layers.set(6); renderer.render(scene, camera);
+  camera.layers.set(0); scene.background = bgc; renderer.setClearColor(cc, ca); renderer.shadowMap.autoUpdate = su;
+  const px = Math.max(0, Math.floor((x0 - pad) * dpr)), py = Math.max(0, Math.floor((y0 - pad) * dpr));
+  const pw = Math.min(W - px, Math.ceil((x1 - x0 + 2 * pad) * dpr)), ph = Math.min(H - py, Math.ceil((y1 - y0 + 2 * pad) * dpr));
+  const buf = new Uint8Array(pw * ph * 4); renderer.readRenderTargetPixels(rt, px, H - py - ph, pw, ph, buf);
+  renderer.setRenderTarget(null); rt.dispose();
+  const c = document.createElement("canvas"); c.width = pw; c.height = ph; const ctx = c.getContext("2d"), id = ctx.createImageData(pw, ph);
+  for (let y = 0; y < ph; y++) id.data.set(buf.subarray((ph - 1 - y) * pw * 4, (ph - y) * pw * 4), y * pw * 4);
+  for (let i = 0; i < id.data.length; i += 4) { const a = id.data[i + 3]; if (a && a < 255) { const k = 255 / a; id.data[i] = Math.min(255, id.data[i] * k); id.data[i + 1] = Math.min(255, id.data[i + 1] * k); id.data[i + 2] = Math.min(255, id.data[i + 2] * k); } }
+  ctx.putImageData(id, 0, 0);
+  return { url: c.toDataURL("image/png"), x: px / dpr, y: py / dpr, w: pw / dpr, h: ph / dpr };
+}
 function startFly() {
   const ani = exhibits.find((e) => e.def.id === "ani");
   if (!ani || !PARENT || typeof PARENT.__flyAni !== "function" || matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
@@ -1239,10 +1258,14 @@ function startFly() {
   let off = { left: 0, top: 0 };
   try { const fr = PARENT.document.querySelector(".home3d iframe"); if (fr) off = fr.getBoundingClientRect(); } catch (e) {}
   // la nuit, l'espace reste visible pendant le vol : on en garde une image, sans le tabouret
-  let bg = "";
-  if (NIGHT) { try { ani.group.visible = false; renderer.render(scene, camera); bg = cv.toDataURL("image/jpeg", 0.86); } catch (e) {} ani.group.visible = true; }
+  let bg = "", cut = null;
+  if (NIGHT) {
+    try { cut = aniCutout(ani, x0, y0, x1, y1); } catch (e) { cut = null; }
+    try { ani.group.visible = false; renderer.render(scene, camera); bg = cv.toDataURL("image/jpeg", 0.8); } catch (e) {} ani.group.visible = true;
+  }
   try { PARENT.__flyAni({ rect: { x: off.left + x0, y: off.top + y0, w: x1 - x0, h: y1 - y0 }, yaw: ani.group.rotation.y, polar: Math.PI / 2 - CAM_PITCH,
-    night: NIGHT, bg, bgRect: { x: off.left, y: off.top, w, h } }); }
+    night: NIGHT, bg, bgRect: { x: off.left, y: off.top, w, h },
+    img: cut ? cut.url : "", ghostRect: cut ? { x: off.left + cut.x, y: off.top + cut.y, w: cut.w, h: cut.h } : null }); }
   catch (e) { return false; }
   return true;
 }

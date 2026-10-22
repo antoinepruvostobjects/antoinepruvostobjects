@@ -125,7 +125,8 @@ header.top .meta a:hover { color: var(--fg); }
 .fiche.flying .fvw { opacity: 1 !important; transform: none !important; transition: none !important; }
 .fiche .fcard, .fiche .ftitle-m, .fiche .fnote { transition: opacity .9s ease, transform 1s cubic-bezier(.2,.6,.2,1); }
 /* arrivée de nuit : l'image de l'espace reste derrière le tabouret pendant le vol, puis la fiche reprend ses couleurs */
-.flybg { position: fixed; z-index: 0; pointer-events: none; object-fit: cover; transition: opacity .9s ease; }
+.flybg { position: fixed; z-index: 0; pointer-events: none; object-fit: cover; transition: opacity .9s ease, filter .35s ease, transform .35s ease; }
+.flybg.blur { filter: blur(60px) brightness(.45); transform: scale(1.25); }
 .fpanel { transition: background-color .9s ease; }
 .fiche.flynight .fpanel { background: transparent; transition: none; }
 .fiche.flynight .ftitle-m, .fiche.flynight .fnote { opacity: 0 !important; }
@@ -1274,7 +1275,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "49"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "50"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);
@@ -1541,7 +1542,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     var old = document.querySelector(".flyghost"); if (old) old.remove();
     if (info.img) {
       var g = document.createElement("img"); g.className = "flyghost"; g.alt = ""; g.src = info.img;
-      g.style.cssText = "left:" + info.rect.x + "px;top:" + info.rect.y + "px;width:" + info.rect.w + "px;height:" + info.rect.h + "px";
+      var gr = info.ghostRect || info.rect;
+      g.style.cssText = "left:" + gr.x + "px;top:" + gr.y + "px;width:" + gr.w + "px;height:" + gr.h + "px";
       document.body.appendChild(g);
       setTimeout(function () { if (g.isConnected) { g.style.opacity = "0"; setTimeout(function () { g.remove(); }, 400); } }, 5000);   // sécurité
     }
@@ -1550,6 +1552,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       var bgd = document.createElement("img"); bgd.className = "flybg"; bgd.alt = ""; bgd.src = info.bg;
       bgd.style.cssText = "left:" + info.bgRect.x + "px;top:" + info.bgRect.y + "px;width:" + info.bgRect.w + "px;height:" + info.bgRect.h + "px";
       document.body.appendChild(bgd);
+      // dès le clic, le décor part dans un flou complet : on ne voit plus que le tabouret
+      requestAnimationFrame(function () { bgd.classList.add("blur"); });
       setTimeout(function () { if (bgd.isConnected) { bgd.style.opacity = "0"; setTimeout(function () { bgd.remove(); }, 900); } }, 10000);   // sécurité
     }
     window.__flyFrom = info; location.hash = "ani";
@@ -1686,13 +1690,6 @@ window.__mountViewer = function (o) {
     flyS.tx = f.rect.x + f.rect.w / 2 - er.left - flyS.s * (x0 + x1) / 2;
     flyS.ty = f.rect.y + f.rect.h / 2 - er.top - flyS.s * (y0 + y1) / 2;
     host.style.transformOrigin = "0 0"; host.style.willChange = "transform"; applyFly(0);
-    // la nuit : le décor derrière se floute et s'assombrit pendant le vol (mise au point sur le tabouret)
-    var bgEl = document.querySelector(".flybg");
-    if (bgEl) {
-      var dd = (flyS.dur / 1000).toFixed(2);
-      bgEl.style.transition = "filter " + dd + "s ease, transform " + dd + "s ease, opacity .9s ease";
-      requestAnimationFrame(function () { requestAnimationFrame(function () { bgEl.style.filter = "blur(16px) brightness(.5)"; bgEl.style.transform = "scale(1.06)"; }); });
-    }
     var g = document.querySelector(".flyghost");
     if (g) requestAnimationFrame(function () { requestAnimationFrame(function () { g.style.opacity = "0"; setTimeout(function () { g.remove(); }, 300); }); });
   }
