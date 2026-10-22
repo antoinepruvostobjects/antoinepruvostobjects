@@ -1152,7 +1152,7 @@ let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
 /* Sur téléphone (écran en hauteur), les objets des bords se rapprochent du centre : la scène est moins large, donc vue de plus près */
 /* et la scène s'étire en profondeur pour remplir l'écran en hauteur */
-const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: 0.85, ani: 1.15, impression: 0.8 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.5;
+const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: -0.3, ani: -0.02, impression: -0.35 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.5;
 const benchRef = { g: null, o: null }, tableRef = { g: null, o: null };
 let phoneLayout = false;
 function applyLayout() {
@@ -1185,23 +1185,20 @@ function frameAll() {
     camDist *= 1.03; placeCamera(); camera.updateMatrixWorld(true);
   }
   // téléphone (écran en hauteur) : la scène tient en largeur, il resterait un grand vide au-dessus du bureau ; on remonte le cadrage
-  // et l'ensemble (du bureau jusqu'aux cartons, ANI et l'imprimante) tient entre l'en-tête et le texte de présentation du bas,
-  // centré dans cet espace : on recule la caméra s'il faut, puis on centre
+  // l'ensemble (le bureau en haut, la rangée cartons / ANI / imprimante au milieu, l'espace où il marche en bas)
+  // tient entre l'en-tête et le texte de présentation du bas, centré dans cet espace
   if (camera.aspect < 1) {
-    const nearZ = Math.max(...exhibits.filter((e) => !e.isDesk && !e.isMe).map((e) => e.group.position.z + 0.32), 0.8);
-    const nearPt = new THREE.Vector3(0, 0, nearZ);
+    const nearPt = new THREE.Vector3(0, 0, 0.95);
     let botPx = h - Math.max(110, h * 0.15);
     try { const it = document.getElementById("intro"); if (it) { const r = it.getBoundingClientRect(); if (r.height && r.top > h * 0.5) botPx = r.top - 18; } } catch (e) {}
-    const band = botPx - topPx;
-    const ys = () => [(1 - farPt.clone().project(camera).y) / 2 * h, (1 - nearPt.clone().project(camera).y) / 2 * h];
+    const band = botPx - topPx, py = (pt) => (1 - pt.clone().project(camera).y) / 2 * h;
     for (let k = 0; k < 60; k++) {
-      for (let i = 0; i < 120; i++) {
-        const [yt, yb] = ys(), gap = (yt - topPx) - (botPx - yb);   // > 0 : trop de vide en haut ; < 0 : trop de vide en bas
+      for (let i = 0; i < 200; i++) {
+        const gap = (py(farPt) - topPx) - (botPx - py(nearPt));   // > 0 : trop de vide en haut ; < 0 : trop de vide en bas
         if (Math.abs(gap) < 3) break;
         look.z += gap > 0 ? 0.01 : -0.01; placeCamera(); camera.updateMatrixWorld(true);
       }
-      const [yt, yb] = ys();
-      if (yb - yt <= band * 0.94 || camDist >= 70) break;
+      if (py(nearPt) - py(farPt) <= band * 0.96 || camDist >= 70) break;
       camDist *= 1.02; placeCamera(); camera.updateMatrixWorld(true);
     }
   }
