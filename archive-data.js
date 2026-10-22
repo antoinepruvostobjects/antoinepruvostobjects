@@ -4,7 +4,7 @@ window.ARCHIVE = [
       id: "ani", heroPos: "50% 68%", heroPosM: "50% 100%", year: 2026, onlyFiche: true,
       fiche: {
         title: "ANI - Tabouret",
-        model: "ani-model.js", name: "ani", poster: "ani-poster.jpg",
+        model: "models/ani.glb", name: "ani", poster: "ani-poster.jpg",
         specs: [["Matière", "Bois massif"], ["Finition", "Protection à effet mat"], ["Hauteur", "43 cm"], ["Diamètre d'assise", "32 cm"], ["Livraison", "À plat"], ["Montage", "Outils et notice inclus"]],
         story: {
           intro: { title: "ANI, une construction géométrique",

@@ -1110,7 +1110,54 @@ function release(e) {
     const ex = pickAt(e.clientX, e.clientY);
     // au doigt comme à la souris : un seul toucher ouvre l'objet
     if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
+    if (ex && (ex.def.id === "ani" || ex.def.id === "colis") && startFly()) return;
     if (ex) { go(ex.def.href); return; }
+  }
+}
+/* ANI s'envole vers sa fiche : le reste de l'espace s'efface dans le gris de la fiche, le tabouret reste seul,
+   puis la page ANI prend le relais à la même place (le parent reçoit sa position à l'écran et une image) */
+const FLY_LAYER = 6, FLY_BG = 0xeceef1;
+let fly = null;
+function startFly() {
+  if (fly) return true;
+  const ani = exhibits.find((e) => e.def.id === "ani");
+  if (!ani || !PARENT || typeof PARENT.__flyAni !== "function" || matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+  ani.inner.traverse((n) => { if (n.isMesh) n.layers.enable(FLY_LAYER); });
+  const veil = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: FLY_BG, transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
+  veil.frustumCulled = false; const vs = new THREE.Scene(); vs.add(veil);
+  fly = { ani, veil, vs, cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), t: 0, sent: false };
+  setHover(null); hideIntro();
+  return true;
+}
+function renderFly(dt) {
+  fly.t += dt; const a = Math.min(1, fly.t / 0.38);
+  fly.veil.material.opacity = a * a * (3 - 2 * a);
+  renderer.autoClear = false; renderer.clear(); renderer.render(scene, camera); renderer.render(fly.vs, fly.cam);
+  const su = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
+  renderer.clearDepth(); camera.layers.set(FLY_LAYER); renderer.render(scene, camera); camera.layers.set(0);
+  renderer.shadowMap.autoUpdate = su; renderer.autoClear = true;
+  if (a >= 1 && !fly.sent) {
+    fly.sent = true;
+    // position du tabouret à l'écran (en pixels de la page parente) et image de ce qu'on voit
+    const box = new THREE.Box3().setFromObject(fly.ani.inner), w = cv.clientWidth, h = cv.clientHeight;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < 8; i++) {
+      const v = new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
+      const px = (v.x + 1) / 2 * w, py = (1 - v.y) / 2 * h; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    let img = "";
+    try {
+      const dpr = renderer.getPixelRatio(), c = document.createElement("canvas"), pad = 6;
+      c.width = Math.round((x1 - x0 + 2 * pad) * dpr); c.height = Math.round((y1 - y0 + 2 * pad) * dpr);
+      c.getContext("2d").drawImage(cv, (x0 - pad) * dpr, (y0 - pad) * dpr, c.width, c.height, 0, 0, c.width, c.height);
+      img = c.toDataURL("image/png"); x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+    } catch (e) {}
+    let off = { left: 0, top: 0 };
+    try { const fr = PARENT.document.querySelector(".home3d iframe"); if (fr) off = fr.getBoundingClientRect(); } catch (e) {}
+    try {
+      PARENT.__flyAni({ rect: { x: off.left + x0, y: off.top + y0, w: x1 - x0, h: y1 - y0 }, img,
+        yaw: fly.ani.group.rotation.y, polar: Math.PI / 2 - CAM_PITCH, box: [box.min.toArray(), box.max.toArray()] });
+    } catch (e) { go("/#ani"); }
   }
 }
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
@@ -1307,6 +1354,7 @@ function loop() {
   updateZoom(dt);
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
+  if (fly) { renderFly(dt); requestAnimationFrame(loop); return; }
   renderer.render(scene, camera);
   if (TOUCH) {
     exhibits.forEach((e) => { if (!e.isMe) setOutlined(e, e.lift > 0.15); });
