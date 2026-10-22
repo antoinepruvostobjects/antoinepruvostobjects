@@ -1360,7 +1360,7 @@ const TOUCH = matchMedia("(hover: none)").matches;
 if (TOUCH) document.getElementById("intro-sub").textContent = "Touchez un objet pour l'ouvrir";
 let introOn = true;
 /* Sur téléphone : dès que le doigt touche ou fait défiler l'écran, tous les objets cliquables se soulèvent un instant */
-/* tant que le doigt reste posé ils flottent, cernés d'un contour ; dès qu'on le lève, ils se reposent */
+/* tant que le doigt reste posé ils flottent ; dès qu'on le lève, ils se reposent */
 let levitateUntil = 0, fingerDown = false;
 function levitate(ms) { if (TOUCH) levitateUntil = Math.max(levitateUntil, performance.now() + (ms || 1400)); }
 window.__finger = (down) => { fingerDown = !!down; };
@@ -1443,11 +1443,6 @@ function loop() {
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
-  if (TOUCH) {
-    exhibits.forEach((e) => { if (!e.isMe) setOutlined(e, e.lift > 0.15); });
-    const lifted = exhibits.filter((e) => e.outlined);
-    if (lifted.length) renderOutline(lifted);
-  }
   requestAnimationFrame(loop);
 }
 
