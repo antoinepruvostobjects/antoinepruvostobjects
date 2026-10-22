@@ -124,6 +124,13 @@ header.top .meta a:hover { color: var(--fg); }
 .fiche.flying .fv .poster { opacity: 0 !important; transition: none; }
 .fiche.flying .fvw { opacity: 1 !important; transform: none !important; transition: none !important; }
 .fiche .fcard, .fiche .ftitle-m, .fiche .fnote { transition: opacity .9s ease, transform 1s cubic-bezier(.2,.6,.2,1); }
+/* fiche de nuit : fond sombre, halo chaud de l'Arco sous le tabouret ; la carte d'infos reste claire */
+.fiche.night .fpanel { background: #17181b; }
+.fiche.night .fvw { background: radial-gradient(ellipse 34% 40% at calc((100% - var(--cw) - var(--gut)) / 2) 66%, rgba(255, 206, 150, .2), rgba(255, 206, 150, .07) 55%, rgba(255, 206, 150, 0) 100%); }
+.fiche.night .fv .poster { mix-blend-mode: normal; opacity: 0; }
+.fiche.night .fnote { color: #8e8e93; }
+.fiche.night .ftitle-m { color: #ecebe8; }
+@media (max-width: 800px) { .fiche.night .fvw { background: radial-gradient(ellipse 60% 46% at 50% 64%, rgba(255, 206, 150, .2), rgba(255, 206, 150, .06) 60%, rgba(255, 206, 150, 0) 100%); } }
 .story .reveal { transform: translateY(72px); transition: opacity 1.1s ease, transform 1.3s cubic-bezier(.16,.7,.2,1); }
 .story .reveal.in { transform: none; }
 .reveal.d1 { transition-delay: .12s; }
@@ -842,7 +849,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   }
 
   function ficheNode(f, reveal) {
-    var sec = mk("section", "fiche"), fly = window.__flyFrom || null; window.__flyFrom = null;
+    var sec = mk("section", "fiche"), fly = window.__flyFrom || null, night = !!(window.__isNight && window.__isNight()); window.__flyFrom = null;
+    if (night) sec.classList.add("night");
     if (fly) sec.classList.add("flying");
     var panel = mk("div", "fpanel"); sec.appendChild(panel);
     var tm = mk("div", "ftitle-m", f.title); tm.setAttribute("aria-hidden", "true"); panel.appendChild(reveal(tm));
@@ -895,7 +903,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       if (!fv.isConnected && tries > 0) return;
       if (window.__mountViewer) {
         try {
-          viewer = window.__mountViewer({ el: fv, shiftEl: card, model: f.model, name: f.name, colors: f.colors, start: pending, fly: fly,
+          viewer = window.__mountViewer({ el: fv, shiftEl: card, model: f.model, name: f.name, colors: f.colors, start: pending, fly: fly, night: night,
             onLanded: function () { sec.classList.remove("flying"); },
             onReady: function () { fv.classList.add("ready"); }, onMove: function () { fv.classList.add("moved"); } });
         } catch (e) { viewer = null; }
@@ -1499,6 +1507,38 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   }
   var lastHash = location.hash;
   /* L'espace 3D d'accueil passe le relais : image du tabouret posée à sa place, puis la fiche ANI s'ouvre et le reprend */
+  /* La nuit (coucher du soleil réel chez le visiteur, comme l'espace 3D) : la fiche ANI passe dans l'ambiance de nuit, éclairée par l'Arco */
+  function sunTimes(date, lat, lng) {
+    const rad = Math.PI / 180, dayMs = 864e5, J1970 = 2440588, J2000 = 2451545;
+    const d = date.valueOf() / dayMs - 0.5 + J1970 - J2000, lw = -lng * rad, phi = lat * rad;
+    const n = Math.round(d - 0.0009 - lw / (2 * Math.PI)), ds = 0.0009 + lw / (2 * Math.PI) + n;
+    const M = rad * (357.5291 + 0.98560028 * ds), C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+    const L = M + C + rad * 102.9372 + Math.PI, dec = Math.asin(Math.sin(L) * Math.sin(rad * 23.4397));
+    const Jnoon = J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+    const cosw = (Math.sin(rad * -0.833) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec));
+    if (cosw >= 1) return { polar: "night" }; if (cosw <= -1) return { polar: "day" };
+    const Jset = J2000 + 0.0009 + (Math.acos(cosw) + lw) / (2 * Math.PI) + n + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L), Jrise = 2 * Jnoon - Jset;
+    const toDate = (j) => new Date((j + 0.5 - J1970) * dayMs);
+    return { rise: toDate(Jrise), set: toDate(Jset) };
+  }
+  const TZ_POS = { "Europe/Paris": [48.86, 2.35], "Europe/Brussels": [50.85, 4.35], "Europe/Luxembourg": [49.61, 6.13], "Europe/Zurich": [47.37, 8.54], "Europe/Monaco": [43.73, 7.42],
+    "Europe/London": [51.5, -0.13], "Europe/Dublin": [53.35, -6.26], "Europe/Amsterdam": [52.37, 4.9], "Europe/Berlin": [52.52, 13.4], "Europe/Madrid": [40.42, -3.7], "Europe/Lisbon": [38.72, -9.14],
+    "Europe/Rome": [41.9, 12.5], "Europe/Vienna": [48.21, 16.37], "Europe/Copenhagen": [55.68, 12.57], "Europe/Stockholm": [59.33, 18.07], "Europe/Oslo": [59.91, 10.75], "Europe/Athens": [37.98, 23.73],
+    "America/New_York": [40.71, -74.0], "America/Toronto": [43.65, -79.38], "America/Montreal": [45.5, -73.57], "America/Chicago": [41.88, -87.63], "America/Los_Angeles": [34.05, -118.24],
+    "Asia/Tokyo": [35.68, 139.69], "Asia/Shanghai": [31.23, 121.47], "Asia/Dubai": [25.2, 55.27], "Australia/Sydney": [-33.87, 151.21] };
+  function visitorPos() {
+    let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+    if (TZ_POS[tz]) return TZ_POS[tz];
+    const jan = new Date(new Date().getFullYear(), 0, 1).getTimezoneOffset();   // heure d'hiver : un fuseau = 15° de longitude
+    return [tz.indexOf("Australia") === 0 || tz.indexOf("America/Argentina") === 0 ? -35 : 45, -jan / 4];
+  }
+  function isDark(now) {
+    const [lat, lng] = visitorPos(), t = sunTimes(now || new Date(), lat, lng);
+    if (t.polar) return t.polar === "night";
+    return now < t.rise || now > t.set;
+  }
+  var QSN = new URLSearchParams(location.search);
+  window.__isNight = function () { return QSN.has("nuit") ? true : QSN.has("jour") ? false : isDark(new Date()); };
   window.__flyAni = function (info) {
     var old = document.querySelector(".flyghost"); if (old) old.remove();
     if (info.img) {
@@ -1588,7 +1628,12 @@ window.__mountViewer = function (o) {
   var dl = new THREE.DirectionalLight(0xffffff, 2.2); dl.position.set(-0.7, 1.8, 0.9); dl.castShadow = true;
   dl.shadow.mapSize.set(2048, 2048); dl.shadow.radius = 8; dl.shadow.bias = -0.0003; dl.shadow.normalBias = 0.003;
   Object.assign(dl.shadow.camera, { left: -1, right: 1, top: 1, bottom: -1, near: 0.2, far: 5 }); scene.add(dl);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.35));
+  var hemiV = new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.35); scene.add(hemiV);
+  /* nuit : la lumière chaude de l'Arco tombe d'en haut, le reste est sombre */
+  if (o.night) {
+    dl.color.set(0xffd2a0); dl.intensity = 2.6; dl.position.set(-0.35, 2.2, 0.45); hemiV.color.set(0x8796b8); hemiV.groundColor.set(0x16171a); hemiV.intensity = 0.12;
+    renderer.toneMappingExposure = 0.95; ground.material.opacity = 0.38;
+  }
 
   function onModel(gltf) {
     if (disposed) return;
@@ -1598,6 +1643,7 @@ window.__mountViewer = function (o) {
       n.material = /ball/.test(nm) ? alu : /screw/.test(nm) ? inox : woodMat;
       n.castShadow = true; n.receiveShadow = true;
     });
+    if (o.night) gltf.scene.traverse(function (n) { if (n.isMesh && n.material && n.material.envMapIntensity !== undefined && !n.material.userData.nightEnv) { n.material.userData.nightEnv = 1; n.material.envMapIntensity *= 0.18; } });
     scene.add(gltf.scene); modelRoot = gltf.scene;
     setColorNow(o.start || 0); resize(); if (o.fly) startFly(); draw(); if (o.onReady) o.onReady();
   }
