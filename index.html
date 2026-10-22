@@ -1330,9 +1330,10 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     var back = mk("a", "back", "← Archive"); back.href = "#archive"; head.appendChild(back);
     var split = mk("div", "psplit"), pinfo = mk("div", "pinfo");
     var tr = mk("div", "prow ptitle2"), h1 = mk("h1", "", p.title);
-    h1.appendChild(mk("span", "kind", p.kind)); tr.appendChild(h1); tr.appendChild(mk("span", "yr", String(p.year)));
+    tr.appendChild(h1);
     pinfo.appendChild(reveal(tr));
-    (p.specs || []).forEach(function (sp, k) {
+    /* trois rubriques seulement : type, année, client */
+    [["Type", p.kind], ["Année", String(p.year)], ["Client", p.client || "—"]].forEach(function (sp, k) {
       var r = mk("div", "prow"); r.appendChild(mk("span", "pl", sp[0])); r.appendChild(mk("span", "pv", sp[1]));
       pinfo.appendChild(reveal(r)); if (k < 4) r.classList.add("d" + (k + 1));
     });

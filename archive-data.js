@@ -1,7 +1,7 @@
 /* Archive : tous les projets réalisés (repris du portfolio). Ajouter un projet = ajouter un bloc ici. */
 window.ARCHIVE = [
     {
-      id: "ani", heroPos: "50% 68%", heroPosM: "50% 100%", year: 2026, onlyFiche: true,
+      id: "ani", client: "Musée Horta", heroPos: "50% 68%", heroPosM: "50% 100%", year: 2026, onlyFiche: true,
       fiche: {
         title: "ANI - Tabouret",
         model: "models/ani.glb", name: "ani", poster: "ani-poster.jpg",
@@ -108,7 +108,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "duo", year: 2026, title: "Duo", kind: "Bougeoir", cover: "duo-00.jpg", pos: "50% 52%",
+      id: "duo", client: "XLBOOM", year: 2026, title: "Duo", kind: "Bougeoir", cover: "duo-00.jpg", pos: "50% 52%",
       tagline: "Un geste, deux ambiances.",
       specs: [["Pour", "XLBOOM"], ["Domaine", "Objet domestique, lumière, hospitalité"], ["Matériaux", "Verre soufflé sablé, aluminium tourné (pistes)"]],
       sections: [
@@ -132,7 +132,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "kome", year: 2025, cover: "kome-09.jpg", pos: "50% 50%", title: "Komé", kind: "Composteur de cuisine",
+      id: "kome", client: "Royal Canin", year: 2025, cover: "kome-09.jpg", pos: "50% 50%", title: "Komé", kind: "Composteur de cuisine",
       tagline: "Un composteur de cuisine compact, développé avec Royal Canin.",
       specs: [["Collaboration", "Royal Canin"], ["Principe", "Fermentation bokashi"], ["Composition", "Quatre éléments ; bac intérieur perforé"], ["Manipulation", "Jus vidé par basculement ; jusqu'à 5 kg de déchets"]],
       sections: [
@@ -151,7 +151,7 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "bucheup", year: 2025, cover: "bucheup-02.jpg", pos: "50% 42%", title: "Bûch'Up", kind: "Porte-bois",
+      id: "bucheup", client: "Centre de prêt de Naninne", year: 2025, cover: "bucheup-02.jpg", pos: "50% 42%", title: "Bûch'Up", kind: "Porte-bois",
       tagline: "Un porte-bois fait de matériaux destinés au rebut.",
       specs: [["Partenaire", "Centre de prêt de Naninne"], ["Pour", "Scouts et mouvements de jeunesse"], ["Matériaux", "PVC et sangles, matériaux revalorisés"], ["Usage", "Collecte et transport du bois de chauffage"]],
       sections: [
