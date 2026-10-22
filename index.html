@@ -124,13 +124,11 @@ header.top .meta a:hover { color: var(--fg); }
 .fiche.flying .fv .poster { opacity: 0 !important; transition: none; }
 .fiche.flying .fvw { opacity: 1 !important; transform: none !important; transition: none !important; }
 .fiche .fcard, .fiche .ftitle-m, .fiche .fnote { transition: opacity .9s ease, transform 1s cubic-bezier(.2,.6,.2,1); }
-/* fiche de nuit : fond sombre, halo chaud de l'Arco sous le tabouret ; la carte d'infos reste claire */
-.fiche.night .fpanel { background: #17181b; }
-.fiche.night .fvw { background: radial-gradient(ellipse 34% 40% at calc((100% - var(--cw) - var(--gut)) / 2) 66%, rgba(255, 206, 150, .2), rgba(255, 206, 150, .07) 55%, rgba(255, 206, 150, 0) 100%); }
-.fiche.night .fv .poster { mix-blend-mode: normal; opacity: 0; }
-.fiche.night .fnote { color: #8e8e93; }
-.fiche.night .ftitle-m { color: #ecebe8; }
-@media (max-width: 800px) { .fiche.night .fvw { background: radial-gradient(ellipse 60% 46% at 50% 64%, rgba(255, 206, 150, .2), rgba(255, 206, 150, .06) 60%, rgba(255, 206, 150, 0) 100%); } }
+/* arrivée de nuit : l'image de l'espace reste derrière le tabouret pendant le vol, puis la fiche reprend ses couleurs */
+.flybg { position: fixed; z-index: 0; pointer-events: none; object-fit: cover; transition: opacity .9s ease; }
+.fpanel { transition: background-color .9s ease; }
+.fiche.flynight .fpanel { background: transparent; transition: none; }
+.fiche.flynight .ftitle-m, .fiche.flynight .fnote { opacity: 0 !important; }
 .story .reveal { transform: translateY(72px); transition: opacity 1.1s ease, transform 1.3s cubic-bezier(.16,.7,.2,1); }
 .story .reveal.in { transform: none; }
 .reveal.d1 { transition-delay: .12s; }
@@ -849,8 +847,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   }
 
   function ficheNode(f, reveal) {
-    var sec = mk("section", "fiche"), fly = window.__flyFrom || null, night = !!(window.__isNight && window.__isNight()); window.__flyFrom = null;
-    if (night) sec.classList.add("night");
+    var sec = mk("section", "fiche"), fly = window.__flyFrom || null, night = !!(fly && fly.night && fly.bg); window.__flyFrom = null;
+    if (night) sec.classList.add("flynight");
     if (fly) sec.classList.add("flying");
     var panel = mk("div", "fpanel"); sec.appendChild(panel);
     var tm = mk("div", "ftitle-m", f.title); tm.setAttribute("aria-hidden", "true"); panel.appendChild(reveal(tm));
@@ -897,14 +895,14 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       card.appendChild(ex);
     }
     if (f.story) sec.appendChild(storyNode(f.story, reveal));
-    if (fly) setTimeout(function () { sec.classList.remove("flying"); }, 6000);   // sécurité si la 3D ne se charge pas
+    if (fly) setTimeout(function () { sec.classList.remove("flying"); sec.classList.remove("flynight"); }, 6000);   // sécurité si la 3D ne se charge pas
     var tries = 0;
     (function mount() {
       if (!fv.isConnected && tries > 0) return;
       if (window.__mountViewer) {
         try {
           viewer = window.__mountViewer({ el: fv, shiftEl: card, model: f.model, name: f.name, colors: f.colors, start: pending, fly: fly, night: night,
-            onLanded: function () { sec.classList.remove("flying"); },
+            onLanded: function () { sec.classList.remove("flying"); sec.classList.remove("flynight"); var b = document.querySelector(".flybg"); if (b) { b.style.opacity = "0"; setTimeout(function () { b.remove(); }, 900); } },
             onReady: function () { fv.classList.add("ready"); }, onMove: function () { fv.classList.add("moved"); } });
         } catch (e) { viewer = null; }
       } else if (tries++ < 100) setTimeout(mount, 100);
@@ -1194,7 +1192,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     grid.appendChild(reveal(vw)); grid.appendChild(reveal(card));
     if (fly) vw.classList.add("in");
     sec.appendChild(storyNode(h.story, reveal));
-    if (fly) setTimeout(function () { sec.classList.remove("flying"); }, 6000);   // sécurité si la 3D ne se charge pas
+    if (fly) setTimeout(function () { sec.classList.remove("flying"); sec.classList.remove("flynight"); }, 6000);   // sécurité si la 3D ne se charge pas
     var tries = 0;
     (function mount() {
       if (!fv.isConnected && tries > 0) return;
@@ -1276,7 +1274,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "48"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "49"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);
@@ -1547,6 +1545,13 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
       document.body.appendChild(g);
       setTimeout(function () { if (g.isConnected) { g.style.opacity = "0"; setTimeout(function () { g.remove(); }, 400); } }, 5000);   // sécurité
     }
+    var ob = document.querySelector(".flybg"); if (ob) ob.remove();
+    if (info.bg) {   // la nuit : l'espace reste derrière le tabouret pendant qu'il vole
+      var bgd = document.createElement("img"); bgd.className = "flybg"; bgd.alt = ""; bgd.src = info.bg;
+      bgd.style.cssText = "left:" + info.bgRect.x + "px;top:" + info.bgRect.y + "px;width:" + info.bgRect.w + "px;height:" + info.bgRect.h + "px";
+      document.body.appendChild(bgd);
+      setTimeout(function () { if (bgd.isConnected) { bgd.style.opacity = "0"; setTimeout(function () { bgd.remove(); }, 900); } }, 10000);   // sécurité
+    }
     window.__flyFrom = info; location.hash = "ani";
   };
   window.addEventListener("hashchange", function () {
@@ -1630,10 +1635,16 @@ window.__mountViewer = function (o) {
   Object.assign(dl.shadow.camera, { left: -1, right: 1, top: 1, bottom: -1, near: 0.2, far: 5 }); scene.add(dl);
   var hemiV = new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.35); scene.add(hemiV);
   /* nuit : la lumière chaude de l'Arco tombe d'en haut, le reste est sombre */
-  if (o.night) {
-    dl.color.set(0xffd2a0); dl.intensity = 2.6; dl.position.set(-0.35, 2.2, 0.45); hemiV.color.set(0x8796b8); hemiV.groundColor.set(0x16171a); hemiV.intensity = 0.12;
-    renderer.toneMappingExposure = 0.95; ground.material.opacity = 0.38;
+  var DAY = { dc: dl.color.clone(), di: dl.intensity, dp: dl.position.clone(), hc: hemiV.color.clone(), hg: hemiV.groundColor.clone(), hi: hemiV.intensity, go: ground.material.opacity };
+  var NGT = { dc: new THREE.Color(0xffd2a0), di: 2.6, dp: new THREE.Vector3(-0.35, 2.2, 0.45), hc: new THREE.Color(0x8796b8), hg: new THREE.Color(0x16171a), hi: 0.12, go: 0.38 };
+  var nightK = o.night ? 1 : 0, nightT0 = 0, envMats = [];
+  function setNightK(k) {
+    dl.color.copy(DAY.dc).lerp(NGT.dc, k); dl.intensity = DAY.di + (NGT.di - DAY.di) * k; dl.position.copy(DAY.dp).lerp(NGT.dp, k);
+    hemiV.color.copy(DAY.hc).lerp(NGT.hc, k); hemiV.groundColor.copy(DAY.hg).lerp(NGT.hg, k); hemiV.intensity = DAY.hi + (NGT.hi - DAY.hi) * k;
+    ground.material.opacity = DAY.go + (NGT.go - DAY.go) * k;
+    envMats.forEach(function (m) { m.envMapIntensity = m.userData.envDay * (1 - 0.82 * k); });
   }
+  setNightK(nightK);
 
   function onModel(gltf) {
     if (disposed) return;
@@ -1643,7 +1654,8 @@ window.__mountViewer = function (o) {
       n.material = /ball/.test(nm) ? alu : /screw/.test(nm) ? inox : woodMat;
       n.castShadow = true; n.receiveShadow = true;
     });
-    if (o.night) gltf.scene.traverse(function (n) { if (n.isMesh && n.material && n.material.envMapIntensity !== undefined && !n.material.userData.nightEnv) { n.material.userData.nightEnv = 1; n.material.envMapIntensity *= 0.18; } });
+    gltf.scene.traverse(function (n) { if (n.isMesh && n.material && n.material.envMapIntensity !== undefined && n.material.userData.envDay === undefined) { n.material.userData.envDay = n.material.envMapIntensity; envMats.push(n.material); } });
+    setNightK(nightK);
     scene.add(gltf.scene); modelRoot = gltf.scene;
     setColorNow(o.start || 0); resize(); if (o.fly) startFly(); draw(); if (o.onReady) o.onReady();
   }
@@ -1803,9 +1815,11 @@ window.__mountViewer = function (o) {
         flyS = null; host.style.transform = ""; host.style.willChange = "";
         controls.enabled = true; controls.update(); controls.autoRotate = true;
         if (o.onLanded) o.onLanded();
+        if (nightK > 0) nightT0 = performance.now();
       }
       return;
     }
+    if (nightK > 0 && nightT0) { var nk = Math.max(0, 1 - (performance.now() - nightT0) / 900); nightK = nk; setNightK(nk * nk); if (!nk) nightT0 = 0; }
     controls.update(); renderer.render(scene, camera);
   }
   function loop() {

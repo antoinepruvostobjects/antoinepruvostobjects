@@ -1238,7 +1238,11 @@ function startFly() {
   }
   let off = { left: 0, top: 0 };
   try { const fr = PARENT.document.querySelector(".home3d iframe"); if (fr) off = fr.getBoundingClientRect(); } catch (e) {}
-  try { PARENT.__flyAni({ rect: { x: off.left + x0, y: off.top + y0, w: x1 - x0, h: y1 - y0 }, yaw: ani.group.rotation.y, polar: Math.PI / 2 - CAM_PITCH }); }
+  // la nuit, l'espace reste visible pendant le vol : on en garde une image, sans le tabouret
+  let bg = "";
+  if (NIGHT) { try { ani.group.visible = false; renderer.render(scene, camera); bg = cv.toDataURL("image/jpeg", 0.86); } catch (e) {} ani.group.visible = true; }
+  try { PARENT.__flyAni({ rect: { x: off.left + x0, y: off.top + y0, w: x1 - x0, h: y1 - y0 }, yaw: ani.group.rotation.y, polar: Math.PI / 2 - CAM_PITCH,
+    night: NIGHT, bg, bgRect: { x: off.left, y: off.top, w, h } }); }
   catch (e) { return false; }
   return true;
 }
