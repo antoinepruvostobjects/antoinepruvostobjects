@@ -43,6 +43,10 @@ header .back:hover { color: var(--fg); }
 .intro b { display: block; font-weight: 500; font-size: clamp(16px, .5vw + 12px, 22px); letter-spacing: .02em; color: var(--fg); }
 .intro span { display: block; margin-top: 4px; font-size: 13px; letter-spacing: .03em; color: var(--muted); }
 .intro.off { opacity: 0; transform: translateY(6px); }
+/* textes du bas posés sur un bandeau blanc translucide, comme l'en-tête du site, pour rester lisibles sur les objets */
+.intro, .zhint { background: rgba(255, 255, 255, 0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.intro { padding: 10px 14px 11px; margin-left: -14px; }
+.zhint { padding: 7px 12px; margin-right: -12px; }
 .zhint { position: fixed; z-index: 5; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); bottom: max(22px, env(safe-area-inset-bottom, 0px)); margin: 0; color: var(--muted); font-size: 13px; letter-spacing: .05em; pointer-events: none; transition: opacity .5s ease; opacity: 0; }
 .embed .zhint { opacity: 1; }
 .embed #stage canvas { touch-action: pan-y; }
