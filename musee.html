@@ -1152,7 +1152,7 @@ let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
 /* Sur téléphone (écran en hauteur), les objets des bords se rapprochent du centre : la scène est moins large, donc vue de plus près */
 /* et la scène s'étire en profondeur pour remplir l'écran en hauteur */
-const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: 2.05, ani: 2.4, impression: 2.0 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.3;
+const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: 0.85, ani: 1.15, impression: 0.8 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.3;
 const benchRef = { g: null, o: null }, tableRef = { g: null, o: null };
 let phoneLayout = false;
 function applyLayout() {
@@ -1185,11 +1185,15 @@ function frameAll() {
     camDist *= 1.03; placeCamera(); camera.updateMatrixWorld(true);
   }
   // téléphone (écran en hauteur) : la scène tient en largeur, il resterait un grand vide au-dessus du bureau ; on remonte le cadrage
+  // et l'ensemble (du bureau jusqu'aux cartons, ANI et l'imprimante) est centré dans la hauteur restante sous l'en-tête
   if (camera.aspect < 1) {
-    for (let i = 0; i < 80; i++) {
-      const v = farPt.clone().project(camera), y = (1 - v.y) / 2 * h;
-      if (y <= topPx + 6) break;
-      look.z += 0.04; placeCamera(); camera.updateMatrixWorld(true);
+    const nearZ = Math.max(...exhibits.filter((e) => !e.isDesk && !e.isMe).map((e) => e.group.position.z + 0.3), 0.8);
+    const nearPt = new THREE.Vector3(0, 0, nearZ), botPx = h - Math.max(90, h * 0.13);   // on garde la place du petit texte de présentation en bas
+    for (let i = 0; i < 120; i++) {
+      const yt = (1 - farPt.clone().project(camera).y) / 2 * h, yb = (1 - nearPt.clone().project(camera).y) / 2 * h;
+      const gap = (yt - topPx) - (botPx - yb);     // > 0 : trop de vide en haut ; < 0 : trop de vide en bas
+      if (Math.abs(gap) < 4) break;
+      look.z += gap > 0 ? 0.015 : -0.015; placeCamera(); camera.updateMatrixWorld(true);
     }
   }
   lookZ0 = look.z;
