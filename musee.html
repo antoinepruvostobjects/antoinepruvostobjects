@@ -1274,7 +1274,8 @@ function renderOutline(lifted) {
   fx.mat.uniforms.amt.value = Math.min(1, Math.max(...lifted.map((e) => e.lift))) * 0.85;
   renderer.autoClear = false; renderer.render(fx.scene, fx.cam); renderer.autoClear = ac;
 }
-function hideIntro() { if (!introOn) return; introOn = false; document.getElementById("intro").classList.add("off"); }
+function hideIntro() { if (!introOn || TOUCH) return;   // sur téléphone et tablette, le petit texte de présentation reste affiché
+  introOn = false; document.getElementById("intro").classList.add("off"); }
 addEventListener("wheel", hideIntro, { passive: true });
 let workshopLoading = true; // l'atelier est chargé dès le départ (on l'aperçoit déjà sur téléphone)
 function loop() {
