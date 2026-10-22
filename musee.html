@@ -355,7 +355,7 @@ async function loadDesk() {
 /* ---------- Décor : les colis d'ANI, en préparation d'envoi ----------
    Deux cartons fermés empilés contre le bureau et un carton ouvert, papier de soie qui dépasse :
    ANI n'est plus un prototype, il va être expédié. Un clic ouvre la fiche d'ANI (inscription à la sortie). */
-const PARCEL = { id: "colis", name: "ANI", kind: "En préparation d'envoi · être informé de la sortie", year: "", href: "/#ani", x: -1.68, z: 0.05, rot: 6 };
+const PARCEL = { decor: true, id: "colis", name: "ANI", kind: "En préparation d'envoi · être informé de la sortie", year: "", href: "/#ani", x: -1.68, z: 0.05, rot: 6 };
 function canvasTex(w, h, draw, repeat) {
   const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
@@ -1074,7 +1074,7 @@ function pickAt(x, y) {
   const r = cv.getBoundingClientRect();
   mouse.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hits = ray.intersectObjects(exhibits.map((e) => e.group).concat([person.root]), true);
+  const hits = ray.intersectObjects(exhibits.filter((e) => !e.def.decor).map((e) => e.group).concat([person.root]), true);
   if (!hits.length) return null;
   if (hits[0].object.userData.me) return MEX;
   const id = hits[0].object.userData.exhibit;
@@ -1110,55 +1110,26 @@ function release(e) {
     const ex = pickAt(e.clientX, e.clientY);
     // au doigt comme à la souris : un seul toucher ouvre l'objet
     if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
-    if (ex && (ex.def.id === "ani" || ex.def.id === "colis") && startFly()) return;
+    if (ex && ex.def.id === "ani" && startFly()) return;
     if (ex) { go(ex.def.href); return; }
   }
 }
-/* ANI s'envole vers sa fiche : le reste de l'espace s'efface dans le gris de la fiche, le tabouret reste seul,
-   puis la page ANI prend le relais à la même place (le parent reçoit sa position à l'écran et une image) */
-const FLY_LAYER = 6, FLY_BG = 0xeceef1;
-let fly = null;
+/* ANI s'envole vers sa fiche : la page ANI s'ouvre aussitôt et reprend le tabouret là où il était à l'écran,
+   avec le même angle de vue, puis l'amène à sa place (le parent reçoit sa position et son orientation) */
 function startFly() {
-  if (fly) return true;
   const ani = exhibits.find((e) => e.def.id === "ani");
   if (!ani || !PARENT || typeof PARENT.__flyAni !== "function" || matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-  ani.inner.traverse((n) => { if (n.isMesh) n.layers.enable(FLY_LAYER); });
-  const veil = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: FLY_BG, transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
-  veil.frustumCulled = false; const vs = new THREE.Scene(); vs.add(veil);
-  fly = { ani, veil, vs, cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), t: 0, sent: false };
-  setHover(null); hideIntro();
-  return true;
-}
-function renderFly(dt) {
-  fly.t += dt; const a = Math.min(1, fly.t / 0.38);
-  fly.veil.material.opacity = a * a * (3 - 2 * a);
-  renderer.autoClear = false; renderer.clear(); renderer.render(scene, camera); renderer.render(fly.vs, fly.cam);
-  const su = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
-  renderer.clearDepth(); camera.layers.set(FLY_LAYER); renderer.render(scene, camera); camera.layers.set(0);
-  renderer.shadowMap.autoUpdate = su; renderer.autoClear = true;
-  if (a >= 1 && !fly.sent) {
-    fly.sent = true;
-    // position du tabouret à l'écran (en pixels de la page parente) et image de ce qu'on voit
-    const box = new THREE.Box3().setFromObject(fly.ani.inner), w = cv.clientWidth, h = cv.clientHeight;
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (let i = 0; i < 8; i++) {
-      const v = new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
-      const px = (v.x + 1) / 2 * w, py = (1 - v.y) / 2 * h; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
-    }
-    let img = "";
-    try {
-      const dpr = renderer.getPixelRatio(), c = document.createElement("canvas"), pad = 6;
-      c.width = Math.round((x1 - x0 + 2 * pad) * dpr); c.height = Math.round((y1 - y0 + 2 * pad) * dpr);
-      c.getContext("2d").drawImage(cv, (x0 - pad) * dpr, (y0 - pad) * dpr, c.width, c.height, 0, 0, c.width, c.height);
-      img = c.toDataURL("image/png"); x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
-    } catch (e) {}
-    let off = { left: 0, top: 0 };
-    try { const fr = PARENT.document.querySelector(".home3d iframe"); if (fr) off = fr.getBoundingClientRect(); } catch (e) {}
-    try {
-      PARENT.__flyAni({ rect: { x: off.left + x0, y: off.top + y0, w: x1 - x0, h: y1 - y0 }, img,
-        yaw: fly.ani.group.rotation.y, polar: Math.PI / 2 - CAM_PITCH, box: [box.min.toArray(), box.max.toArray()] });
-    } catch (e) { go("/#ani"); }
+  const box = new THREE.Box3().setFromObject(ani.inner), w = cv.clientWidth, h = cv.clientHeight;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i < 8; i++) {
+    const v = new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
+    const px = (v.x + 1) / 2 * w, py = (1 - v.y) / 2 * h; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
   }
+  let off = { left: 0, top: 0 };
+  try { const fr = PARENT.document.querySelector(".home3d iframe"); if (fr) off = fr.getBoundingClientRect(); } catch (e) {}
+  try { PARENT.__flyAni({ rect: { x: off.left + x0, y: off.top + y0, w: x1 - x0, h: y1 - y0 }, yaw: ani.group.rotation.y, polar: Math.PI / 2 - CAM_PITCH }); }
+  catch (e) { return false; }
+  return true;
 }
 cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
 cv.addEventListener("pointerleave", () => { pointerIn = false; if (!dragging) setHover(null); });
@@ -1169,7 +1140,7 @@ cv.addEventListener("wheel", (e) => { e.preventDefault(); if (PARENT && !e.ctrlK
 let kIndex = -1;
 addEventListener("keydown", (e) => {
   if (!exhibits.length) return;
-  if (e.key === "Tab") { e.preventDefault(); kIndex = (kIndex + (e.shiftKey ? -1 : 1) + exhibits.length) % exhibits.length; const ex = exhibits[kIndex]; setHover(ex); const p = ex.group.position.clone().project(camera); tag.style.left = ((p.x + 1) / 2 * innerWidth) + "px"; tag.style.top = ((1 - p.y) / 2 * innerHeight - 40) + "px"; }
+  if (e.key === "Tab") { e.preventDefault(); kIndex = (kIndex + (e.shiftKey ? -1 : 1) + exhibits.length) % exhibits.length; if (exhibits[kIndex].def.decor) kIndex = (kIndex + (e.shiftKey ? -1 : 1) + exhibits.length) % exhibits.length; const ex = exhibits[kIndex]; setHover(ex); const p = ex.group.position.clone().project(camera); tag.style.left = ((p.x + 1) / 2 * innerWidth) + "px"; tag.style.top = ((1 - p.y) / 2 * innerHeight - 40) + "px"; }
   if (e.key === "Enter" && hovered) go(hovered.def.href);
 });
 
@@ -1336,7 +1307,7 @@ function loop() {
   if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
   const lev = TOUCH && (fingerDown || performance.now() < levitateUntil);
   exhibits.forEach((e) => {
-    if (TOUCH) e.target = lev || e === hovered ? 1 : 0;
+    if (TOUCH) e.target = !e.def.decor && (lev || e === hovered) ? 1 : 0;   // les cartons sont du décor : ils ne se soulèvent pas
     if (e.isDesk && walker.atDesk) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
     e.inner.position.y = e.baseY + e.lift * (TOUCH ? 0.16 : 0.09);
@@ -1354,7 +1325,6 @@ function loop() {
   updateZoom(dt);
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
-  if (fly) { renderFly(dt); requestAnimationFrame(loop); return; }
   renderer.render(scene, camera);
   if (TOUCH) {
     exhibits.forEach((e) => { if (!e.isMe) setOutlined(e, e.lift > 0.15); });
@@ -1371,7 +1341,7 @@ Promise.all([loadAni(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar()])
   setTimeout(hideIntro, 12000);
   // au chargement, les objets cliquables se soulèvent un à un, pour montrer qu'ils s'ouvrent
   if (TOUCH) setTimeout(() => levitate(1800), 900);
-  const seq = TOUCH ? [] : exhibits.filter((e) => !e.def.y && !e.isMe);
+  const seq = TOUCH ? [] : exhibits.filter((e) => !e.def.y && !e.isMe && !e.def.decor);
   seq.forEach((e, i) => { setTimeout(() => { if (!hovered) e.target = 1; }, 900 + i * 420); setTimeout(() => { if (hovered !== e) e.target = 0; }, 1500 + i * 420); });
   loop();
 });
