@@ -471,11 +471,11 @@ async function loadPrinter() {
   };
   const fh = H * 0.82, f = pane(dx * 0.86, fh, 0.018); f.position.set(cx + dx * 0.02, pb.min.y + H * 0.03 + fh / 2, pb.max.z + 0.003); glow.add(f);          // porte vitrée
   const sw = dz * 0.6, shh = H * 0.48, sd = pane(sw, shh, 0.018); sd.rotation.y = Math.PI / 2;
-  sd.position.set(pb.max.x + 0.003, pb.min.y + H * 0.4 + shh / 2, pb.max.z - dz * 0.6); glow.add(sd);                                                // fenêtre du côté gauche
+  sd.position.set(pb.max.x + 0.003, pb.min.y + H * 0.4 + shh / 2, cz); glow.add(sd);                                                // fenêtre du côté gauche, centrée
   const tp = pane(dx * 0.86, dz * 0.24, 0.015); tp.rotation.x = -Math.PI / 2; tp.position.set(cx, ty + 0.003, pb.max.z - dz * 0.15); glow.add(tp);   // vitre du dessus, devant l'AMS
   // la lumière qui sort, comme celle de l'écran de l'iMac : devant, à gauche et vers le haut, pas sur la table
   const lf = new THREE.PointLight(0xc6d8ff, 0, 1.6, 2); lf.position.set(cx, pb.min.y + H * 0.6, pb.max.z + 0.16); g.add(lf);
-  const ll = new THREE.PointLight(0xc6d8ff, 0, 1.1, 2); ll.position.set(pb.max.x + 0.12, pb.min.y + H * 0.68, pb.max.z - dz * 0.55); g.add(ll);
+  const ll = new THREE.PointLight(0xc6d8ff, 0, 1.1, 2); ll.position.set(pb.max.x + 0.12, pb.min.y + H * 0.68, cz); g.add(ll);
   const lt = new THREE.PointLight(0xc6d8ff, 0, 1.0, 2); lt.position.set(cx, ty + 0.18, pb.max.z - dz * 0.1); g.add(lt);
   printerGlow.lights = [[lf, 0.6], [ll, 0.18], [lt, 0.14]];
   addExhibit(PRINTER, g);
