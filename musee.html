@@ -1199,7 +1199,7 @@ let lookZ0 = LOOK0.z; // centre du cadrage du studio, recalé selon l'écran
 const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) avec une marge, en mètres
 /* Sur téléphone (écran en hauteur), les objets des bords se rapprochent du centre : la scène est moins large, donc vue de plus près */
 /* et la scène s'étire en profondeur pour remplir l'écran en hauteur */
-const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: -0.3, ani: -0.02, impression: -0.35 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.5;
+const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: -0.02, ani: 0.26, impression: -0.07 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.5;
 const benchRef = { g: null, o: null }, tableRef = { g: null, o: null };
 let phoneLayout = false;
 function applyLayout() {
