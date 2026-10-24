@@ -524,16 +524,40 @@ async function loadPrinter() {
   const edge = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.5 });
   [[fw, 0.006, 0, fh / 2 - 0.003], [fw, 0.006, 0, -fh / 2 + 0.003]].forEach(([w, h, x, y]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.004), edge); b.position.set(fw / 2 + x, y, 0); door.add(b); });
   const handle = new THREE.Mesh(new RoundedBoxGeometry(0.012, fh * 0.32, 0.014, 2, 0.004), edge); handle.position.set(fw - 0.018, 0, 0.008); door.add(handle);
+  /* l'intérieur, refait proprement (le modèle est flou dedans) : une chambre gris anthracite, une cinématique CoreXY
+     — la tête se déplace dans un plan fixe en haut, le plateau descend d'une couche à chaque passage, comme sur la vraie machine */
   const inside = new THREE.Group(); inside.visible = false; g.add(inside);
-  const bedY = pb.min.y + H * 0.32, bed = new THREE.Mesh(new RoundedBoxGeometry(dx * 0.62, 0.008, dz * 0.62, 2, 0.003), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: 0.6, roughness: 0.35 }));
-  bed.position.set(cx, bedY, cz); inside.add(bed);
-  const head = new THREE.Group(), hb = new THREE.Mesh(new RoundedBoxGeometry(0.07, 0.06, 0.06, 2, 0.008), new THREE.MeshStandardMaterial({ color: 0x2b2c2f, roughness: 0.45 }));
-  const nz = new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.02, 12), new THREE.MeshStandardMaterial({ color: 0xc9a25a, metalness: 0.8, roughness: 0.3 })); nz.rotation.x = Math.PI; nz.position.y = -0.04;
-  head.add(hb); head.add(nz); inside.add(head);
-  const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, dx * 0.8, 10), new THREE.MeshStandardMaterial({ color: 0xbfc3c7, metalness: 1, roughness: 0.25 })); rail.rotation.z = Math.PI / 2; inside.add(rail);
-  const led = new THREE.PointLight(0xf2f6ff, 0, 1.2, 2); led.position.set(cx, pb.min.y + H * 0.78, cz + dz * 0.1); inside.add(led);
-  printerRef.g = g; printerRef.door = door; printerRef.inside = inside; printerRef.head = head; printerRef.rail = rail; printerRef.led = led;
-  printerRef.box = { cx, cz, dx, dz, H, bedY, y0: pb.min.y, front: pb.max.z, fcy, fh, fw };
+  const ix0 = cx - dx * 0.43, ix1 = cx + dx * 0.43, iz0 = pb.max.z - dz * 0.92, iz1 = pb.max.z - 0.012, iy0 = pb.min.y + H * 0.05, iy1 = pb.min.y + H * 0.85;
+  const iw = ix1 - ix0, idp = iz1 - iz0, ih = iy1 - iy0, icz = (iz0 + iz1) / 2;
+  const wallM = new THREE.MeshStandardMaterial({ color: 0x1c1d20, roughness: 0.85, metalness: 0.1, side: THREE.BackSide });
+  const noWall = new THREE.MeshBasicMaterial({ visible: false });
+  const liner = new THREE.Mesh(new THREE.BoxGeometry(iw, ih, idp), [wallM, wallM, wallM, wallM, noWall, wallM]); liner.position.set(cx, (iy0 + iy1) / 2, icz);   // pas de paroi devant : c'est la porte vitrée
+  inside.add(liner);
+  const steel = new THREE.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 1, roughness: 0.22 }), black = new THREE.MeshStandardMaterial({ color: 0x151517, roughness: 0.5, metalness: 0.2 });
+  // quatre vis de Z dans les coins, et les deux rails Y de chaque côté, en haut
+  [[ix0 + 0.03, iz0 + 0.03], [ix1 - 0.03, iz0 + 0.03], [ix0 + 0.03, iz1 - 0.05], [ix1 - 0.03, iz1 - 0.05]].forEach(([x, z]) => {
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, ih * 0.92, 12), steel); r.position.set(x, (iy0 + iy1) / 2, z); inside.add(r); });
+  const gy = iy1 - ih * 0.2;   // hauteur du plan de la tête (le haut de la pièce en cours)
+  [ix0 + 0.012, ix1 - 0.012].forEach((x) => { const r = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.022, idp * 0.94), black); r.position.set(x, gy + 0.05, icz); inside.add(r); });
+  const xbar = new THREE.Mesh(new THREE.BoxGeometry(iw - 0.03, 0.02, 0.026), new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.35, metalness: 0.5 })); inside.add(xbar);
+  // la tête : capot noir, ventilateur, buse en laiton, et le tube de filament blanc qui part vers le haut
+  const head = new THREE.Group(), body = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.068, 0.056, 3, 0.008), black); body.position.y = 0.012; head.add(body);
+  const face = new THREE.Mesh(new RoundedBoxGeometry(0.044, 0.05, 0.004, 2, 0.003), new THREE.MeshStandardMaterial({ color: 0x232427, roughness: 0.5, metalness: 0.3 })); face.position.set(0, 0.016, 0.029); head.add(face);
+  const fan = new THREE.Mesh(new THREE.RingGeometry(0.008, 0.016, 28), new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.6, side: THREE.DoubleSide })); fan.position.set(0, 0.016, 0.0315); head.add(fan);
+  const nz = new THREE.Mesh(new THREE.ConeGeometry(0.0055, 0.014, 14), new THREE.MeshStandardMaterial({ color: 0xc9a25a, metalness: 0.9, roughness: 0.3 })); nz.rotation.x = Math.PI; nz.position.y = -0.029; head.add(nz);
+  const ptfe = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, iy1 - gy - 0.05, 10), new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.4, transparent: true, opacity: 0.9 })); ptfe.position.y = 0.046 + (iy1 - gy - 0.05) / 2; head.add(ptfe);
+  inside.add(head);
+  // le plateau : plaque PEI texturée gris foncé sur son support ; il descend pendant l'impression
+  const bedG = new THREE.Group(); inside.add(bedG);
+  const carrier = new THREE.Mesh(new RoundedBoxGeometry(iw * 0.86, 0.012, idp * 0.8, 2, 0.004), black); carrier.position.y = -0.008; bedG.add(carrier);
+  const plate = new THREE.Mesh(new RoundedBoxGeometry(iw * 0.8, 0.004, idp * 0.74, 2, 0.002), new THREE.MeshStandardMaterial({ color: 0x45474b, roughness: 0.78, metalness: 0.35 })); bedG.add(plate);
+  bedG.position.set(cx, gy - 0.031, icz + idp * 0.04);
+  // la lumière : une barre LED au plafond, devant
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(iw * 0.7, 0.004, 0.01), new THREE.MeshBasicMaterial({ color: 0xf4f7ff })); bar.position.set(cx, iy1 - 0.004, iz1 - 0.03); inside.add(bar);
+  const led = new THREE.PointLight(0xf2f6ff, 0, 1.0, 2); led.position.set(cx, iy1 - 0.03, iz1 - 0.06); inside.add(led);
+  printerRef.model = pr; printerRef.ibox = new THREE.Box3(new THREE.Vector3(ix0 + 0.004, iy0 + 0.004, iz0 + 0.004), new THREE.Vector3(ix1 - 0.004, iy1 - 0.004, iz1 + 0.02));
+  printerRef.g = g; printerRef.door = door; printerRef.inside = inside; printerRef.head = head; printerRef.xbar = xbar; printerRef.led = led; printerRef.bed = bedG;
+  printerRef.box = { cx, cz: icz + idp * 0.04, dx, dz, H, gy, bed0: gy - 0.031, y0: pb.min.y, front: pb.max.z, fcy, fh, fw };
   addExhibit(PRINTER, g);
 }
 
@@ -1063,6 +1087,8 @@ function goLie() {
 }
 function decide() {
   walker.onArrive = null;
+  // pendant qu'on remplit une demande devant l'imprimante, il va travailler à son bureau (loin du champ de la caméra)
+  if (pview.on) { if (walker.lastAct !== "work" && goWork()) return; walker.state = "pause"; walker.timer = 3; walker.target = null; return; }
   if (walker.wanted) { const w = walker.wanted; walker.wanted = null; walker.last = w; walker.lastAct = "visit"; return startWalk(viewSpot(w), w); }
   const r = Math.random();
   if (r < 0.32) {
@@ -1380,28 +1406,48 @@ function printerPose() {
 function openPrinter() {
   if (!printerRef.g || zoom || pview.on) return false;
   pview.on = true; pview.back = { p: camera.position.clone(), l: look.clone() };
+  walker.wanted = null; if (!walker.steps) decide();
   setHover(null); hideIntro(); document.getElementById("intro").classList.add("off");
   const { p1, l1, near } = printerPose(); pview.l1 = l1;
   zoom = { t: 0, dur: 1.4, p0: camera.position.clone(), l0: look.clone(), p1, l1, f0: camera.fov, f1: PFOV, n0: camera.near, n1: near, keep: true, done: () => { pview.doorT = 1; setTimeout(() => document.getElementById("pform").classList.add("on"), 650); } };
   printerRef.door.visible = true; printerRef.inside.visible = true; if (printerGlow.front) printerGlow.front.visible = false;
-  // un petit ANI à imprimer sur le plateau : il « monte » couche par couche
+  clipModelInterior(true);
+  // un petit ANI à imprimer sur le plateau, couche par couche, avec ses fines lignes de couches
   const ani = exhibits.find((e) => e.def.id === "ani");
   if (ani && !pview.mini) {
-    const m = ani.inner.clone(true), bb = new THREE.Box3().setFromObject(ani.inner), hgt = bb.max.y - bb.min.y, k = 0.085 / hgt;
-    pview.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
-    const pla = new THREE.MeshStandardMaterial({ color: 0xe9c46a, roughness: 0.55, clippingPlanes: [pview.clip], side: THREE.DoubleSide });
+    const m = ani.inner.clone(true), bb = new THREE.Box3().setFromObject(ani.inner), hgt = bb.max.y - bb.min.y, k = PRINT.h / hgt;
+    pview.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0); pview.uBed = { value: 0 };
+    const pla = new THREE.MeshStandardMaterial({ color: 0xe9c46a, roughness: 0.6, clippingPlanes: [pview.clip], side: THREE.DoubleSide });
+    pla.onBeforeCompile = (sh) => {
+      sh.uniforms.uBed = pview.uBed; sh.uniforms.uLh = { value: PRINT.h / PRINT.n };
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vWY;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWY = (modelMatrix * vec4(transformed, 1.0)).y;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vWY;\nuniform float uBed;\nuniform float uLh;")
+        .replace("#include <color_fragment>", "#include <color_fragment>\n{ float f = fract((vWY - uBed) / uLh); diffuseColor.rgb *= 0.9 + 0.1 * smoothstep(0.0, 0.35, f) * smoothstep(1.0, 0.65, f); }");
+    };
     m.traverse((n) => { if (n.isMesh) { n.material = pla; n.castShadow = false; delete n.userData.exhibit; } });
-    m.scale.setScalar(k); m.position.set(printerRef.box.cx, printerRef.box.bedY + 0.004, printerRef.box.cz); m.rotation.set(0, 0.6, 0);
-    printerRef.inside.add(m); pview.mini = m; renderer.localClippingEnabled = true;
+    m.updateMatrixWorld(true); m.scale.setScalar(k); m.position.set(0, 0.002, 0); m.rotation.set(0, 0.6, 0);
+    printerRef.bed.add(m); pview.mini = m; renderer.localClippingEnabled = true;
   }
   pview.t = 0; return true;
+}
+/* on « vide » l'intérieur flou du modèle : six plans de coupe qui ne retirent que ce qui est dans la chambre */
+function clipModelInterior(on) {
+  const r = printerRef; if (!r.model) return;
+  let planes = null;
+  if (on) {
+    const b = r.ibox, M = r.g.matrixWorld; r.g.updateMatrixWorld(true);
+    planes = [[1, 0, 0, b.max.x], [-1, 0, 0, -b.min.x], [0, 1, 0, b.max.y], [0, -1, 0, -b.min.y], [0, 0, 1, b.max.z], [0, 0, -1, -b.min.z]]
+      .map(([x, y, z, d]) => new THREE.Plane(new THREE.Vector3(x, y, z), -d).applyMatrix4(M));
+    renderer.localClippingEnabled = true;
+  }
+  r.model.traverse((n) => { if (n.isMesh && n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => { m.clippingPlanes = planes; m.clipIntersection = true; m.needsUpdate = true; }); });
 }
 function closePrinter() {
   if (!pview.on || zoom) return;
   document.getElementById("pform").classList.remove("on"); pview.doorT = 0;
   setTimeout(() => {
     zoom = { t: 0, dur: 1.2, p0: camera.position.clone(), l0: pview.l1 || look.clone(), p1: pview.back.p, l1: pview.back.l, f0: PFOV, f1: FOV0, n0: camera.near, n1: 0.5, keep: true,
-      done: () => { pview.on = false; if (TOUCH) document.getElementById("intro").classList.remove("off"); printerRef.door.visible = false; printerRef.inside.visible = false; if (printerGlow.front) printerGlow.front.visible = true; frameAll(); } };
+      done: () => { pview.on = false; if (TOUCH) document.getElementById("intro").classList.remove("off"); printerRef.door.visible = false; printerRef.inside.visible = false; if (printerGlow.front) printerGlow.front.visible = true; clipModelInterior(false); frameAll(); } };
   }, 550);
 }
 (function () {
@@ -1421,19 +1467,31 @@ function closePrinter() {
       .finally(() => { bt.disabled = false; });
   });
 })();
+const PRINT = { h: 0.085, n: 70, layer: 1.7, hold: 5 };   // 8,5 cm, 70 couches d'environ 1,2 mm, 1,7 s par couche (≈ 2 min), puis 5 s de pause
 function updatePrinter(dt) {
   if (!printerRef.door || !pview.on) return;
   pview.door = THREE.MathUtils.damp(pview.door, pview.doorT, 4.5, dt);
   const e = pview.door * pview.door * (3 - 2 * pview.door);
   printerRef.door.rotation.y = -1.85 * e;
-  printerRef.led.intensity = 0.9 * e;
+  printerRef.led.intensity = 0.55 * e;
+  if (pview.door < 0.5) return;   // l'impression démarre une fois la porte ouverte
   pview.t += dt;
-  const b = printerRef.box, hd = printerRef.head, ph = (pview.t * 0.9) % 1;
-  // la tête va et vient au-dessus de la pièce, et la pièce monte doucement (une impression en boucle de 12 s)
-  const prog = Math.min(1, (pview.t % 12) / 10), top = b.bedY + 0.004 + 0.085 * prog;
-  hd.position.set(b.cx + Math.sin(pview.t * 3.1) * 0.05, top + 0.045, b.cz + Math.cos(pview.t * 2.3) * 0.04);
-  printerRef.rail.position.set(b.cx, top + 0.075, hd.position.z);
-  if (pview.clip && pview.mini) { const wy = printerRef.g.localToWorld(new THREE.Vector3(0, top, 0)).y; pview.clip.constant = wy; }
+  const b = printerRef.box, cyc = PRINT.n * PRINT.layer + PRINT.hold, t = pview.t % cyc;
+  const L = Math.min(PRINT.n, Math.floor(t / PRINT.layer)), u = (t % PRINT.layer) / PRINT.layer, done = L >= PRINT.n, lh = PRINT.h / PRINT.n;
+  // le plateau descend d'une couche à chaque fois ; la tête reste dans son plan
+  const z = (done ? PRINT.n : L) * lh;
+  printerRef.bed.position.y = b.bed0 - z;
+  // trajet de la tête : un tour de périmètre autour de la pièce, puis des allers-retours de remplissage ; elle se gare quand c'est fini
+  let hx, hz;
+  const R = 0.034 * (0.75 + 0.25 * Math.cos(L * 0.15));
+  if (done) { const k = Math.min(1, (t - PRINT.n * PRINT.layer) / 1.2); hx = b.cx + (b.dx * 0.3) * k; hz = b.cz - 0.06 * k; }
+  else if (u < 0.5) { const a = u / 0.5 * Math.PI * 2 + L; hx = b.cx + Math.cos(a) * R; hz = b.cz + Math.sin(a) * R * 0.8; }
+  else { const v = (u - 0.5) / 0.5, rows = 6, row = Math.min(rows - 1, Math.floor(v * rows)), s2 = (v * rows) % 1; hz = b.cz + (row / (rows - 1) - 0.5) * R * 1.4; hx = b.cx + (row % 2 ? 1 - s2 : s2) * R * 1.6 - R * 0.8; }
+  printerRef.head.position.set(hx, b.gy, hz); printerRef.xbar.position.set(b.cx, b.gy + 0.05, hz);
+  if (pview.clip && pview.mini) {
+    const bedW = printerRef.g.localToWorld(new THREE.Vector3(0, printerRef.bed.position.y + 0.002, 0)).y, s = printerRef.g.getWorldScale(new THREE.Vector3()).y;
+    pview.uBed.value = bedW; pview.clip.constant = bedW + ((done ? PRINT.n : L + u * 0.999) * lh) * s;
+  }
 }
 
 /* ---------- Mise à l'échelle de l'écran ---------- */
