@@ -19,6 +19,29 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 html.night { --bg: #17181b; }
+/* formulaire de devis, à côté de l'imprimante ouverte */
+.pform { position: fixed; z-index: 8; right: max(clamp(20px, 5vw, 120px), env(safe-area-inset-right, 0px)); top: 50%; width: min(440px, 40vw); max-height: calc(100% - 40px); overflow: auto;
+  transform: translate(24px, -50%); opacity: 0; pointer-events: none; transition: opacity .6s ease, transform .7s cubic-bezier(.2,.7,.2,1);
+  background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 6px; padding: clamp(20px, 2.2vw, 34px); box-shadow: 0 20px 50px -30px rgba(0,0,0,.4); color: #111; margin: 0; }
+.pform.on { opacity: 1; transform: translate(0, -50%); pointer-events: auto; }
+.pform h2 { margin: 6px 0 6px; font-size: clamp(20px, 1.6vw, 26px); font-weight: 500; letter-spacing: .01em; }
+.pform .pf-sub { margin: 0 0 16px; color: #6b6b6b; font-size: 13px; line-height: 1.45; }
+.pform label { display: block; margin-top: 10px; font-size: 12px; letter-spacing: .03em; color: #5c5c5c; }
+.pform label span { color: #9a9a9a; }
+.pform input, .pform select, .pform textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 5px; padding: 9px 10px; border: 1px solid #e2e2e2; border-radius: 3px; background: #fff; font: inherit; font-size: 14px; color: #111; }
+.pform input:focus, .pform select:focus, .pform textarea:focus { outline: none; border-color: #111; }
+.pform .pf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pform .pf-hp { position: absolute; left: -9999px; }
+.pform .pf-send { width: 100%; margin-top: 16px; padding: 12px; border: 0; border-radius: 3px; background: #2f2f31; color: #fff; font: inherit; font-size: 14px; letter-spacing: .03em; cursor: pointer; }
+.pform .pf-send:hover { background: #111; }
+.pform .pf-back { appearance: none; border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: #6b6b6b; cursor: pointer; letter-spacing: .03em; }
+.pform .pf-back:hover { color: #111; }
+.pform .pf-state { margin: 10px 0 0; font-size: 13px; color: #6b6b6b; min-height: 1em; }
+@media (max-aspect-ratio: 1/1) {
+  .pform { left: 12px; right: 12px; width: auto; top: auto; bottom: 12px; max-height: 58%; transform: translateY(30px); }
+  .pform.on { transform: none; }
+  .pform .pf-row { grid-template-columns: 1fr 1fr; }
+}
 html.night .intro { background: rgba(23, 24, 27, 0.6); } html.night .intro b { color: #ecebe8; } html.night .intro span { color: #9a9a9e; }
 html.night .tag { color: #ecebe8; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
@@ -63,6 +86,20 @@ header .back:hover { color: var(--fg); }
 <div id="stage" aria-label="Espace d'exposition en 3D : survolez un objet pour le soulever, cliquez pour ouvrir sa fiche"></div>
 <div class="tag" id="tag" aria-hidden="true"><b></b><span></span></div>
 <p class="hint" id="hint" hidden>Survolez un objet · cliquez pour l'ouvrir</p>
+<form class="pform" id="pform" novalidate>
+  <button type="button" class="pf-back" id="pf-back">← Retour</button>
+  <h2>Demande d'impression 3D</h2>
+  <p class="pf-sub">Décrivez votre pièce : je vérifie le fichier et je vous réponds avec un devis.</p>
+  <div class="pf-row"><label>Nom<input name="nom" required autocomplete="name"></label><label>E-mail<input name="email" type="email" required autocomplete="email"></label></div>
+  <label>Lien vers le fichier <span>(STL, 3MF, STEP… via WeTransfer, Drive…)</span><input name="fichier" type="url" placeholder="https://"></label>
+  <div class="pf-row"><label>Matière<select name="matiere"><option>Je ne sais pas</option><option>PLA</option><option>PETG</option><option>TPU (souple)</option><option>ABS / ASA</option></select></label><label>Couleur<input name="couleur" placeholder="Noir, blanc…"></label></div>
+  <div class="pf-row"><label>Quantité<input name="quantite" type="number" min="1" value="1"></label><label>Taille approx.<input name="taille" placeholder="ex. 10 × 5 × 3 cm"></label></div>
+  <label>Délai souhaité<input name="delai" placeholder="ex. dans 2 semaines"></label>
+  <label>Message<textarea name="message" rows="3" placeholder="Usage de la pièce, contraintes…"></textarea></label>
+  <input type="text" name="_honey" class="pf-hp" tabindex="-1" autocomplete="off">
+  <button type="submit" class="pf-send">Demander un devis</button>
+  <p class="pf-state" aria-live="polite"></p>
+</form>
 <div class="intro" id="intro"><b>Antoine Pruvost, designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
@@ -439,6 +476,7 @@ async function loadParcels() {
 /* ---------- L'imprimante 3D sur sa petite table blanche (façon IKEA Lack) : un clic mène au devis d'impression ---------- */
 const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.68, z: 0.02, rot: -90 };
 const printerGlow = { g: null, lights: [] };
+const printerRef = { g: null };
 async function loadPrinter() {
   const pr = await loadGLB("printer"); if (!pr) return;
   const g = new THREE.Group();
@@ -477,7 +515,25 @@ async function loadPrinter() {
   const lf = new THREE.PointLight(0xc6d8ff, 0, 1.6, 2); lf.position.set(cx, pb.min.y + H * 0.6, pb.max.z + 0.16); g.add(lf);
   const ll = new THREE.PointLight(0xc6d8ff, 0, 1.1, 2); ll.position.set(pb.max.x + 0.12, pb.min.y + H * 0.68, cz); g.add(ll);
   const lt = new THREE.PointLight(0xc6d8ff, 0, 1.0, 2); lt.position.set(cx, ty + 0.18, pb.max.z - dz * 0.1); g.add(lt);
-  printerGlow.lights = [[lf, 0.6], [ll, 0.18], [lt, 0.14]];
+  printerGlow.lights = [[lf, 0.6], [ll, 0.18], [lt, 0.14]]; printerGlow.front = f;
+  /* La porte vitrée (une vitre posée devant celle du modèle, articulée à gauche) et l'intérieur qui s'anime quand on ouvre l'imprimante */
+  const fw = dx * 0.86, fcy = pb.min.y + H * 0.03 + fh / 2;
+  const door = new THREE.Group(); door.position.set(cx + dx * 0.02 - fw / 2, fcy, pb.max.z + 0.006); door.visible = false; g.add(door);
+  const doorGlass = new THREE.MeshPhysicalMaterial({ color: 0x2c3238, transparent: true, opacity: 0.5, roughness: 0.04, metalness: 0, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false });
+  const dg = pane(fw, fh, 0.018); dg.material = doorGlass; dg.position.x = fw / 2; door.add(dg);
+  const edge = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.5 });
+  [[fw, 0.006, 0, fh / 2 - 0.003], [fw, 0.006, 0, -fh / 2 + 0.003]].forEach(([w, h, x, y]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.004), edge); b.position.set(fw / 2 + x, y, 0); door.add(b); });
+  const handle = new THREE.Mesh(new RoundedBoxGeometry(0.012, fh * 0.32, 0.014, 2, 0.004), edge); handle.position.set(fw - 0.018, 0, 0.008); door.add(handle);
+  const inside = new THREE.Group(); inside.visible = false; g.add(inside);
+  const bedY = pb.min.y + H * 0.32, bed = new THREE.Mesh(new RoundedBoxGeometry(dx * 0.62, 0.008, dz * 0.62, 2, 0.003), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: 0.6, roughness: 0.35 }));
+  bed.position.set(cx, bedY, cz); inside.add(bed);
+  const head = new THREE.Group(), hb = new THREE.Mesh(new RoundedBoxGeometry(0.07, 0.06, 0.06, 2, 0.008), new THREE.MeshStandardMaterial({ color: 0x2b2c2f, roughness: 0.45 }));
+  const nz = new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.02, 12), new THREE.MeshStandardMaterial({ color: 0xc9a25a, metalness: 0.8, roughness: 0.3 })); nz.rotation.x = Math.PI; nz.position.y = -0.04;
+  head.add(hb); head.add(nz); inside.add(head);
+  const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, dx * 0.8, 10), new THREE.MeshStandardMaterial({ color: 0xbfc3c7, metalness: 1, roughness: 0.25 })); rail.rotation.z = Math.PI / 2; inside.add(rail);
+  const led = new THREE.PointLight(0xf2f6ff, 0, 1.2, 2); led.position.set(cx, pb.min.y + H * 0.78, cz + dz * 0.1); inside.add(led);
+  printerRef.g = g; printerRef.door = door; printerRef.inside = inside; printerRef.head = head; printerRef.rail = rail; printerRef.led = led;
+  printerRef.box = { cx, cz, dx, dz, H, bedY, y0: pb.min.y, front: pb.max.z, fcy, fh, fw };
   addExhibit(PRINTER, g);
 }
 
@@ -1221,7 +1277,9 @@ function release(e) {
     const ex = pickAt(e.clientX, e.clientY);
     // au doigt comme à la souris : un seul toucher ouvre l'objet
     if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
+    if (pview.on) return;
     if (ex && ex.def.id === "ani" && startFly()) return;
+    if (ex && ex.def.id === "impression" && openPrinter()) return;
     if (ex) { go(ex.def.href); return; }
   }
 }
@@ -1296,10 +1354,86 @@ function updateZoom(dt) {
   if (!zoom) return false;
   zoom.t = Math.min(1, zoom.t + dt / zoom.dur);
   const e = zoom.t < 0.5 ? 4 * zoom.t ** 3 : 1 - Math.pow(-2 * zoom.t + 2, 3) / 2;
+  if (zoom.f1) { camera.fov = zoom.f0 + (zoom.f1 - zoom.f0) * e; if (zoom.n1) camera.near = zoom.n0 + (zoom.n1 - zoom.n0) * e; camera.updateProjectionMatrix(); }
   camera.position.lerpVectors(zoom.p0, zoom.p1, e);
   camera.lookAt(new THREE.Vector3().lerpVectors(zoom.l0, zoom.l1, e));
-  if (zoom.t >= 1) { const f = zoom.done; zoom = null; setTimeout(f, 120); setTimeout(() => { frameAll(); }, 900); }
+  if (zoom.t >= 1) { const f = zoom.done, keep = zoom.keep; zoom = null; setTimeout(f, keep ? 0 : 120); if (!keep) setTimeout(() => { frameAll(); }, 900); }
   return true;
+}
+
+/* ---------- L'imprimante : la caméra vient en face, la porte vitrée s'ouvre, l'imprimante imprime un petit ANI,
+   et le formulaire de demande de devis apparaît à côté ---------- */
+const PFOV = 30, FOV0 = 11;   // de près, une focale plus courte : la caméra peut s'approcher sans traverser le décor
+const pview = { on: false, door: 0, doorT: 0, t: 0, back: null, mini: null, clip: null };
+function printerPose() {
+  const r = printerRef, b = r.box; r.g.updateMatrixWorld(true);
+  const c = r.g.localToWorld(new THREE.Vector3(b.cx, b.y0 + b.H * 0.66, b.front));   // le milieu de l'imprimante avec son AMS
+  const n = new THREE.Vector3(0, 0, 1).transformDirection(r.g.matrixWorld); n.y = 0; n.normalize();
+  const half = Math.tan(THREE.MathUtils.degToRad(PFOV / 2)), w = cv.clientWidth, h = cv.clientHeight, asp = w / h;
+  const wide = asp >= 1, H = b.H * (wide ? 1.85 : 1.45);
+  let d = (H / 2) / half; if (!wide) d = Math.max((H / 2) / (half * 0.42), (b.dx * 1.6 / 2) / (half * asp));   // téléphone : l'imprimante tient dans le haut de l'écran, au-dessus du formulaire
+  const up = new THREE.Vector3(0, 1, 0), right = new THREE.Vector3().crossVectors(n.clone().negate(), up).normalize();
+  const shift = wide ? right.clone().multiplyScalar(d * half * asp * 0.38) : up.clone().multiplyScalar(-d * half * 0.56);   // l'imprimante à gauche (ordinateur) ou en haut (téléphone)
+  const l1 = c.clone().add(shift), p1 = l1.clone().addScaledVector(n, d).add(new THREE.Vector3(0, d * 0.06, 0));
+  return { p1, l1, near: Math.max(0.5, d - b.dx * 1.4) };   // tout ce qui est entre la caméra et l'imprimante est laissé hors champ
+}
+function openPrinter() {
+  if (!printerRef.g || zoom || pview.on) return false;
+  pview.on = true; pview.back = { p: camera.position.clone(), l: look.clone() };
+  setHover(null); hideIntro(); document.getElementById("intro").classList.add("off");
+  const { p1, l1, near } = printerPose(); pview.l1 = l1;
+  zoom = { t: 0, dur: 1.4, p0: camera.position.clone(), l0: look.clone(), p1, l1, f0: camera.fov, f1: PFOV, n0: camera.near, n1: near, keep: true, done: () => { pview.doorT = 1; setTimeout(() => document.getElementById("pform").classList.add("on"), 650); } };
+  printerRef.door.visible = true; printerRef.inside.visible = true; if (printerGlow.front) printerGlow.front.visible = false;
+  // un petit ANI à imprimer sur le plateau : il « monte » couche par couche
+  const ani = exhibits.find((e) => e.def.id === "ani");
+  if (ani && !pview.mini) {
+    const m = ani.inner.clone(true), bb = new THREE.Box3().setFromObject(ani.inner), hgt = bb.max.y - bb.min.y, k = 0.085 / hgt;
+    pview.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+    const pla = new THREE.MeshStandardMaterial({ color: 0xe9c46a, roughness: 0.55, clippingPlanes: [pview.clip], side: THREE.DoubleSide });
+    m.traverse((n) => { if (n.isMesh) { n.material = pla; n.castShadow = false; delete n.userData.exhibit; } });
+    m.scale.setScalar(k); m.position.set(printerRef.box.cx, printerRef.box.bedY + 0.004, printerRef.box.cz); m.rotation.set(0, 0.6, 0);
+    printerRef.inside.add(m); pview.mini = m; renderer.localClippingEnabled = true;
+  }
+  pview.t = 0; return true;
+}
+function closePrinter() {
+  if (!pview.on || zoom) return;
+  document.getElementById("pform").classList.remove("on"); pview.doorT = 0;
+  setTimeout(() => {
+    zoom = { t: 0, dur: 1.2, p0: camera.position.clone(), l0: pview.l1 || look.clone(), p1: pview.back.p, l1: pview.back.l, f0: PFOV, f1: FOV0, n0: camera.near, n1: 0.5, keep: true,
+      done: () => { pview.on = false; if (TOUCH) document.getElementById("intro").classList.remove("off"); printerRef.door.visible = false; printerRef.inside.visible = false; if (printerGlow.front) printerGlow.front.visible = true; frameAll(); } };
+  }, 550);
+}
+(function () {
+  const f = document.getElementById("pform"), st = f.querySelector(".pf-state"), bt = f.querySelector(".pf-send");
+  document.getElementById("pf-back").addEventListener("click", () => closePrinter());
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && pview.on) closePrinter(); });
+  f.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(f).entries());
+    if (d._honey) return;
+    if (!d.nom || !d.email || !/.+@.+\..+/.test(d.email)) { st.textContent = "Merci d'indiquer votre nom et un e-mail valide."; return; }
+    bt.disabled = true; st.textContent = "Envoi…";
+    const body = Object.assign({ _subject: "Demande d'impression 3D — " + d.nom, _template: "table", _captcha: "false" }, d); delete body._honey;
+    fetch("https://formsubmit.co/ajax/antoine.pruvost.ap@gmail.com", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) })
+      .then((r) => r.json()).then((r) => { if (r && (r.success === "true" || r.success === true)) { st.textContent = "Merci ! Votre demande est partie, je vous réponds rapidement."; f.reset(); } else throw 0; })
+      .catch(() => { st.textContent = "L'envoi n'a pas fonctionné. Écrivez-moi à antoine.pruvost.ap@gmail.com"; })
+      .finally(() => { bt.disabled = false; });
+  });
+})();
+function updatePrinter(dt) {
+  if (!printerRef.door || !pview.on) return;
+  pview.door = THREE.MathUtils.damp(pview.door, pview.doorT, 4.5, dt);
+  const e = pview.door * pview.door * (3 - 2 * pview.door);
+  printerRef.door.rotation.y = -1.85 * e;
+  printerRef.led.intensity = 0.9 * e;
+  pview.t += dt;
+  const b = printerRef.box, hd = printerRef.head, ph = (pview.t * 0.9) % 1;
+  // la tête va et vient au-dessus de la pièce, et la pièce monte doucement (une impression en boucle de 12 s)
+  const prog = Math.min(1, (pview.t % 12) / 10), top = b.bedY + 0.004 + 0.085 * prog;
+  hd.position.set(b.cx + Math.sin(pview.t * 3.1) * 0.05, top + 0.045, b.cz + Math.cos(pview.t * 2.3) * 0.04);
+  printerRef.rail.position.set(b.cx, top + 0.075, hd.position.z);
+  if (pview.clip && pview.mini) { const wy = printerRef.g.localToWorld(new THREE.Vector3(0, top, 0)).y; pview.clip.constant = wy; }
 }
 
 /* ---------- Mise à l'échelle de l'écran ---------- */
@@ -1328,6 +1462,7 @@ function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); r
 function frameAll() {
   const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
   camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (pview.on && !zoom) { camera.fov = PFOV; const { p1, l1, near } = printerPose(); camera.near = near; camera.updateProjectionMatrix(); pview.l1 = l1; camera.position.copy(p1); camera.lookAt(l1); return; }
   look.copy(LOOK0);
   const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const span = Math.max(5.2, 3.6 / camera.aspect + 2);               // ordinateur : largeur de sol montrée
@@ -1461,12 +1596,12 @@ function loop() {
   updateAvatar(dt);
   // l'atelier n'est chargé que lorsqu'on commence à descendre (ou après quelques secondes sur place)
   if (!workshopLoading && (scrollT > 0.02 || clock.elapsedTime > 6)) { workshopLoading = true; fetchGLTF("workbench"); loadWorkshop().then(() => exhibits.forEach((e) => { if (e.baseY === undefined) e.baseY = e.inner.position.y; })); }
-  if (!zoom) {
+  if (!zoom && !pview.on) {
     const prev = scrollP; scrollP = THREE.MathUtils.damp(scrollP, scrollT, 5, dt);
     if (Math.abs(scrollP - prev) > 1e-5) { look.z = THREE.MathUtils.lerp(lookZ0, LOOK0.z + ZONE_DZ, scrollP); placeCamera(); }
     const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
   }
-  updateZoom(dt);
+  updateZoom(dt); updatePrinter(dt);
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   renderer.render(scene, camera);
