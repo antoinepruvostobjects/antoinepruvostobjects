@@ -100,7 +100,7 @@ header .back:hover { color: var(--fg); }
   <button type="submit" class="pf-send">Demander un devis</button>
   <p class="pf-state" aria-live="polite"></p>
 </form>
-<div class="intro" id="intro"><b>Antoine Pruvost, designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
+<div class="intro" id="intro"><b>Antoine Pruvost<br>designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
 <p class="proto">Prototype</p>
 <div class="load" id="load">Chargement de l'espace…</div>
 
@@ -1358,12 +1358,15 @@ function release(e) {
   hideIntro();
   if (moved <= 6) {
     const ex = pickAt(e.clientX, e.clientY);
-    // au doigt comme à la souris : un seul toucher ouvre l'objet
-    if (ex && ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
-    if (pview.on) return;
-    if (ex && ex.def.id === "ani" && startFly()) return;
-    if (ex && ex.def.id === "impression" && openPrinter()) return;
-    if (ex) { go(ex.def.href); return; }
+    if (pview.on || !ex) return;
+    // au doigt comme à la souris : un seul toucher ouvre l'objet ; au doigt, l'objet touché se soulève un instant avant de s'ouvrir
+    const open = () => {
+      if (ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
+      if (ex.def.id === "ani" && startFly()) return;
+      if (ex.def.id === "impression" && openPrinter()) return;
+      go(ex.def.href);
+    };
+    if (TOUCH && !ex.isMe) { ex.pulseFrom = 0; ex.pulse = performance.now() + 420; setTimeout(open, 280); } else open();
   }
 }
 /* ANI s'envole vers sa fiche : la page ANI s'ouvre aussitôt et reprend le tabouret là où il était à l'écran,
@@ -1703,9 +1706,9 @@ function loop() {
     deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
   }
   if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, NIGHT ? Math.max(0.85, deskParts.screenTarget) : deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
-  const lev = TOUCH && (fingerDown || performance.now() < levitateUntil);
+  const nowT = performance.now();
   exhibits.forEach((e) => {
-    if (TOUCH) e.target = !e.def.decor && (lev || e === hovered) ? 1 : 0;   // les cartons sont du décor : ils ne se soulèvent pas
+    if (TOUCH) e.target = !e.def.decor && nowT < (e.pulse || 0) && nowT >= (e.pulseFrom || 0) ? 1 : 0;   // au doigt : seulement le petit « bonjour » de l'arrivée et l'objet qu'on touche
     if (e.isDesk && walker.atDesk) e.target = 0;
     if (pview.on) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
@@ -1735,9 +1738,9 @@ Promise.all([loadAni(), loadDesk(), loadParcels(), loadPrinter(), loadAvatar(), 
   document.getElementById("load").classList.add("off");
   setTimeout(hideIntro, 12000);
   // au chargement, les objets cliquables se soulèvent un à un, pour montrer qu'ils s'ouvrent
-  if (TOUCH) setTimeout(() => levitate(1800), 900);
-  const seq = TOUCH ? [] : exhibits.filter((e) => !e.def.y && !e.isMe && !e.def.decor);
-  seq.forEach((e, i) => { setTimeout(() => { if (!hovered) e.target = 1; }, 900 + i * 420); setTimeout(() => { if (hovered !== e) e.target = 0; }, 1500 + i * 420); });
+  const seq = exhibits.filter((e) => !e.def.y && !e.isMe && !e.def.decor);
+  if (TOUCH) seq.forEach((e, i) => { e.pulse = performance.now() + 1200 + i * 420 + 600; e.pulseFrom = performance.now() + 1200 + i * 420; });
+  else seq.forEach((e, i) => { setTimeout(() => { if (!hovered) e.target = 1; }, 900 + i * 420); setTimeout(() => { if (hovered !== e) e.target = 0; }, 1500 + i * 420); });
   loop();
 });
 </script>
