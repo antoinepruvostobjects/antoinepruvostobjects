@@ -477,8 +477,70 @@ async function loadParcels() {
 const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.68, z: 0.02, rot: -90 };
 const printerGlow = { g: null, lights: [] };
 const printerRef = { g: null };
+/* L'imprimante Bambu Lab H2C, refaite proprement en 3D (le modèle d'origine était flou) :
+   corps graphite, bandeau noir brillant avec l'écran tactile, porte vitrée fumée, fenêtre sur le côté gauche,
+   et l'AMS 2 Pro au-dessus avec ses quatre bobines sous le dôme transparent */
+function printerScreenTexture() {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 320; const x = c.getContext("2d");
+  x.fillStyle = "#0e1013"; x.fillRect(0, 0, 512, 320);
+  x.fillStyle = "#1b1e23"; x.fillRect(0, 0, 64, 320);                                   // colonne d'icônes
+  ["#e9e9e9", "#8a8f96", "#8a8f96", "#8a8f96", "#8a8f96"].forEach((col, i) => { x.fillStyle = col; x.beginPath(); x.arc(32, 40 + i * 56, 9, 0, Math.PI * 2); x.fill(); });
+  const card = (cx, cy, w, h) => { x.fillStyle = "#1d2127"; x.beginPath(); x.roundRect(cx, cy, w, h, 14); x.fill(); };
+  card(84, 22, 238, 276); card(336, 22, 156, 130); card(336, 168, 156, 130);
+  x.fillStyle = "#2c3038"; x.beginPath(); x.roundRect(106, 46, 194, 150, 10); x.fill();     // aperçu du plateau
+  x.fillStyle = "#e9c46a"; x.beginPath(); x.moveTo(190, 160); x.lineTo(203, 92); x.lineTo(216, 160); x.closePath(); x.fill(); x.fillRect(176, 96, 54, 10);
+  x.fillStyle = "#3a3f47"; x.beginPath(); x.roundRect(106, 222, 194, 10, 5); x.fill();
+  x.fillStyle = "#3fbf6b"; x.beginPath(); x.roundRect(106, 222, 120, 10, 5); x.fill();      // progression
+  x.fillStyle = "#f2f2f2"; x.font = "600 30px Helvetica, Arial, sans-serif"; x.fillText("62%", 106, 272);
+  x.fillStyle = "#9aa0a8"; x.font = "20px Helvetica, Arial, sans-serif"; x.fillText("1 h 08", 230, 272);
+  x.fillStyle = "#f2f2f2"; x.font = "600 26px Helvetica, Arial, sans-serif"; x.fillText("220°", 356, 88); x.fillText("65°", 356, 234);
+  x.fillStyle = "#9aa0a8"; x.font = "17px Helvetica, Arial, sans-serif"; x.fillText("Buse", 356, 120); x.fillText("Plateau", 356, 266);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+function buildH2C() {
+  const W = 0.46, D = 0.47, BH = 0.56, T = 0.012, g = new THREE.Group();
+  const shell = new THREE.MeshStandardMaterial({ color: 0x2c2d30, roughness: 0.66, metalness: 0.25 });
+  const gloss = new THREE.MeshStandardMaterial({ color: 0x09090a, roughness: 0.16, metalness: 0.3 });
+  const smoke = new THREE.MeshPhysicalMaterial({ color: 0x15181c, transparent: true, opacity: 0.6, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 });
+  const box = (w, h, d, m, x, y, z, r = 0.004) => { const b = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, r), m); b.position.set(x, y, z); b.castShadow = true; b.receiveShadow = true; g.add(b); return b; };
+  // flancs, dos, socle ; les arêtes verticales bien arrondies comme sur la vraie machine
+  box(T * 2, BH, D, shell, -W / 2 + T, BH / 2, 0, 0.012); box(T * 2, BH, D, shell, W / 2 - T, BH / 2, 0, 0.012);
+  box(W - 0.02, BH, T, shell, 0, BH / 2, -D / 2 + T / 2);
+  box(W, 0.03, D, new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.7 }), 0, 0.015, 0, 0.006);
+  // dessus : une seule plaque de verre fumé, avec son cadre graphite plus large devant
+  box(W, 0.008, D, smoke, 0, BH - 0.004, 0, 0.003);
+  box(W, 0.01, 0.03, shell, 0, BH - 0.005, D / 2 - 0.015, 0.004);
+  // bandeau avant : noir brillant, avec l'écran tactile à gauche
+  const BAND = 0.1; box(W - 0.02, BAND, T, gloss, 0, BH - BAND / 2, D / 2 - T / 2, 0.003);
+  const bez = box(0.122, 0.078, 0.008, new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.2 }), -W / 2 + 0.03 + 0.061, BH - BAND / 2, D / 2 + 0.002, 0.006);
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.068), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: printerScreenTexture(), emissiveIntensity: 0.9, roughness: 0.2 }));
+  scr.position.set(bez.position.x, bez.position.y, D / 2 + 0.0065); g.add(scr);
+  // montants de la porte et petite bande basse
+  box(0.014, BH - BAND - 0.03, T, shell, -W / 2 + 0.007, (BH - BAND + 0.03) / 2, D / 2 - T / 2, 0.003); box(0.014, BH - BAND - 0.03, T, shell, W / 2 - 0.007, (BH - BAND + 0.03) / 2, D / 2 - T / 2, 0.003);
+  // fenêtre du côté gauche (+x) : verre fumé encastré, coins arrondis
+  const sw = new THREE.Mesh(new RoundedBoxGeometry(0.004, BH * 0.46, D * 0.6, 2, 0.002), smoke); sw.position.set(W / 2 + 0.001, BH * 0.62, 0); g.add(sw);
+  // l'AMS 2 Pro posé dessus, vers l'arrière
+  const ams = new THREE.Group(); ams.position.set(0, BH, -D / 2 + 0.165); g.add(ams);
+  const AW = 0.4, AD = 0.27, AH = 0.11;
+  const amsDark = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.55, metalness: 0.2 });
+  const amsGlass = new THREE.MeshPhysicalMaterial({ color: 0x3b4046, transparent: true, opacity: 0.42, roughness: 0.08, clearcoat: 1, depthWrite: false });
+  const ab = new THREE.Mesh(new RoundedBoxGeometry(AW, 0.028, AD, 3, 0.008), amsDark); ab.position.y = 0.014; ams.add(ab);
+  const aw = new THREE.Mesh(new RoundedBoxGeometry(AW, AH - 0.028, AD, 3, 0.01), amsGlass); aw.position.y = 0.028 + (AH - 0.028) / 2; ams.add(aw);
+  const rim = new THREE.Mesh(new RoundedBoxGeometry(AW + 0.004, 0.008, AD + 0.004, 2, 0.003), amsDark); rim.position.y = AH; ams.add(rim);
+  const cols = [0xe9e8e4, 0x2f5fb3, 0x5ea65a, 0xd2553a], flange = new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: 0.4, transparent: true, opacity: 0.85 });
+  cols.forEach((col, i) => {
+    const x = -AW / 2 + AW / 8 + i * AW / 4, sp = new THREE.Group(); sp.position.set(x, AH - 0.005, 0.01); ams.add(sp);
+    const fil = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.06, 40), new THREE.MeshStandardMaterial({ color: col, roughness: 0.55 })); fil.rotation.z = Math.PI / 2; sp.add(fil);
+    [-0.033, 0.033].forEach((o) => { const fl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.004, 40), flange); fl.rotation.z = Math.PI / 2; fl.position.x = o; sp.add(fl); });
+    const feed = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 20), amsDark); feed.position.set(x, 0.06, AD / 2 - 0.05); ams.add(feed);   // les modules d'entraînement, à l'avant
+  });
+  const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, AW, 48, 1, true, -Math.PI / 2, Math.PI), new THREE.MeshPhysicalMaterial({ color: 0xdfe6ec, transparent: true, opacity: 0.22, roughness: 0.04, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false }));
+  dome.rotation.z = Math.PI / 2; dome.position.set(0, AH, 0.01); ams.add(dome);
+  [-AW / 2, AW / 2].forEach((x) => { const cap = new THREE.Mesh(new THREE.CircleGeometry(0.115, 32, 0, Math.PI), amsDark); cap.rotation.y = Math.PI / 2; cap.rotation.x = 0; cap.position.set(x, AH, 0.01); ams.add(cap); });
+  g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+  return { g, W, D, BH };
+}
 async function loadPrinter() {
-  const pr = await loadGLB("printer"); if (!pr) return;
   const g = new THREE.Group();
   const white = new THREE.MeshStandardMaterial({ color: 0xf1f0ec, roughness: 0.55 });
   const TW = 0.55, TH = 0.45, TT = 0.05, LG = 0.05;                     // plateau 55 × 55 cm, 45 cm de haut, pieds de 5 cm
@@ -487,18 +549,11 @@ async function loadPrinter() {
     const leg = new THREE.Mesh(new RoundedBoxGeometry(LG, TH - TT, LG, 2, 0.003), white);
     leg.position.set(sx * (TW / 2 - LG / 2), (TH - TT) / 2, sz * (TW / 2 - LG / 2)); g.add(leg);
   });
-  // imprimante : 49 cm de large, posée au centre du plateau, porte vers l'avant
-  pr.updateMatrixWorld(true);
-  const b = new THREE.Box3().setFromObject(pr), sc = 0.49 / (b.max.x - b.min.x), ce = b.getCenter(new THREE.Vector3());
-  pr.scale.setScalar(sc); pr.position.set(-ce.x * sc, TH - b.min.y * sc, -ce.z * sc);
-  pr.traverse((n) => { if (n.isMesh && n.material) { n.material.roughness = 0.5; n.material.metalness = 0; n.material.envMapIntensity = 0.7; } });
-  g.add(pr);
+  const h2c = buildH2C(), pr = h2c.g; pr.position.y = TH; g.add(pr);
   // la nuit : la LED intérieure se voit à travers les vitres — la porte (devant, +z), la vitre du dessus devant l'AMS
   // et la fenêtre du côté gauche (+x) ; rien derrière ni à droite. Des vitres aux coins arrondis, une lueur douce comme l'écran de l'iMac
-  pr.updateMatrixWorld(true);
-  const pb = new THREE.Box3().setFromObject(pr), dx = pb.max.x - pb.min.x, dz = pb.max.z - pb.min.z, cx = (pb.min.x + pb.max.x) / 2, cz = (pb.min.z + pb.max.z) / 2;
-  const tz = pb.max.z - dz * 0.14, rc = new THREE.Raycaster(new THREE.Vector3(cx, pb.max.y + 1, tz), new THREE.Vector3(0, -1, 0));
-  const hit = rc.intersectObject(pr, true)[0], ty = hit ? hit.point.y : pb.min.y + (pb.max.y - pb.min.y) * 0.7, H = ty - pb.min.y;   // hauteur du corps (sans l'AMS)
+  const pb = new THREE.Box3(new THREE.Vector3(-h2c.W / 2, TH, -h2c.D / 2), new THREE.Vector3(h2c.W / 2, TH + h2c.BH, h2c.D / 2));
+  const dx = h2c.W, dz = h2c.D, cx = 0, cz = 0, ty = TH + h2c.BH, H = h2c.BH * 0.9;   // H : jusqu'au bas du bandeau
   const glowM = new THREE.MeshBasicMaterial({ color: 0xbfd4ff, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false });
   const glow = new THREE.Group(); glow.visible = false; g.add(glow); printerGlow.g = glow;
   const pane = (w, h, r) => {
@@ -507,7 +562,8 @@ async function loadPrinter() {
     sh.lineTo(x + r, y + h); sh.quadraticCurveTo(x, y + h, x, y + h - r); sh.lineTo(x, y + r); sh.quadraticCurveTo(x, y, x + r, y);
     return new THREE.Mesh(new THREE.ShapeGeometry(sh, 6), glowM);
   };
-  const fh = H * 0.82, f = pane(dx * 0.86, fh, 0.018); f.position.set(cx + dx * 0.02, pb.min.y + H * 0.03 + fh / 2, pb.max.z + 0.003); glow.add(f);          // porte vitrée
+  const fh = h2c.BH - 0.1 - 0.034, fw = dx - 0.032, fcy = pb.min.y + 0.03 + fh / 2;   // l'ouverture de la porte, entre le socle, les montants et le bandeau
+  const f = pane(fw, fh, 0.012); f.position.set(cx, fcy, pb.max.z + 0.006); glow.add(f);          // porte vitrée
   const sw = dz * 0.6, shh = H * 0.48, sd = pane(sw, shh, 0.018); sd.rotation.y = Math.PI / 2;
   sd.position.set(pb.max.x + 0.003, pb.min.y + H * 0.4 + shh / 2, cz); glow.add(sd);                                                // fenêtre du côté gauche, centrée
   const tp = pane(dx * 0.76, dz * 0.17, 0.015); tp.rotation.x = -Math.PI / 2; tp.position.set(cx, ty + 0.003, pb.max.z - dz * 0.205); glow.add(tp);   // cadre plus épais, surtout devant   // vitre du dessus, devant l'AMS
@@ -517,16 +573,15 @@ async function loadPrinter() {
   const lt = new THREE.PointLight(0xc6d8ff, 0, 1.0, 2); lt.position.set(cx, ty + 0.18, pb.max.z - dz * 0.1); g.add(lt);
   printerGlow.lights = [[lf, 0.6], [ll, 0.18], [lt, 0.14]]; printerGlow.front = f;
   /* La porte vitrée (une vitre posée devant celle du modèle, articulée à gauche) et l'intérieur qui s'anime quand on ouvre l'imprimante */
-  const fw = dx * 0.86, fcy = pb.min.y + H * 0.03 + fh / 2;
-  const door = new THREE.Group(); door.position.set(cx + dx * 0.02 - fw / 2, fcy, pb.max.z + 0.006); door.visible = false; g.add(door);
-  const doorGlass = new THREE.MeshPhysicalMaterial({ color: 0x2c3238, transparent: true, opacity: 0.5, roughness: 0.04, metalness: 0, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false });
-  const dg = pane(fw, fh, 0.018); dg.material = doorGlass; dg.position.x = fw / 2; door.add(dg);
+  const door = new THREE.Group(); door.position.set(cx - fw / 2, fcy, pb.max.z + 0.004); g.add(door);
+  const doorGlass = new THREE.MeshPhysicalMaterial({ color: 0x14171b, transparent: true, opacity: 0.55, roughness: 0.04, metalness: 0, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false });
+  const dg = pane(fw, fh, 0.012); dg.material = doorGlass; dg.position.x = fw / 2; door.add(dg);
   const edge = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.5 });
   [[fw, 0.006, 0, fh / 2 - 0.003], [fw, 0.006, 0, -fh / 2 + 0.003]].forEach(([w, h, x, y]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.004), edge); b.position.set(fw / 2 + x, y, 0); door.add(b); });
   const handle = new THREE.Mesh(new RoundedBoxGeometry(0.012, fh * 0.32, 0.014, 2, 0.004), edge); handle.position.set(fw - 0.018, 0, 0.008); door.add(handle);
   /* l'intérieur, refait proprement (le modèle est flou dedans) : une chambre gris anthracite, une cinématique CoreXY
      — la tête se déplace dans un plan fixe en haut, le plateau descend d'une couche à chaque passage, comme sur la vraie machine */
-  const inside = new THREE.Group(); inside.visible = false; g.add(inside);
+  const inside = new THREE.Group(); g.add(inside);
   const ix0 = cx - dx * 0.43, ix1 = cx + dx * 0.43, iz0 = pb.max.z - dz * 0.92, iz1 = pb.max.z - 0.012, iy0 = pb.min.y + H * 0.05, iy1 = pb.min.y + H * 0.85;
   const iw = ix1 - ix0, idp = iz1 - iz0, ih = iy1 - iy0, icz = (iz0 + iz1) / 2;
   const wallM = new THREE.MeshStandardMaterial({ color: 0x1c1d20, roughness: 0.85, metalness: 0.1, side: THREE.BackSide });
@@ -555,7 +610,7 @@ async function loadPrinter() {
   // la lumière : une barre LED au plafond, devant
   const bar = new THREE.Mesh(new THREE.BoxGeometry(iw * 0.7, 0.004, 0.01), new THREE.MeshBasicMaterial({ color: 0xf4f7ff })); bar.position.set(cx, iy1 - 0.004, iz1 - 0.03); inside.add(bar);
   const led = new THREE.PointLight(0xf2f6ff, 0, 1.0, 2); led.position.set(cx, iy1 - 0.03, iz1 - 0.06); inside.add(led);
-  printerRef.model = pr; printerRef.ibox = new THREE.Box3(new THREE.Vector3(ix0 + 0.004, iy0 + 0.004, iz0 + 0.004), new THREE.Vector3(ix1 - 0.004, iy1 - 0.004, iz1 + 0.02));
+  printerRef.model = null; printerRef.ibox = new THREE.Box3(new THREE.Vector3(ix0 + 0.004, iy0 + 0.004, iz0 + 0.004), new THREE.Vector3(ix1 - 0.004, iy1 - 0.004, iz1 + 0.02));
   printerRef.g = g; printerRef.door = door; printerRef.inside = inside; printerRef.head = head; printerRef.xbar = xbar; printerRef.led = led; printerRef.bed = bedG;
   printerRef.box = { cx, cz: icz + idp * 0.04, dx, dz, H, gy, bed0: gy - 0.031, y0: pb.min.y, front: pb.max.z, fcy, fh, fw };
   addExhibit(PRINTER, g);
@@ -1394,10 +1449,10 @@ const PFOV = 30, FOV0 = 11;   // de près, une focale plus courte : la caméra p
 const pview = { on: false, door: 0, doorT: 0, t: 0, back: null, mini: null, clip: null };
 function printerPose() {
   const r = printerRef, b = r.box; r.g.updateMatrixWorld(true);
-  const c = r.g.localToWorld(new THREE.Vector3(b.cx, b.y0 + b.H * 0.66, b.front));   // le milieu de l'imprimante avec son AMS
+  const tot = b.H / 0.9 + 0.23, c = r.g.localToWorld(new THREE.Vector3(b.cx, b.y0 + tot * 0.5, b.front));   // le milieu de l'imprimante avec son AMS
   const n = new THREE.Vector3(0, 0, 1).transformDirection(r.g.matrixWorld); n.y = 0; n.normalize();
   const half = Math.tan(THREE.MathUtils.degToRad(PFOV / 2)), w = cv.clientWidth, h = cv.clientHeight, asp = w / h;
-  const wide = asp >= 1, H = b.H * (wide ? 1.85 : 1.45);
+  const wide = asp >= 1, H = tot * (wide ? 1.3 : 1.12);
   let d = (H / 2) / half; if (!wide) d = Math.max((H / 2) / (half * 0.42), (b.dx * 1.6 / 2) / (half * asp));   // téléphone : l'imprimante tient dans le haut de l'écran, au-dessus du formulaire
   const up = new THREE.Vector3(0, 1, 0), right = new THREE.Vector3().crossVectors(n.clone().negate(), up).normalize();
   const shift = wide ? right.clone().multiplyScalar(d * half * asp * 0.38) : up.clone().multiplyScalar(-d * half * 0.56);   // l'imprimante à gauche (ordinateur) ou en haut (téléphone)
@@ -1413,7 +1468,7 @@ function openPrinter() {
   setHover(null); hideIntro(); document.getElementById("intro").classList.add("off");
   const { p1, l1, near } = printerPose(); pview.l1 = l1;
   zoom = { t: 0, dur: 1.4, p0: camera.position.clone(), l0: look.clone(), p1, l1, f0: camera.fov, f1: PFOV, n0: camera.near, n1: near, keep: true, done: () => { pview.doorT = 1; setTimeout(() => document.getElementById("pform").classList.add("on"), 650); } };
-  printerRef.door.visible = true; printerRef.inside.visible = true; if (printerGlow.front) printerGlow.front.visible = false;
+  if (printerGlow.front) printerGlow.front.visible = false;
   clipModelInterior(true);
   // un petit ANI à imprimer sur le plateau, couche par couche, avec ses fines lignes de couches
   const ani = exhibits.find((e) => e.def.id === "ani");
@@ -1451,7 +1506,7 @@ function closePrinter() {
   document.getElementById("pform").classList.remove("on"); pview.doorT = 0;
   setTimeout(() => {
     zoom = { t: 0, dur: 1.2, p0: camera.position.clone(), l0: pview.l1 || look.clone(), p1: pview.back.p, l1: pview.back.l, f0: PFOV, f1: FOV0, n0: camera.near, n1: 0.5, keep: true,
-      done: () => { pview.on = false; if (TOUCH) document.getElementById("intro").classList.remove("off"); printerRef.door.visible = false; printerRef.inside.visible = false; if (printerGlow.front) printerGlow.front.visible = true; clipModelInterior(false); frameAll(); } };
+      done: () => { pview.on = false; if (TOUCH) document.getElementById("intro").classList.remove("off"); if (printerGlow.front) printerGlow.front.visible = true; frameAll(); } };
   }, 550);
 }
 (function () {
