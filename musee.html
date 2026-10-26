@@ -1264,6 +1264,7 @@ const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(-9, -9);
 const tag = document.getElementById("tag");
 let hovered = null, hoverT = 0, pointerIn = false;
 function pickAt(x, y) {
+  if (pview.on) return null;   // devant l'imprimante ouverte, plus rien ne réagit à la souris
   const r = cv.getBoundingClientRect();
   mouse.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
@@ -1406,6 +1407,8 @@ function printerPose() {
 function openPrinter() {
   if (!printerRef.g || zoom || pview.on) return false;
   pview.on = true; pview.back = { p: camera.position.clone(), l: look.clone() };
+  // l'imprimante se repose aussitôt (plus de lévitation) : la caméra et l'intérieur se calent sur sa vraie place
+  exhibits.forEach((e) => { e.lift = 0; e.target = 0; if (e.baseY !== undefined) { e.inner.position.y = e.baseY; e.inner.rotation.x = 0; e.inner.rotation.z = 0; } });
   walker.wanted = null; if (!walker.steps) decide();
   setHover(null); hideIntro(); document.getElementById("intro").classList.add("off");
   const { p1, l1, near } = printerPose(); pview.l1 = l1;
@@ -1431,15 +1434,16 @@ function openPrinter() {
   pview.t = 0; return true;
 }
 /* on « vide » l'intérieur flou du modèle : six plans de coupe qui ne retirent que ce qui est dans la chambre */
+function updateModelClip() {   // les plans suivent l'imprimante (elle peut encore redescendre de sa lévitation)
+  const r = printerRef; if (!r.planes) return;
+  const b = r.ibox; r.g.updateMatrixWorld(true);
+  [[1, 0, 0, b.max.x], [-1, 0, 0, -b.min.x], [0, 1, 0, b.max.y], [0, -1, 0, -b.min.y], [0, 0, 1, b.max.z], [0, 0, -1, -b.min.z]]
+    .forEach(([x, y, z, d], k) => r.planes[k].set(new THREE.Vector3(x, y, z), -d).applyMatrix4(r.g.matrixWorld));
+}
 function clipModelInterior(on) {
   const r = printerRef; if (!r.model) return;
   let planes = null;
-  if (on) {
-    const b = r.ibox, M = r.g.matrixWorld; r.g.updateMatrixWorld(true);
-    planes = [[1, 0, 0, b.max.x], [-1, 0, 0, -b.min.x], [0, 1, 0, b.max.y], [0, -1, 0, -b.min.y], [0, 0, 1, b.max.z], [0, 0, -1, -b.min.z]]
-      .map(([x, y, z, d]) => new THREE.Plane(new THREE.Vector3(x, y, z), -d).applyMatrix4(M));
-    renderer.localClippingEnabled = true;
-  }
+  if (on) { planes = [0, 1, 2, 3, 4, 5].map(() => new THREE.Plane()); r.planes = planes; updateModelClip(); renderer.localClippingEnabled = true; } else r.planes = null;
   r.model.traverse((n) => { if (n.isMesh && n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => { m.clippingPlanes = planes; m.clipIntersection = true; m.needsUpdate = true; }); });
 }
 function closePrinter() {
@@ -1470,6 +1474,7 @@ function closePrinter() {
 const PRINT = { h: 0.085, n: 70, layer: 1.7, hold: 5 };   // 8,5 cm, 70 couches d'environ 1,2 mm, 1,7 s par couche (≈ 2 min), puis 5 s de pause
 function updatePrinter(dt) {
   if (!printerRef.door || !pview.on) return;
+  updateModelClip();
   pview.door = THREE.MathUtils.damp(pview.door, pview.doorT, 4.5, dt);
   const e = pview.door * pview.door * (3 - 2 * pview.door);
   printerRef.door.rotation.y = -1.85 * e;
@@ -1646,6 +1651,7 @@ function loop() {
   exhibits.forEach((e) => {
     if (TOUCH) e.target = !e.def.decor && (lev || e === hovered) ? 1 : 0;   // les cartons sont du décor : ils ne se soulèvent pas
     if (e.isDesk && walker.atDesk) e.target = 0;
+    if (pview.on) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
     e.inner.position.y = e.baseY + e.lift * (TOUCH ? 0.16 : 0.09);
     e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
