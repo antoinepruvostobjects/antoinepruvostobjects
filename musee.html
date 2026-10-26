@@ -1540,9 +1540,9 @@ function renderNearCut() {
   renderer.autoClear = false; renderer.clear();
   camera.near = 0.5; camera.updateProjectionMatrix(); camera.layers.set(GROUND_LAYER); renderer.render(scene, camera);
   camera.layers.set(0); camera.near = n; camera.updateProjectionMatrix();
-  const su = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false; ground.visible = false;
+  const su = renderer.shadowMap.autoUpdate, bg = scene.background; renderer.shadowMap.autoUpdate = false; ground.visible = false; scene.background = null;   // sans fond : sinon le second passage efface le sol
   renderer.clearDepth(); renderer.render(scene, camera);
-  ground.visible = true; renderer.shadowMap.autoUpdate = su; renderer.autoClear = ac;
+  scene.background = bg; ground.visible = true; renderer.shadowMap.autoUpdate = su; renderer.autoClear = ac;
 }
 function updatePrinter(dt) {
   if (!printerRef.door || !pview.on) return;
