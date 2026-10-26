@@ -613,6 +613,7 @@ async function loadPrinter() {
   printerRef.model = null; printerRef.ibox = new THREE.Box3(new THREE.Vector3(ix0 + 0.004, iy0 + 0.004, iz0 + 0.004), new THREE.Vector3(ix1 - 0.004, iy1 - 0.004, iz1 + 0.02));
   printerRef.g = g; printerRef.door = door; printerRef.inside = inside; printerRef.head = head; printerRef.xbar = xbar; printerRef.led = led; printerRef.bed = bedG;
   printerRef.box = { cx, cz: icz + idp * 0.04, dx, dz, H, gy, bed0: gy - 0.031, y0: pb.min.y, front: pb.max.z, fcy, fh, fw };
+  head.position.set(cx + dx * 0.3, gy, icz - 0.06); xbar.position.set(cx, gy + 0.05, icz - 0.06);   // la tête garée en haut à droite, au repos
   addExhibit(PRINTER, g);
 }
 
