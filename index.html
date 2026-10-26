@@ -1191,9 +1191,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     card.appendChild(spec);
     card.appendChild(askNode(STATUS.hypar, "Hypar"));
     grid.appendChild(reveal(vw)); grid.appendChild(reveal(card));
-    if (fly) vw.classList.add("in");
     sec.appendChild(storyNode(h.story, reveal));
-    if (fly) setTimeout(function () { sec.classList.remove("flying"); sec.classList.remove("flynight"); }, 6000);   // sécurité si la 3D ne se charge pas
     var tries = 0;
     (function mount() {
       if (!fv.isConnected && tries > 0) return;
