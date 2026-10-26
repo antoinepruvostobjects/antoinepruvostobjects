@@ -1531,6 +1531,19 @@ function closePrinter() {
   });
 })();
 const PRINT = { h: 0.085, n: 70, layer: 1.7, hold: 5 };   // 8,5 cm, 70 couches d'environ 1,2 mm, 1,7 s par couche (≈ 2 min), puis 5 s de pause
+/* devant l'imprimante, la caméra « coupe » ce qui est entre elle et l'imprimante (plan proche reculé) ;
+   le sol, lui, est dessiné à part sans cette coupe, pour qu'il continue jusqu'au bas de l'écran */
+const GROUND_LAYER = 3; let groundLayerReady = false;
+function renderNearCut() {
+  if (!groundLayerReady) { groundLayerReady = true; ground.layers.enable(GROUND_LAYER); scene.traverse((o) => { if (o.isLight) o.layers.enable(GROUND_LAYER); }); }
+  const n = camera.near, ac = renderer.autoClear;
+  renderer.autoClear = false; renderer.clear();
+  camera.near = 0.5; camera.updateProjectionMatrix(); camera.layers.set(GROUND_LAYER); renderer.render(scene, camera);
+  camera.layers.set(0); camera.near = n; camera.updateProjectionMatrix();
+  const su = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false; ground.visible = false;
+  renderer.clearDepth(); renderer.render(scene, camera);
+  ground.visible = true; renderer.shadowMap.autoUpdate = su; renderer.autoClear = ac;
+}
 function updatePrinter(dt) {
   if (!printerRef.door || !pview.on) return;
   updateModelClip();
@@ -1727,7 +1740,7 @@ function loop() {
   updateZoom(dt); updatePrinter(dt);
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
-  renderer.render(scene, camera);
+  if (camera.near > 0.55) renderNearCut(); else renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
