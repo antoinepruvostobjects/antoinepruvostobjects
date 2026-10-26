@@ -574,7 +574,7 @@ async function loadPrinter() {
   printerGlow.lights = [[lf, 0.6], [ll, 0.18], [lt, 0.14]]; printerGlow.front = f;
   /* La porte vitrée (une vitre posée devant celle du modèle, articulée à gauche) et l'intérieur qui s'anime quand on ouvre l'imprimante */
   const door = new THREE.Group(); door.position.set(cx - fw / 2, fcy, pb.max.z + 0.004); g.add(door);
-  const doorGlass = new THREE.MeshPhysicalMaterial({ color: 0x14171b, transparent: true, opacity: 0.55, roughness: 0.04, metalness: 0, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false });
+  const doorGlass = new THREE.MeshPhysicalMaterial({ color: 0x14171b, transparent: true, opacity: 0.55, roughness: 0.25, metalness: 0, clearcoat: 0, specularIntensity: 0, envMapIntensity: 0.15, side: THREE.DoubleSide, depthWrite: false });   // verre fumé sans reflet de lampe
   const dg = pane(fw, fh, 0.012); dg.material = doorGlass; dg.position.x = fw / 2; door.add(dg);
   const edge = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.5 });
   [[fw, 0.006, 0, fh / 2 - 0.003], [fw, 0.006, 0, -fh / 2 + 0.003]].forEach(([w, h, x, y]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.004), edge); b.position.set(fw / 2 + x, y, 0); door.add(b); });
