@@ -1642,6 +1642,8 @@ function printerPose() {
 function openPrinter() {
   if (!printerRef.g || zoom || pview.on) return false;
   pview.on = true; pview.back = { p: camera.position.clone(), l: look.clone() };
+  // une étape dans l'historique du navigateur : la flèche « retour » referme l'imprimante au lieu de quitter l'accueil
+  try { if (PARENT) { PARENT.history.pushState({ printer: 1 }, ""); PARENT.__pvOpen = true; } } catch (e) {}
   // l'imprimante se repose aussitôt (plus de lévitation) : la caméra et l'intérieur se calent sur sa vraie place
   exhibits.forEach((e) => { e.lift = 0; e.target = 0; if (e.baseY !== undefined) { e.inner.position.y = e.baseY; e.inner.rotation.x = 0; e.inner.rotation.z = 0; } });
   walker.wanted = null; if (!walker.steps) decide();
@@ -1681,8 +1683,9 @@ function clipModelInterior(on) {
   if (on) { planes = [0, 1, 2, 3, 4, 5].map(() => new THREE.Plane()); r.planes = planes; updateModelClip(); renderer.localClippingEnabled = true; } else r.planes = null;
   r.model.traverse((n) => { if (n.isMesh && n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => { m.clippingPlanes = planes; m.clipIntersection = true; m.needsUpdate = true; }); });
 }
-function closePrinter() {
+function closePrinter(fromHistory) {
   if (!pview.on || zoom) return;
+  try { if (PARENT && PARENT.__pvOpen) { PARENT.__pvOpen = false; if (!fromHistory) PARENT.history.back(); } } catch (e) {}
   document.getElementById("pform").classList.remove("on"); pview.doorT = 0;
   setTimeout(() => {
     zoom = { t: 0, dur: 1.2, p0: camera.position.clone(), l0: pview.l1 || look.clone(), p1: pview.back.p, l1: pview.back.l, f0: PFOV, f1: FOV0, n0: camera.near, n1: 0.5, keep: true,
@@ -1720,6 +1723,7 @@ function renderNearCut() {
   renderer.clearDepth(); renderer.render(scene, camera);
   scene.background = bg; ground.visible = true; renderer.shadowMap.autoUpdate = su; renderer.autoClear = ac;
 }
+window.__closePrinter = () => { const t = () => { if (zoom) return setTimeout(t, 120); closePrinter(true); }; t(); };
 function updatePrinter(dt) {
   if (!printerRef.door || !pview.on) return;
   updateModelClip();

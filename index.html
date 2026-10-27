@@ -1299,7 +1299,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "71"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "72"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);
@@ -1612,6 +1612,11 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     }
     window.__flyFrom = info; location.hash = "ani";
   };
+  // flèche « retour » du navigateur pendant que l'imprimante est ouverte dans l'espace 3D : on la referme, on reste sur l'accueil
+  window.addEventListener("popstate", function () {
+    if (!window.__pvOpen) return; window.__pvOpen = false;
+    var f = document.querySelector(".home3d iframe"); try { if (f && f.contentWindow.__closePrinter) f.contentWindow.__closePrinter(); } catch (e) {}
+  });
   window.addEventListener("hashchange", function () {
     var from = lastHash; lastHash = location.hash;
     if (window.__flyFrom && location.hash === "#ani") { route(); return; }   // ANI arrive en volant depuis l'espace 3D : pas d'écran de chargement
