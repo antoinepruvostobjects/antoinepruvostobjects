@@ -306,8 +306,58 @@ function makeScreen(w, h) {
     ctx.fillStyle = "#111"; ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(cur.x, cur.y + 22); ctx.lineTo(cur.x + 6, cur.y + 16); ctx.lineTo(cur.x + 15, cur.y + 16); ctx.closePath(); ctx.fill();
     tex.needsUpdate = true;
   }
-  let acc = 0;
-  return { mesh, mat, update(dt, on) { mat.emissiveIntensity = on; if (on > 0.02) { acc += dt; if (acc > 1 / 15) { draw(acc); acc = 0; } } } };
+  let acc = 0, archive = null;
+  /* l'écran passe sur le Finder « Archive », dessiné d'après la vraie page (mêmes positions, mêmes textes, mêmes images) */
+  const imgs = {};
+  const loadImg = (src) => { if (!imgs[src]) { const im = new Image(); im.onload = () => { if (archive) drawArchive(); }; im.src = src; imgs[src] = im; } return imgs[src]; };
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+  function cover(im, x, y, w, h, pos) {
+    if (!im.complete || !im.naturalWidth) return;
+    const k = Math.max(w / im.naturalWidth, h / im.naturalHeight), sw = w / k, sh = h / k;
+    const m = /([\d.]+)%\s+([\d.]+)%/.exec(pos || "") || [0, 50, 50], px = +m[1] / 100, py = +m[2] / 100;
+    ctx.drawImage(im, (im.naturalWidth - sw) * px, (im.naturalHeight - sh) * py, sw, sh, x, y, w, h);
+  }
+  function drawArchive() {
+    const L = archive, W = cvs.width, H = cvs.height, X = (r) => r.x * W, Y = (r) => r.y * H, S = W;   // fractions de l'écran → pixels de la texture
+    const g = ctx.createLinearGradient(0, 0, W * 0.6, H); g.addColorStop(0, "#c9d2dc"); g.addColorStop(0.55, "#e3ddd3"); g.addColorStop(1, "#d6cbbd");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    if (L.bar) { ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(X(L.bar), Y(L.bar), L.bar.w * W, L.bar.h * H); }
+    if (L.win) {
+      ctx.save(); ctx.shadowColor = "rgba(0,0,0,.28)"; ctx.shadowBlur = W * 0.03; ctx.shadowOffsetY = W * 0.01;
+      ctx.fillStyle = "#fff"; rr(X(L.win), Y(L.win), L.win.w * W, L.win.h * H, W * 0.008); ctx.fill(); ctx.restore();
+      ctx.save(); rr(X(L.win), Y(L.win), L.win.w * W, L.win.h * H, W * 0.008); ctx.clip();
+      if (L.title) { ctx.fillStyle = "#f6f6f6"; ctx.fillRect(X(L.title), Y(L.title), L.title.w * W, L.title.h * H); ctx.fillStyle = "#ececec"; ctx.fillRect(X(L.title), Y(L.title) + L.title.h * H - 1, L.title.w * W, 1); }
+      ["#ff5f57", "#febc2e", "#28c840"].forEach((c, i) => { const d = L.dots[i]; if (!d) return; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(X(d) + d.w * W / 2, Y(d) + d.h * H / 2, d.w * W / 2, 0, Math.PI * 2); ctx.fill(); });
+      if (L.body) { ctx.save(); ctx.beginPath(); ctx.rect(X(L.body), Y(L.body), L.body.w * W, L.body.h * H); ctx.clip();
+        ctx.fillStyle = "#e4e4e4"; (L.lines || []).forEach((y) => ctx.fillRect(X(L.body) + 0, y * H, L.body.w * W, 1));
+        (L.thumbs || []).forEach((t) => { ctx.save(); rr(X(t.r), Y(t.r), t.r.w * W, t.r.h * H, W * 0.005); ctx.clip(); ctx.fillStyle = "#f0f0f0"; ctx.fillRect(X(t.r), Y(t.r), t.r.w * W, t.r.h * H); if (t.src) cover(loadImg(t.src), X(t.r), Y(t.r), t.r.w * W, t.r.h * H, t.pos); ctx.restore(); });
+        ctx.restore(); }
+      ctx.restore();
+    }
+    (L.texts || []).forEach((t) => {
+      ctx.fillStyle = t.c; ctx.font = (t.fw >= 600 ? "600 " : t.fw >= 500 ? "500 " : "") + (t.fs * S) + "px Helvetica Neue, Helvetica, Arial, sans-serif"; ctx.textBaseline = "middle";
+      const ix = X(t.r) + (t.pl || 0) * W, iw = t.r.w * W - ((t.pl || 0) + (t.pr || 0)) * W;
+      let str = t.t; if (ctx.measureText(str).width > iw + 1) { while (str.length > 1 && ctx.measureText(str + "…").width > iw) str = str.slice(0, -1); str += "…"; }
+      const x = t.al === "right" || t.al === "end" ? ix + iw : t.al === "center" ? ix + iw / 2 : ix;
+      ctx.textAlign = t.al === "right" || t.al === "end" ? "right" : t.al === "center" ? "center" : "left";
+      ctx.save(); ctx.beginPath(); ctx.rect(X(t.r) - 2, Y(t.r) - 2, t.r.w * W + 4, t.r.h * H + 4); ctx.clip();
+      if (t.b && L.body) { ctx.beginPath(); ctx.rect(X(L.body), Y(L.body), L.body.w * W, L.body.h * H); ctx.clip(); }   // la liste ne déborde pas de la fenêtre
+      ctx.fillText(str, x, Y(t.r) + t.r.h * H / 2); ctx.restore();
+    });
+    if (L.dock) {
+      ctx.fillStyle = "rgba(255,255,255,.45)"; rr(X(L.dock), Y(L.dock), L.dock.w * W, L.dock.h * H, W * 0.012); ctx.fill();
+      const cols = { 0: ["#f0d7a6", "#d2a96b"], 1: ["#f4f4f2", "#cfd0d3"], 3: ["#3a3a3d", "#1b1b1d"], 4: ["#5b8def", "#3157c8"] };
+      (L.icons || []).forEach((ic, i) => {
+        const x = X(ic.r), y = Y(ic.r), w = ic.r.w * W, h = ic.r.h * H; ctx.save(); rr(x, y, w, h, w * 0.22); ctx.clip();
+        if (ic.ig) cover(loadImg("instagram.png"), x, y, w, h); else { const c = cols[i] || ["#888", "#666"], gg = ctx.createLinearGradient(x, y, x + w, y + h); gg.addColorStop(0, c[0]); gg.addColorStop(1, c[1]); ctx.fillStyle = gg; ctx.fillRect(x, y, w, h); }
+        if (ic.t) { ctx.fillStyle = "#fff"; ctx.font = "700 " + (h * 0.38) + "px Helvetica, Arial, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(ic.t, x + w / 2, y + h / 2); }
+        ctx.restore();
+      });
+    }
+    tex.needsUpdate = true;
+  }
+  return { mesh, mat, w, h, update(dt, on) { mat.emissiveIntensity = on; if (archive) return; if (on > 0.02) { acc += dt; if (acc > 1 / 15) { draw(acc); acc = 0; } } },
+    showArchive(L) { archive = L; mat.roughness = 1; mat.envMapIntensity = 0; mat.color.set(0x000000); mat.emissiveIntensity = 1; drawArchive(); } };
 }
 async function loadDesk() {
   const [comp, chair] = await Promise.all([loadGLB("computer"), loadGLB("chair")]);
@@ -1361,7 +1411,7 @@ function release(e) {
     if (pview.on || !ex) return;
     // au doigt comme à la souris : un seul toucher ouvre l'objet ; au doigt, l'objet touché se soulève un instant avant de s'ouvrir
     const open = () => {
-      if (ex.isDesk) { zoomToScreen(() => go("/#ordinateur")); return; }
+      if (ex.isDesk) { zoomToScreen(() => { try { PARENT && PARENT.__pcGo && PARENT.__pcGo(); } catch (e) {} go("/#ordinateur"); }); return; }
       if (ex.def.id === "ani" && startFly()) return;
       if (ex.def.id === "impression" && openPrinter()) return;
       go(ex.def.href);
@@ -1431,9 +1481,25 @@ let zoom = null;
 function zoomToScreen(done) {
   const scr = deskParts.screen; if (!scr || zoom) return done();
   deskParts.screenTarget = 1;
-  const c = scr.mesh.getWorldPosition(new THREE.Vector3()), n = new THREE.Vector3(0, 0, 1).applyQuaternion(scr.mesh.getWorldQuaternion(new THREE.Quaternion()));
-  const h = scr.mesh.geometry.parameters.height, d = (h * 0.62) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  zoom = { t: 0, dur: 1.5, p0: camera.position.clone(), l0: look.clone(), p1: c.clone().addScaledVector(n, d), l1: c.clone(), done, target: c.clone() };
+  const c = scr.mesh.getWorldPosition(new THREE.Vector3()), q = scr.mesh.getWorldQuaternion(new THREE.Quaternion());
+  const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q), right = new THREE.Vector3(1, 0, 0).applyQuaternion(q), up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+  const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), cw = cv.clientWidth, ch = cv.clientHeight;
+  let p1, l1;
+  // l'iMac vient se placer exactement là où sera l'écran de la page Archives, avec la même image : on « entre » dans l'ordinateur
+  let L = null; try { L = PARENT && PARENT.__pcLayout && PARENT.__pcLayout(); } catch (e) { L = null; }
+  if (L && L.screen && L.screen.w > 10) {
+    let off = { left: 0, top: 0 }; try { const fr = PARENT.document.querySelector(".home3d iframe"); if (fr) off = fr.getBoundingClientRect(); } catch (e) {}
+    const sw = scr.w * scr.mesh.getWorldScale(new THREE.Vector3()).x, rw = L.screen.w;
+    const d = sw * ch / (2 * tanH * rw), wpp = 2 * d * tanH / ch;
+    const cx = L.screen.x - off.left + rw / 2, cy = L.screen.y - off.top + L.screen.h / 2;
+    p1 = c.clone().addScaledVector(n, d).addScaledVector(right, -(cx - cw / 2) * wpp).addScaledVector(up, (cy - ch / 2) * wpp);
+    l1 = p1.clone().addScaledVector(n, -d);
+    scr.showArchive(L); deskParts.screenOn = 1; hideIntro(); document.getElementById("intro").classList.add("off");
+  } else {
+    const h = scr.mesh.geometry.parameters.height, d = (h * 0.62) / tanH;
+    p1 = c.clone().addScaledVector(n, d); l1 = c.clone();
+  }
+  zoom = { t: 0, dur: 1.5, p0: camera.position.clone(), l0: look.clone(), p1, l1, done, target: c.clone() };
   setHover(null); document.getElementById("hint").style.opacity = "0";
 }
 function updateZoom(dt) {
