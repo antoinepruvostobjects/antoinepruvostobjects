@@ -1740,6 +1740,19 @@ const CONTENT_W = 4.3;   // largeur des objets exposés (ANI, bureau, Hypar) ave
 const PHONE_X = { colis: -1.12, ani: -0.5, impression: 1.12 }, PHONE_Z = { colis: -0.02, ani: 0.26, impression: -0.07 }, BENCH_X = { wide: -1.72, phone: -1.4 }, TABLE_X = { wide: 1.57, phone: 1.19 }, CONTENT_W_PHONE = 3.5;
 const benchRef = { g: null, o: null }, tableRef = { g: null, o: null };
 let phoneLayout = false;
+/* Les câbles : l'Arco part vers la gauche, l'imprimante vers la droite, au sol, hors du cadre (refaits si la disposition change) */
+const cableGrp = new THREE.Group(); scene.add(cableGrp);
+const cableMat = new THREE.MeshStandardMaterial({ color: 0x1b1b1c, roughness: 0.5 });
+function buildCables() {
+  cableGrp.children.forEach((m) => m.geometry.dispose()); cableGrp.clear();
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const cable = (pts, r) => { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, "centripetal"), 160, r, 8, false), cableMat); m.castShadow = true; m.receiveShadow = true; cableGrp.add(m); };
+  const prE = exhibits.find((e) => e.def.id === "impression");
+  if (prE) { const p = prE.group.position;
+    cable([V(p.x + 0.2, 0.62, p.z + 0.05), V(p.x + 0.255, 0.56, p.z + 0.06), V(p.x + 0.27, 0.42, p.z + 0.1), V(p.x + 0.285, 0.15, p.z + 0.13), V(p.x + 0.32, 0.006, p.z + 0.16), V(p.x + 0.55, 0.005, p.z + 0.32), V(p.x + 0.9, 0.005, p.z + 0.24), V(p.x + 1.6, 0.005, p.z + 0.4), V(p.x + 3.0, 0.005, p.z + 0.5)], 0.004); }
+  if (arcoRef.g) { const a = arcoRef.g.position;
+    cable([V(a.x + 0.02, 0.03, a.z - 0.06), V(a.x - 0.02, 0.006, a.z - 0.14), V(a.x - 0.3, 0.005, a.z - 0.2), V(a.x - 0.7, 0.005, a.z - 0.08), V(a.x - 1.4, 0.005, a.z - 0.22), V(a.x - 2.8, 0.005, a.z - 0.3)], 0.0038); }
+}
 function applyLayout() {
   exhibits.forEach((e) => { const px = PHONE_X[e.def.id], pz = PHONE_Z[e.def.id]; if (px !== undefined) e.group.position.x = phoneLayout ? px : e.def.x; if (pz !== undefined) e.group.position.z = phoneLayout ? pz : e.def.z; });
   const bx = phoneLayout ? BENCH_X.phone : BENCH_X.wide;
@@ -1751,6 +1764,7 @@ function applyLayout() {
     const p = phoneLayout ? ARCO.phone : ARCO.wide, dx = ani.group.position.x - p.x, dz = ani.group.position.z - p.z;
     arcoRef.g.position.set(p.x, 0, p.z); arcoRef.g.rotation.y = -Math.atan2(dz, dx); arcoRef.o.x = p.x; arcoRef.o.z = p.z;
   }
+  buildCables();
 }
 const _ray = new THREE.Raycaster(), _gp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
 function groundAt(x, y) { _ray.setFromCamera(new THREE.Vector2(x, y), camera); return _ray.ray.intersectPlane(_gp, _hit) ? _hit.clone() : null; }
