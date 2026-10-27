@@ -272,39 +272,101 @@ function fetchGLTF(name) {
 function loadGLB(name) { return fetchGLTF(name).then((g) => (g ? g.scene : null)); }
 const deskParts = { chair: null, chairHome: new THREE.Vector3(), out: 0, outTarget: 0, swivel: 0, seat: new THREE.Vector3(), screen: null, screenOn: 0, screenTarget: 0 };
 
-/* Écran de l'iMac : noir au repos ; quand Antoine travaille, il s'allume sur un logiciel de modélisation 3D */
+/* Écran de l'iMac : toujours allumé, sur un logiciel de modélisation 3D où ANI est ouvert */
 function makeScreen(w, h) {
   const cvs = document.createElement("canvas"); cvs.width = 1024; cvs.height = Math.round(1024 * h / w);
   const ctx = cvs.getContext("2d"), tex = new THREE.CanvasTexture(cvs); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   const mat = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.12, metalness: 0, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0 });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-  let t = 0, cur = { x: 600, y: 300 }, goal = { x: 600, y: 300 }, rot = 0.6;
+  /* L'écran : un logiciel de CAO réaliste (dans l'esprit de Fusion 360 / Rhino) — barre d'onglets, ruban d'outils,
+     arborescence du modèle, cube de vue, frise de l'historique — et dans la vue 3D, le vrai tabouret ANI qui tourne, rendu en direct */
+  let t = 0, cur = { x: 640, y: 330 }, goal = { x: 640, y: 330 }, sel = 0, selT = 0;
+  const W = cvs.width, H = cvs.height, TB = 30, RB = 70, LP = 196, BB = 44;          // hauteurs / largeurs des zones (px de texture)
+  const VP = { x: LP, y: TB + RB, w: W - LP, h: H - TB - RB - BB };                   // la vue 3D
+  const ui = "Helvetica Neue, Helvetica, Arial, sans-serif";
+  const tree = [["▾", "ANI_tabouret v12", 0, "#555"], ["▸", "Vues nommées", 1, "#777"], ["▸", "Origine", 1, "#777"], ["▾", "Esquisses", 1, "#555"], ["", "Profil assise", 2, "#666"], ["", "Plan pied A", 2, "#666"],
+    ["▾", "Corps", 1, "#555"], ["", "Assise", 2, "#333"], ["", "Pied 1", 2, "#333"], ["", "Pied 2", 2, "#333"], ["", "Pied 3", 2, "#333"], ["", "Pied 4", 2, "#333"], ["▸", "Inserts (×4)", 1, "#555"], ["▸", "Vis M6 (×4)", 1, "#555"]];
+  const tabs = ["ESQUISSE", "CRÉER", "MODIFIER", "ASSEMBLER", "CONSTRUIRE", "INSPECTER", "INSÉRER", "SÉLECTIONNER"];
+  function chrome() {
+    // barre du haut : onglet du document
+    ctx.fillStyle = "#3a3b3f"; ctx.fillRect(0, 0, W, TB);
+    ctx.fillStyle = "#4b4d52"; ctx.beginPath(); ctx.roundRect(120, 5, 230, TB - 5, [6, 6, 0, 0]); ctx.fill();
+    ctx.fillStyle = "#eaeaea"; ctx.font = "13px " + ui; ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.fillText("ANI_tabouret v12", 136, 18);
+    ctx.fillStyle = "#9a9ca2"; ctx.fillText("×", 330, 18);
+    [["#e05a3a", 16], ["#f0b02e", 34], ["#3fae5c", 52]].forEach(([c, x]) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, 15, 5, 0, 7); ctx.fill(); });
+    ctx.fillStyle = "#c9cbd0"; ctx.font = "12px " + ui; ctx.textAlign = "right"; ctx.fillText("Antoine Pruvost", W - 16, 16); ctx.textAlign = "left";
+    // ruban : onglets et groupes d'outils
+    ctx.fillStyle = "#f2f2f3"; ctx.fillRect(0, TB, W, RB); ctx.fillStyle = "#d9d9dc"; ctx.fillRect(0, TB + RB - 1, W, 1);
+    ctx.fillStyle = "#fff"; ctx.fillRect(10, TB + 6, 86, RB - 12); ctx.strokeStyle = "#d6d6d9"; ctx.strokeRect(10.5, TB + 6.5, 85, RB - 13);
+    ctx.fillStyle = "#2b6cd6"; ctx.fillRect(18, TB + 14, 22, 22); ctx.fillStyle = "#555"; ctx.font = "11px " + ui; ctx.fillText("CONCEPTION", 18, TB + 52);
+    let x = 112;
+    tabs.forEach((tb, i) => {
+      ctx.font = (i === 1 ? "600 " : "") + "10.5px " + ui; ctx.fillStyle = i === 1 ? "#1f5fc6" : "#6b6d72"; ctx.fillText(tb, x, TB + 14);
+      const n = i === 1 ? 5 : 3, cols = ["#2b6cd6", "#4aa0e8", "#7c8794", "#e3913b", "#5bb06a", "#8a6cd6"];
+      for (let k = 0; k < n; k++) { ctx.fillStyle = cols[(i + k) % cols.length]; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.roundRect(x + k * 24, TB + 28, 18, 18, 3); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = "#e0e0e3"; const tw = Math.max(ctx.measureText(tb).width, n * 24) + 18; ctx.fillRect(x + tw - 9, TB + 10, 1, RB - 20); x += tw;
+    });
+    // arborescence du modèle
+    ctx.fillStyle = "#f7f7f8"; ctx.fillRect(0, TB + RB, LP, H - TB - RB); ctx.fillStyle = "#dcdcdf"; ctx.fillRect(LP - 1, TB + RB, 1, H - TB - RB);
+    ctx.fillStyle = "#8a8c91"; ctx.font = "600 10px " + ui; ctx.fillText("NAVIGATEUR", 12, TB + RB + 16);
+    tree.forEach(([ar, nm, lv, c], i) => {
+      const y = TB + RB + 38 + i * 21, xx = 12 + lv * 14, on = i >= 7 && i <= 11 && i - 7 === sel && selT > 0;
+      if (on) { ctx.fillStyle = "#dbe8fb"; ctx.fillRect(2, y - 10, LP - 6, 20); }
+      ctx.fillStyle = "#9a9ca1"; ctx.font = "9px " + ui; ctx.fillText(ar, xx, y);
+      ctx.fillStyle = "#b6b8bd"; ctx.fillRect(xx + 12, y - 4, 9, 8);                                     // petite icône (œil / composant)
+      ctx.fillStyle = on ? "#1f5fc6" : c; ctx.font = "12px " + ui; ctx.fillText(nm, xx + 27, y);
+    });
+    // fond de la vue 3D (dégradé clair), cube de vue
+    const g = ctx.createLinearGradient(0, VP.y, 0, VP.y + VP.h); g.addColorStop(0, "#f9fafc"); g.addColorStop(1, "#c9cfd8"); ctx.fillStyle = g; ctx.fillRect(VP.x, VP.y, VP.w, VP.h);
+    const cx = VP.x + VP.w - 70, cy = VP.y + 60; ctx.save(); ctx.translate(cx, cy); ctx.scale(1.4, 1.4); ctx.translate(-cx, -cy);
+    ctx.fillStyle = "#e9ecf1"; ctx.strokeStyle = "#9aa2ad"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 26, cy - 8); ctx.lineTo(cx, cy - 22); ctx.lineTo(cx + 26, cy - 8); ctx.lineTo(cx, cy + 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#dfe3e9"; ctx.beginPath(); ctx.moveTo(cx - 26, cy - 8); ctx.lineTo(cx, cy + 6); ctx.lineTo(cx, cy + 32); ctx.lineTo(cx - 26, cy + 18); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#d3d8df"; ctx.beginPath(); ctx.moveTo(cx + 26, cy - 8); ctx.lineTo(cx, cy + 6); ctx.lineTo(cx, cy + 32); ctx.lineTo(cx + 26, cy + 18); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#5d6570"; ctx.font = "600 8px " + ui; ctx.textAlign = "center"; ctx.font = "600 6px " + ui; ctx.fillText("HAUT", cx, cy - 7); ctx.fillText("AVANT", cx - 13, cy + 13); ctx.fillText("DROITE", cx + 13, cy + 13); ctx.textAlign = "left"; ctx.restore();
+    // barre de navigation au bas de la vue
+    ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.beginPath(); ctx.roundRect(VP.x + VP.w / 2 - 120, VP.y + VP.h - 34, 240, 26, 6); ctx.fill();
+    for (let k = 0; k < 9; k++) { ctx.fillStyle = k === 4 ? "#2b6cd6" : "#8b9099"; ctx.fillRect(VP.x + VP.w / 2 - 108 + k * 26, VP.y + VP.h - 28, 14, 14); }
+    // frise de l'historique de construction
+    ctx.fillStyle = "#ececee"; ctx.fillRect(LP, H - BB, W - LP, BB); ctx.fillStyle = "#d6d6d9"; ctx.fillRect(LP, H - BB, W - LP, 1);
+    ["#7c8794", "#2b6cd6", "#2b6cd6", "#5bb06a", "#e3913b", "#2b6cd6", "#5bb06a", "#8a6cd6", "#2b6cd6", "#e3913b", "#5bb06a", "#2b6cd6", "#7c8794", "#2b6cd6"].forEach((c, k) => { ctx.fillStyle = c; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.roundRect(LP + 64 + k * 26, H - BB + 13, 18, 18, 3); ctx.fill(); ctx.globalAlpha = 1; });
+    ctx.fillStyle = "#555"; ctx.fillRect(LP + 64 + 14 * 26 + 4, H - BB + 8, 2, 28);
+    ctx.fillStyle = "#8b9099"; [0, 1, 2].forEach((k) => { ctx.beginPath(); ctx.moveTo(LP + 12 + k * 16, H - BB + 16); ctx.lineTo(LP + 22 + k * 16, H - BB + 22); ctx.lineTo(LP + 12 + k * 16, H - BB + 28); ctx.fill(); });
+  }
   function draw(dt) {
-    t += dt; const W = cvs.width, H = cvs.height;
-    if (Math.hypot(goal.x - cur.x, goal.y - cur.y) < 6) goal = { x: 240 + Math.random() * 680, y: 90 + Math.random() * (H - 200) };
-    cur.x += (goal.x - cur.x) * Math.min(1, dt * 3); cur.y += (goal.y - cur.y) * Math.min(1, dt * 3);
-    rot += dt * 0.25;
-    ctx.fillStyle = "#2b2c30"; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#3a3b40"; ctx.fillRect(0, 0, W, 34); ctx.fillStyle = "#4b4c52"; for (let i = 0; i < 14; i++) ctx.fillRect(14 + i * 34, 9, 22, 16);
-    ctx.fillStyle = "#323338"; ctx.fillRect(0, 34, 200, H - 34);
-    ctx.fillStyle = "#8c8d93"; ctx.font = "15px Helvetica, Arial, sans-serif";
-    ["ANI_tabouret v12", "  Corps", "  Assise", "  Pieds (×3)", "  Inserts", "  Vis M6", "Esquisses", "Origine"].forEach((l, i) => ctx.fillText(l, 14, 64 + i * 26));
-    // vue 3D : grille et tabouret en fil de fer qui tourne
-    const vx = 200, vy = 34, vw = W - 200, vh = H - 34 - 54;
-    const g = ctx.createLinearGradient(0, vy, 0, vy + vh); g.addColorStop(0, "#e9eaee"); g.addColorStop(1, "#c9cbd1"); ctx.fillStyle = g; ctx.fillRect(vx, vy, vw, vh);
-    const cx = vx + vw / 2, cy = vy + vh * 0.62, S = vh * 0.5;
-    const P = (x, y, z) => { const c = Math.cos(rot), s2 = Math.sin(rot), X = x * c - z * s2, Z = x * s2 + z * c; return [cx + X * S, cy - y * S + Z * S * 0.35]; };
-    ctx.strokeStyle = "rgba(90,95,110,.25)"; ctx.lineWidth = 1;
-    for (let i = -5; i <= 5; i++) { let a = P(i * 0.2, 0, -1), b = P(i * 0.2, 0, 1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); a = P(-1, 0, i * 0.2); b = P(1, 0, i * 0.2); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
-    ctx.strokeStyle = "#2e6fd6"; ctx.lineWidth = 2;
-    ctx.beginPath(); for (let i = 0; i <= 48; i++) { const a = i / 48 * Math.PI * 2, p = P(Math.cos(a) * 0.36, 0.9, Math.sin(a) * 0.36); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
-    for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, f = P(Math.cos(a) * 0.42, 0, Math.sin(a) * 0.42), u = P(Math.cos(a) * 0.12, 0.88, Math.sin(a) * 0.12), m = P(Math.cos(a + 0.5) * 0.3, 0.5, Math.sin(a + 0.5) * 0.3);
-      ctx.beginPath(); ctx.moveTo(f[0], f[1]); ctx.lineTo(u[0], u[1]); ctx.lineTo(m[0], m[1]); ctx.closePath(); ctx.stroke(); }
-    // frise chronologique en bas
-    ctx.fillStyle = "#35363b"; ctx.fillRect(200, H - 54, W - 200, 54); ctx.fillStyle = "#5c5e66"; for (let i = 0; i < 22; i++) ctx.fillRect(214 + i * 34, H - 38, 24, 20);
+    t += dt; selT -= dt; if (selT < -3) { sel = (sel + 1) % 5; selT = 2.2; }
+    if (Math.hypot(goal.x - cur.x, goal.y - cur.y) < 6) goal = { x: VP.x + 80 + Math.random() * (VP.w - 160), y: VP.y + 40 + Math.random() * (VP.h - 90) };
+    cur.x += (goal.x - cur.x) * Math.min(1, dt * 2.4); cur.y += (goal.y - cur.y) * Math.min(1, dt * 2.4);
+    chrome();
     // curseur
-    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(cur.x, cur.y + 22); ctx.lineTo(cur.x + 6, cur.y + 16); ctx.lineTo(cur.x + 15, cur.y + 16); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#111"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cur.x, cur.y); ctx.lineTo(cur.x, cur.y + 20); ctx.lineTo(cur.x + 5, cur.y + 15); ctx.lineTo(cur.x + 13, cur.y + 15); ctx.closePath(); ctx.stroke(); ctx.fill();
     tex.needsUpdate = true;
+    renderModel(dt);
+  }
+  /* la vue 3D : le tabouret ANI rendu en direct dans une petite image, posée sur l'écran à la place de la vue */
+  let mini = null;
+  function renderModel(dt) {
+    if (!mini) {
+      const ani = exhibits.find((e) => e.def.id === "ani"); if (!ani) return;
+      const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(26, VP.w / VP.h, 0.05, 20);
+      sc.add(new THREE.HemisphereLight(0xffffff, 0x9aa3ad, 1.4)); const dl = new THREE.DirectionalLight(0xffffff, 1.6); dl.position.set(-1, 2, 1.5); sc.add(dl);
+      const piv = new THREE.Group(); sc.add(piv);
+      const m = ani.inner.clone(true); m.traverse((n) => { if (n.isMesh) { n.castShadow = false; n.receiveShadow = false; delete n.userData.exhibit; } });
+      m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); const bb = new THREE.Box3().setFromObject(m), ce = bb.getCenter(new THREE.Vector3()); m.position.set(-ce.x, -bb.min.y, -ce.z); piv.add(m);
+      const hgt = bb.max.y - bb.min.y;
+      const grid = new THREE.GridHelper(hgt * 4, 16, 0x9aa3b0, 0xb9c0ca); grid.material.transparent = true; grid.material.opacity = 0.55; sc.add(grid);
+      const edges = []; m.traverse((n) => { if (n.isMesh) { const e = new THREE.LineSegments(new THREE.EdgesGeometry(n.geometry, 30), new THREE.LineBasicMaterial({ color: 0x1b1d22, transparent: true, opacity: 0.35 })); n.add(e); edges.push(e); } });
+      cam.position.set(hgt * 2.7, hgt * 2.0, hgt * 3.2); cam.lookAt(0, hgt * 0.38, 0);
+      const rt = new THREE.WebGLRenderTarget(640, Math.round(640 * VP.h / VP.w), { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
+      const ov = new THREE.Mesh(new THREE.PlaneGeometry(w * VP.w / W, h * VP.h / H), new THREE.MeshBasicMaterial({ map: rt.texture, transparent: true, toneMapped: false }));
+      ov.position.set(-w / 2 + w * (VP.x + VP.w / 2) / W, h / 2 - h * (VP.y + VP.h / 2) / H, 0.0006); mesh.add(ov);
+      mini = { sc, cam, piv, rt, ov, rot: 0.7 };
+    }
+    mini.rot += dt * 0.22; mini.piv.rotation.y = mini.rot;
+    mini.ov.material.opacity = Math.min(1, mat.emissiveIntensity);
+    const rtPrev = renderer.getRenderTarget(), cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha(), su = renderer.shadowMap.autoUpdate;
+    renderer.shadowMap.autoUpdate = false; renderer.setRenderTarget(mini.rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(mini.sc, mini.cam);
+    renderer.setRenderTarget(rtPrev); renderer.setClearColor(cc, ca); renderer.shadowMap.autoUpdate = su;
   }
   let acc = 0, archive = null;
   /* l'écran passe sur le Finder « Archive », dessiné d'après la vraie page (mêmes positions, mêmes textes, mêmes images) */
@@ -357,7 +419,7 @@ function makeScreen(w, h) {
     tex.needsUpdate = true;
   }
   return { mesh, mat, w, h, update(dt, on) { mat.emissiveIntensity = on; if (archive) return; if (on > 0.02) { acc += dt; if (acc > 1 / 15) { draw(acc); acc = 0; } } },
-    showArchive(L) { archive = L; mat.roughness = 1; mat.envMapIntensity = 0; mat.color.set(0x000000); mat.emissiveIntensity = 1; drawArchive(); } };
+    showArchive(L) { archive = L; if (mini) mini.ov.visible = false; mat.roughness = 1; mat.envMapIntensity = 0; mat.color.set(0x000000); mat.emissiveIntensity = 1; drawArchive(); } };
 }
 async function loadDesk() {
   const [comp, chair] = await Promise.all([loadGLB("computer"), loadGLB("chair")]);
@@ -1804,7 +1866,7 @@ function loop() {
     if (!walker.atDesk) { deskParts.out = THREE.MathUtils.damp(deskParts.out, 0, 3, dt); deskParts.swivel = THREE.MathUtils.damp(deskParts.swivel, 0, 3, dt); }
     deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
   }
-  if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, NIGHT ? Math.max(0.85, deskParts.screenTarget) : deskParts.screenTarget, 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }
+  if (deskParts.screen) { deskParts.screenOn = THREE.MathUtils.damp(deskParts.screenOn, Math.max(0.9, deskParts.screenTarget), 2.5, dt); deskParts.screen.update(dt, deskParts.screenOn); }   // l'écran reste toujours allumé
   const nowT = performance.now();
   exhibits.forEach((e) => {
     if (TOUCH) e.target = !e.def.decor && nowT < (e.pulse || 0) && nowT >= (e.pulseFrom || 0) ? 1 : 0;   // au doigt : seulement le petit « bonjour » de l'arrivée et l'objet qu'on touche
