@@ -758,6 +758,14 @@ async function loadArco() {
   const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 12), new THREE.MeshBasicMaterial({ color: 0xfff1d6 })); bulb.position.set(ARCO.reach, 1.43, 0); bulb.visible = false; g.add(bulb); arcoRef.bulb = bulb;
   const spot = new THREE.SpotLight(0xffd7a3, 0, 0, 1.12, 1, 2); spot.position.set(ARCO.reach, 1.38, 0);
   spot.target.position.set(ARCO.reach, 0, 0); g.add(spot); g.add(spot.target); arcoRef.spot = spot;
+  const fill = new THREE.PointLight(0xffd9ab, 0, 9, 2); fill.position.set(ARCO.reach, 1.25, 0); g.add(fill); arcoRef.fill = fill;
+  spot.castShadow = false; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.0005; spot.shadow.radius = 4;
+  // de jour, le sol ne prend que les ombres : un halo chaud peint au sol montre la lumière de la lampe
+  const hc = document.createElement("canvas"); hc.width = hc.height = 256; const hx = hc.getContext("2d"), hg = hx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  hg.addColorStop(0, "rgba(255,196,120,0.55)"); hg.addColorStop(0.45, "rgba(255,200,130,0.25)"); hg.addColorStop(1, "rgba(255,205,140,0)"); hx.fillStyle = hg; hx.fillRect(0, 0, 256, 256);
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+  halo.rotation.x = -Math.PI / 2; halo.position.set(ARCO.reach, 0.003, 0); g.add(halo); arcoRef.halo = halo;
+  o.traverse((n) => { if (n.isMesh) n.userData.lamp = true; });
   arcoRef.o = { x: 0, z: 0, r: 0.22 }; DECOR_OBST.push(arcoRef.o);
   applyLayout(); applyNight();
 }
@@ -798,6 +806,17 @@ function isDark(now) {
 let NIGHT = QS.has("nuit") ? true : QS.has("jour") ? false : isDark(new Date());
 const night = { done: false, screenL: null, printL: null };
 if (!QS.has("nuit") && !QS.has("jour")) setInterval(() => { if (!NIGHT && isDark(new Date())) { NIGHT = true; applyNight(); } }, 60000);   // le soleil se couche pendant la visite
+/* La lampe Arco s'allume et s'éteint d'un clic, de jour comme de nuit */
+const lamp = { k: 0, target: 0, set: false };
+const LAMPX = { isLamp: true, def: { id: "arco", name: "Arco", kind: "" } };
+function toggleLamp() { lamp.target = lamp.target > 0.5 ? 0 : 1; lamp.set = true; LAMPX.def.kind = lamp.target ? "Éteindre la lampe" : "Allumer la lampe"; if (hovered === LAMPX) tag.querySelector("span").textContent = LAMPX.def.kind; }
+function updateLamp(dt) {
+  if (!arcoRef.spot) return;
+  lamp.k = THREE.MathUtils.damp(lamp.k, lamp.target, 6, dt); const k = lamp.k < 0.002 ? 0 : lamp.k;
+  arcoRef.spot.intensity = k * (NIGHT ? 6.5 : 4.5); arcoRef.fill.intensity = k * (NIGHT ? 3.2 : 1.1);
+  arcoRef.bulb.visible = k > 0.05; arcoRef.halo.material.opacity = NIGHT ? 0 : k;
+  const cs = NIGHT && k > 0.01; if (arcoRef.spot.castShadow !== cs) arcoRef.spot.castShadow = cs;   // ombres de la lampe : seulement la nuit, quand elle éclaire (le sol de jour ne garde que les ombres)
+}
 function applyNight() {
   if (!NIGHT) return;
   if (outFx.mat) outFx.mat.uniforms.col.value.set(0xe9e4da);
@@ -815,12 +834,7 @@ function applyNight() {
   const seen = new Set();
   scene.traverse((n) => { if (!n.isMesh || !n.material) return; (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => {
     if (seen.has(m) || m.userData.nightEnv) return; seen.add(m); m.userData.nightEnv = 1; if (m.envMapIntensity !== undefined) m.envMapIntensity *= 0.1; }); });
-  if (arcoRef.spot && !arcoRef.spot.intensity) {
-    arcoRef.spot.intensity = 6.5;
-    // l'Arco éclaire presque toute la pièce : une lumière chaude et diffuse autour de l'abat-jour, en plus du cercle au sol
-    const fill = new THREE.PointLight(0xffd9ab, 3.2, 9, 2); fill.position.set(ARCO.reach, 1.25, 0); arcoRef.g.add(fill); arcoRef.spot.castShadow = true; arcoRef.spot.shadow.mapSize.set(1024, 1024); arcoRef.spot.shadow.bias = -0.0005; arcoRef.spot.shadow.radius = 4;
-    arcoRef.bulb.visible = true;
-  }
+  if (!lamp.set) { lamp.target = 1; lamp.set = true; }   // la nuit, la lampe est allumée en arrivant
   const d = exhibits.find((e) => e.isDesk);
   if (d && !night.screenL) { const l = new THREE.PointLight(0xbcd0ff, 0.45, 2.2, 2); l.position.set(0.05, 1.05, 0.12); d.group.add(l); night.screenL = l; }
   if (printerGlow.g && !night.printL) { printerGlow.g.visible = true; printerGlow.lights.forEach(([l, i]) => (l.intensity = i)); night.printL = true; }
@@ -1449,9 +1463,10 @@ function pickAt(x, y) {
   const r = cv.getBoundingClientRect();
   mouse.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hits = ray.intersectObjects(exhibits.filter((e) => !e.def.decor).map((e) => e.group).concat([person.root]), true);
+  const hits = ray.intersectObjects(exhibits.filter((e) => !e.def.decor).map((e) => e.group).concat([person.root], arcoRef.g ? [arcoRef.g] : []), true);
   if (!hits.length) return null;
   if (hits[0].object.userData.me) return MEX;
+  if (hits[0].object.userData.lamp) { LAMPX.def.kind = lamp.target > 0.5 ? "Éteindre la lampe" : "Allumer la lampe"; return LAMPX; }
   const id = hits[0].object.userData.exhibit;
   return exhibits.find((e) => e.def.id === id) || null;
 }
@@ -1484,6 +1499,7 @@ function release(e) {
   if (moved <= 6) {
     const ex = pickAt(e.clientX, e.clientY);
     if (pview.on || !ex) return;
+    if (ex.isLamp) { toggleLamp(); return; }
     // au doigt comme à la souris : un seul toucher ouvre l'objet ; au doigt, l'objet touché se soulève un instant avant de s'ouvrir
     const open = () => {
       if (ex.isDesk) { zoomToScreen(() => { try { PARENT && PARENT.__pcGo && PARENT.__pcGo(); } catch (e) {} go("/#ordinateur"); }); return; }
@@ -1888,7 +1904,7 @@ let workshopLoading = true; // l'atelier est chargé dès le départ (on l'aper�
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   watchSize();
-  if (hovered) { hoverT += dt; if (!hovered.isMe && hoverT > 0.9 && walker.target !== hovered && !walker.steps) walker.wanted = hovered; }
+  if (hovered) { hoverT += dt; if (!hovered.isMe && !hovered.isLamp && hoverT > 0.9 && walker.target !== hovered && !walker.steps) walker.wanted = hovered; }
   if (deskParts.chair) {
     if (!walker.atDesk) { deskParts.out = THREE.MathUtils.damp(deskParts.out, 0, 3, dt); deskParts.swivel = THREE.MathUtils.damp(deskParts.swivel, 0, 3, dt); }
     deskParts.chair.position.z = deskParts.chairHome.z + deskParts.out; deskParts.chair.rotation.y = deskParts.swivel - 0.04;
@@ -1912,7 +1928,7 @@ function loop() {
     if (Math.abs(scrollP - prev) > 1e-5) { look.z = THREE.MathUtils.lerp(lookZ0, LOOK0.z + ZONE_DZ, scrollP); placeCamera(); }
     const zh = document.getElementById("zhint"); if (zh) zh.style.opacity = scrollP < 0.12 && EMBED ? "1" : "0";
   }
-  updateZoom(dt); updatePrinter(dt);
+  updateZoom(dt); updatePrinter(dt); updateLamp(dt);
   if (introOn && scrollT > 0.03) hideIntro();
   sun.position.set(look.x - 2.6, 6.5, look.z + 3.2); sun.target.position.set(look.x, 0, look.z);
   if (camera.near > 0.55) renderNearCut(); else renderer.render(scene, camera);
