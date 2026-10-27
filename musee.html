@@ -809,10 +809,10 @@ if (!QS.has("nuit") && !QS.has("jour")) setInterval(() => { if (!NIGHT && isDark
 /* La lampe Arco s'allume et s'éteint d'un clic, de jour comme de nuit */
 const lamp = { k: 0, target: 0, set: false };
 const LAMPX = { isLamp: true, def: { id: "arco", name: "Arco", kind: "" } };
-function toggleLamp() { lamp.target = lamp.target > 0.5 ? 0 : 1; lamp.set = true; LAMPX.def.kind = lamp.target ? "Éteindre la lampe" : "Allumer la lampe"; if (hovered === LAMPX) tag.querySelector("span").textContent = LAMPX.def.kind; }
+function toggleLamp() { lamp.target = lamp.target > 0.5 ? 0 : 1; lamp.set = true; lamp.touched = true; LAMPX.def.kind = lamp.target ? "Éteindre la lampe" : "Allumer la lampe"; if (hovered === LAMPX) tag.querySelector("span").textContent = LAMPX.def.kind; }
 function updateLamp(dt) {
   if (!arcoRef.spot) return;
-  lamp.k = THREE.MathUtils.damp(lamp.k, lamp.target, 6, dt); const k = lamp.k < 0.002 ? 0 : lamp.k;
+  lamp.k = THREE.MathUtils.damp(lamp.k, lamp.target, lamp.touched ? 6 : 1.6, dt);   // à l'arrivée, un allumage lent ; au clic, plus vif const k = lamp.k < 0.002 ? 0 : lamp.k;
   arcoRef.spot.intensity = k * (NIGHT ? 6.5 : 4.5); arcoRef.fill.intensity = k * (NIGHT ? 3.2 : 1.1);
   arcoRef.bulb.visible = k > 0.05; arcoRef.halo.material.opacity = NIGHT ? 0 : k;
   const cs = NIGHT && k > 0.01; if (arcoRef.spot.castShadow !== cs) arcoRef.spot.castShadow = cs;   // ombres de la lampe : seulement la nuit, quand elle éclaire (le sol de jour ne garde que les ombres)
@@ -834,7 +834,7 @@ function applyNight() {
   const seen = new Set();
   scene.traverse((n) => { if (!n.isMesh || !n.material) return; (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => {
     if (seen.has(m) || m.userData.nightEnv) return; seen.add(m); m.userData.nightEnv = 1; if (m.envMapIntensity !== undefined) m.envMapIntensity *= 0.1; }); });
-  if (!lamp.set) { lamp.target = 1; lamp.set = true; }   // la nuit, la lampe est allumée en arrivant
+  if (!lamp.set) { lamp.set = true; setTimeout(() => { if (lamp.target === 0 && !lamp.touched) lamp.target = 1; }, 1100); }   // la nuit, la lampe s'allume doucement juste après l'arrivée, comme si quelqu'un venait d'entrer
   const d = exhibits.find((e) => e.isDesk);
   if (d && !night.screenL) { const l = new THREE.PointLight(0xbcd0ff, 0.45, 2.2, 2); l.position.set(0.05, 1.05, 0.12); d.group.add(l); night.screenL = l; }
   if (printerGlow.g && !night.printL) { printerGlow.g.visible = true; printerGlow.lights.forEach(([l, i]) => (l.intensity = i)); night.printL = true; }
