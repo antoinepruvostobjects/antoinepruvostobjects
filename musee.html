@@ -1481,6 +1481,9 @@ let zoom = null;
 function zoomToScreen(done) {
   const scr = deskParts.screen; if (!scr || zoom) return done();
   deskParts.screenTarget = 1;
+  // le bureau se repose aussitôt (plus de lévitation ni d'inclinaison) : sinon l'écran arrive décalé et penché
+  exhibits.forEach((e) => { e.lift = 0; e.target = 0; e.pulse = 0; if (e.baseY !== undefined) { e.inner.position.y = e.baseY; e.inner.rotation.x = 0; e.inner.rotation.z = 0; } });
+  scene.updateMatrixWorld(true);
   const c = scr.mesh.getWorldPosition(new THREE.Vector3()), q = scr.mesh.getWorldQuaternion(new THREE.Quaternion());
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q), right = new THREE.Vector3(1, 0, 0).applyQuaternion(q), up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
   const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), cw = cv.clientWidth, ch = cv.clientHeight;
@@ -1792,7 +1795,7 @@ function loop() {
   exhibits.forEach((e) => {
     if (TOUCH) e.target = !e.def.decor && nowT < (e.pulse || 0) && nowT >= (e.pulseFrom || 0) ? 1 : 0;   // au doigt : seulement le petit « bonjour » de l'arrivée et l'objet qu'on touche
     if (e.isDesk && walker.atDesk) e.target = 0;
-    if (pview.on) e.target = 0;
+    if (pview.on || zoom) e.target = 0;
     e.lift = THREE.MathUtils.damp(e.lift, e.target, 7, dt);
     e.inner.position.y = e.baseY + e.lift * (TOUCH ? 0.16 : 0.09);
     e.inner.rotation.x = e.lift * 0.05; e.inner.rotation.z = -e.lift * 0.03;
