@@ -459,6 +459,19 @@ async function loadDesk() {
     const b = new THREE.Box3().setFromObject(c), ce = b.getCenter(new THREE.Vector3());
     comp.position.x -= ce.x; comp.position.z -= ce.z; comp.position.y -= b.min.y;
     c.position.set(0.05, TOP, -0.04); g.add(c);
+    // l'écran du modèle était épais comme une brique (6,6 cm) : on l'affine à l'épaisseur d'un iMac 24" (≈ 1,2 cm), face avant inchangée
+    g.updateMatrixWorld(true);
+    // et la coque arrière du modèle (un gros bloc qui épaississait l'écran par derrière) est retirée : il reste la dalle fine et le pied
+    comp.traverse((n) => { if (!n.isMesh) return; const bb = new THREE.Box3().setFromObject(n); g.worldToLocal(bb.min); g.worldToLocal(bb.max);
+      if (bb.min.y < TOP + 0.03 && bb.max.y > TOP + 0.45 && bb.max.z - bb.min.z > 0.2) n.visible = false; });
+    const bodyParts = []; let front = -Infinity, back = Infinity;
+    comp.traverse((n) => { if (!n.isMesh || !n.visible) return; const bb = new THREE.Box3().setFromObject(n); g.worldToLocal(bb.min); g.worldToLocal(bb.max);
+      if (bb.min.y > TOP + 0.08) { bodyParts.push(n); front = Math.max(front, bb.max.z); back = Math.min(back, bb.min.z); } });
+    if (bodyParts.length && front - back > 0.03) {
+      const piv = new THREE.Group(); piv.position.set(0, 0, front); g.add(piv); piv.updateMatrixWorld(true);
+      bodyParts.forEach((n) => piv.attach(n));
+      piv.scale.z = 0.012 / (front - back);
+    }
     // la dalle : une surface noire brillante posée sur l'écran du modèle, qui s'allume pendant le travail
     g.updateMatrixWorld(true);
     if (screenMesh) {
@@ -467,15 +480,6 @@ async function loadDesk() {
       const scr = makeScreen(sw, sh);
       scr.mesh.position.set((sb.min.x + sb.max.x) / 2, (sb.min.y + sb.max.y) / 2, sb.max.z + 0.0015);
       g.add(scr.mesh); deskParts.screen = scr;
-    }
-    // le dessus et les flancs de l'écran sont en aluminium (vus d'en haut, ils apparaissaient comme un gros bandeau noir)
-    let big = null, bigW = 0;
-    comp.traverse((n) => { if (n.isMesh && n.material === iBlack) { const bb = new THREE.Box3().setFromObject(n); const wd = bb.max.x - bb.min.x; if (wd > bigW) { bigW = wd; big = bb; } } });
-    if (big && bigW > 0.3) {
-      g.worldToLocal(big.min); g.worldToLocal(big.max);
-      const bw = big.max.x - big.min.x, bd = big.max.z - big.min.z, bh = big.max.y - big.min.y;
-      const cap = new THREE.Mesh(new RoundedBoxGeometry(bw + 0.002, 0.006, bd - 0.004, 2, 0.0025), iAlu); cap.position.set((big.min.x + big.max.x) / 2, big.max.y - 0.002, (big.min.z + big.max.z) / 2 - 0.002); cap.castShadow = true; g.add(cap);
-      [big.min.x, big.max.x].forEach((x) => { const sd = new THREE.Mesh(new THREE.BoxGeometry(0.004, bh - 0.004, bd - 0.004), iAlu); sd.position.set(x, (big.min.y + big.max.y) / 2, (big.min.z + big.max.z) / 2 - 0.002); g.add(sd); });
     }
   }
   // carnet ouvert à gauche du clavier, croquis d'ANI au crayon, et le crayon posé dessus
