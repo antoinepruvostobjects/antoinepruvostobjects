@@ -1478,6 +1478,18 @@ addEventListener("keydown", (e) => {
 
 /* Clic sur le bureau : la caméra plonge vers l'écran de l'iMac, qui s'allume, puis l'Archive s'ouvre « dans » l'ordinateur */
 let zoom = null;
+/* fondu d'un groupe d'objets (AP, la chaise) : leurs matières deviennent transparentes le temps du zoom */
+function fadeList(objs) {
+  const list = []; list.meshes = [];
+  objs.forEach((o) => o && o.traverse((n) => { if (!n.isMesh || !n.material) return; list.meshes.push([n, n.castShadow]); (Array.isArray(n.material) ? n.material : [n.material]).forEach((m) => { if (!list.some((x) => x.m === m)) list.push({ m, t: m.transparent, o: m.opacity, d: m.depthWrite }); }); }));
+  return list;
+}
+function setFade(list, k) {
+  if (!list) return;
+  list.forEach((x) => { const on = k < 0.999; x.m.transparent = on || x.t; x.m.opacity = x.o * k; x.m.depthWrite = on ? false : x.d; x.m.needsUpdate = true; });
+  list.forEach((x) => (x.m.visible = k > 0.003));
+  list.meshes.forEach(([n, cs]) => (n.castShadow = cs && k > 0.6));   // l'ombre part avec lui
+}
 function zoomToScreen(done) {
   const scr = deskParts.screen; if (!scr || zoom) return done();
   deskParts.screenTarget = 1;
@@ -1502,7 +1514,8 @@ function zoomToScreen(done) {
     const h = scr.mesh.geometry.parameters.height, d = (h * 0.62) / tanH;
     p1 = c.clone().addScaledVector(n, d); l1 = c.clone();
   }
-  zoom = { t: 0, dur: 1.5, p0: camera.position.clone(), l0: look.clone(), p1, l1, done, target: c.clone() };
+  zoom = { t: 0, dur: 1.5, p0: camera.position.clone(), l0: look.clone(), p1, l1, done, target: c.clone(), fade: fadeList([person.root, deskParts.chair]) };
+  const d0 = done, fl = zoom.fade; zoom.done = () => { d0(); setTimeout(() => setFade(fl, 1), 1500); };
   setHover(null); document.getElementById("hint").style.opacity = "0";
 }
 function updateZoom(dt) {
@@ -1513,7 +1526,8 @@ function updateZoom(dt) {
   camera.position.lerpVectors(zoom.p0, zoom.p1, e);
   camera.lookAt(new THREE.Vector3().lerpVectors(zoom.l0, zoom.l1, e));
   // vers l'écran : tout ce qui passe entre la caméra et l'iMac (AP, la chaise) sort du champ, le clavier reste
-  if (zoom.target) { camera.near = Math.max(0.5, camera.position.distanceTo(zoom.target) - 0.3); camera.updateProjectionMatrix(); }
+  // vers l'écran : AP et la chaise s'effacent en fondu dès le début du zoom, pour laisser l'écran entièrement visible
+  if (zoom.target) setFade(zoom.fade, 1 - THREE.MathUtils.smoothstep(e, 0.05, 0.4));
   if (zoom.t >= 1) { const f = zoom.done, keep = zoom.keep; zoom = null; setTimeout(f, keep ? 0 : 120); if (!keep) setTimeout(() => { frameAll(); }, 900); }
   return true;
 }
