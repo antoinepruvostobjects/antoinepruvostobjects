@@ -468,6 +468,15 @@ async function loadDesk() {
       scr.mesh.position.set((sb.min.x + sb.max.x) / 2, (sb.min.y + sb.max.y) / 2, sb.max.z + 0.0015);
       g.add(scr.mesh); deskParts.screen = scr;
     }
+    // le dessus et les flancs de l'écran sont en aluminium (vus d'en haut, ils apparaissaient comme un gros bandeau noir)
+    let big = null, bigW = 0;
+    comp.traverse((n) => { if (n.isMesh && n.material === iBlack) { const bb = new THREE.Box3().setFromObject(n); const wd = bb.max.x - bb.min.x; if (wd > bigW) { bigW = wd; big = bb; } } });
+    if (big && bigW > 0.3) {
+      g.worldToLocal(big.min); g.worldToLocal(big.max);
+      const bw = big.max.x - big.min.x, bd = big.max.z - big.min.z, bh = big.max.y - big.min.y;
+      const cap = new THREE.Mesh(new RoundedBoxGeometry(bw + 0.002, 0.006, bd - 0.004, 2, 0.0025), iAlu); cap.position.set((big.min.x + big.max.x) / 2, big.max.y - 0.002, (big.min.z + big.max.z) / 2 - 0.002); cap.castShadow = true; g.add(cap);
+      [big.min.x, big.max.x].forEach((x) => { const sd = new THREE.Mesh(new THREE.BoxGeometry(0.004, bh - 0.004, bd - 0.004), iAlu); sd.position.set(x, (big.min.y + big.max.y) / 2, (big.min.z + big.max.z) / 2 - 0.002); g.add(sd); });
+    }
   }
   // carnet ouvert à gauche du clavier, croquis d'ANI au crayon, et le crayon posé dessus
   {
