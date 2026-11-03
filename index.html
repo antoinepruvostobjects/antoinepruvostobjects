@@ -635,6 +635,13 @@ header.top .meta a.on, header.top .meta a[data-nav].on { color: var(--fg); }
 
 .mcol a.mall { margin-top: 6px; color: var(--muted); }
 .mcol a.mall:hover { color: var(--fg); }
+/* Menu minimal : deux liens seulement */
+.mcard { left: auto; right: max(12px, calc(var(--gut) / 3)); min-width: 230px; }
+.mcin { display: flex; flex-direction: column; gap: 14px; min-height: 0; padding: 26px 30px; }
+.mcin a { color: var(--fg); font-size: 19px; line-height: 1.3; width: fit-content; }
+.mcin a:hover, .mcin a.on { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+@media (max-width: 800px) { .mcin { display: flex; gap: 14px; } }
+
 
 /* Contact : bande sombre en bas de chaque page, coupe droite, coordonnées et formulaire */
 :root { --dk: #2e2e30; --dk2: #3a3a3d; --btn: #3a3a3c; --cf-bg: #2e2e30; --cf-field: #3a3a3d; --cf-fg: #f1f1ef; --cf-mut: rgba(241,241,239,.55); --cf-line: rgba(241,241,239,.14); }
@@ -762,16 +769,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   </div>
   <nav class="mcard" id="mob-menu" hidden aria-label="Menu">
     <div class="mcin">
-      <div class="mlead">
-        <p class="mq">Une pièce à imprimer, un objet qui vous intéresse&nbsp;?</p>
-        <a class="mcta" href="mailto:antoine.pruvost.ap@gmail.com">Me contacter <span aria-hidden="true">↗</span></a>
-      </div>
-      <div class="mcols">
-        <div class="mcol"><p class="mcat">Objects</p><a href="#ani" data-nav="ani">ANI</a><a href="#hypar" data-nav="hypar">HYPAR</a></div>
-        <div class="mcol"><p class="mcat">Studio</p><a href="#archive" data-nav="archive">Archive</a><a href="#impression-3d" data-nav="impression-3d">Impression 3D</a><a href="#a-propos" data-nav="a-propos">À propos</a></div>
-        <div class="mcol"><p class="mcat">Social</p><a href="https://www.instagram.com/ap_for_design/" target="_blank" rel="noopener">Instagram</a></div>
-      </div>
-      <div class="mbot"><span>© Antoine Pruvost, 2026</span><span class="addr">antoine.pruvost.ap@gmail.com</span></div>
+      <a href="#archive" data-nav="archive">Projets</a>
+      <a href="#a-propos" data-nav="a-propos">À propos</a>
     </div>
   </nav>
 </header>
@@ -1278,8 +1277,8 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 
   function renderArchive(box) {
     var view = box || document.getElementById("view");
-    document.title = "Archive | Antoinepruvostobjects";
-    var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Archive")); head.appendChild(mk("span", "k", ARCHIVE.length + " projets"));
+    document.title = "Projets | Antoinepruvostobjects";
+    var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Projets")); head.appendChild(mk("span", "k", ARCHIVE.length + " projets"));
     view.appendChild(head);
     var ul = mk("ul", "alist");
     var peek = mk("div", "apeek"), pim = document.createElement("img"); pim.alt = ""; peek.appendChild(pim); view.appendChild(peek);
@@ -1307,7 +1306,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     document.title = "Antoinepruvostobjects";
     var sec = mk("section", "home3d");
     var fr = document.createElement("iframe");
-    var MUSEE_V = "74"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
+    var MUSEE_V = "75"; // à changer à chaque mise à jour de l’espace 3D, pour que les navigateurs ne gardent pas l’ancienne version
     fr.src = "musee.html?embed=1&v=" + MUSEE_V; fr.setAttribute("aria-label", "Espace d'exposition en 3D : survolez un objet, cliquez pour l'ouvrir");
     fr.setAttribute("allow", "fullscreen");
     sec.appendChild(fr); view.appendChild(sec);
@@ -1334,7 +1333,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   /* L'ordinateur : l'Archive s'ouvre comme sur l'écran de l'iMac du bureau, avec une fenêtre et un curseur */
   function renderComputer(target) {
     var into = target || view;
-    if (!target) document.title = "Archive | Antoinepruvostobjects";
+    if (!target) document.title = "Projets | Antoinepruvostobjects";
     var room = mk("section", "pc");
     if (!target && window.__pcFromZoom) { room.classList.add("fromzoom"); window.__pcFromZoom = false; }   // on arrive par le zoom de l'espace 3D : l'écran est déjà là
     var quit = mk("a", "pc-quit", "← Quitter l'ordinateur"); quit.href = "#"; room.appendChild(quit);
@@ -1346,7 +1345,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     scr.appendChild(bar);
     var win = mk("div", "pc-win"), tb = mk("div", "pc-title");
     var dots = mk("span", "pc-dots"); ["c", "m", "z"].forEach(function (c) { var d = mk("a", "d " + c); if (c === "c") { d.href = "#"; d.title = "Fermer"; } dots.appendChild(d); }); tb.appendChild(dots);
-    tb.appendChild(mk("span", "pc-name", "Archive — Antoinepruvostobjects"));
+    tb.appendChild(mk("span", "pc-name", "Projets — Antoinepruvostobjects"));
     win.appendChild(tb);
     var body = mk("div", "pc-body"); win.appendChild(body); scr.appendChild(win);
     /* le dock : Instagram et l'impression 3D sont de vrais liens, les autres icônes sont du décor */
@@ -1368,7 +1367,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
   function renderArchiveProject(p) {
     document.title = p.title + " | Antoinepruvostobjects";
     var head = mk("div", "phead2");
-    var back = mk("a", "back", "← Archive"); back.href = "#archive"; head.appendChild(back);
+    var back = mk("a", "back", "← Projets"); back.href = "#archive"; head.appendChild(back);
     var split = mk("div", "psplit"), pinfo = mk("div", "pinfo");
     var tr = mk("div", "prow ptitle2"), h1 = mk("h1", "", p.title);
     tr.appendChild(h1);
