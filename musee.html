@@ -1723,6 +1723,15 @@ function renderNearCut() {
   renderer.clearDepth(); renderer.render(scene, camera);
   scene.background = bg; ground.visible = true; renderer.shadowMap.autoUpdate = su; renderer.autoClear = ac;
 }
+// « Demander un devis » depuis la page Impression 3D : on ouvre l'imprimante dès que la scène est prête
+function wantPrinter() {
+  try { if (PARENT && PARENT.__wantPrinter) {
+    const ov = PARENT.document.getElementById("logo-ov");
+    if (printerRef.g && !zoom && !pview.on && (!ov || ov.classList.contains("off"))) { PARENT.__wantPrinter = false; setTimeout(openPrinter, 500); }
+  } } catch (e) { return; }
+  setTimeout(wantPrinter, 200);
+}
+setTimeout(wantPrinter, 300);
 window.__closePrinter = () => { const t = () => { if (zoom) return setTimeout(t, 120); closePrinter(true); }; t(); };
 function updatePrinter(dt) {
   if (!printerRef.door || !pview.on) return;
