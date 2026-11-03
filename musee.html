@@ -88,16 +88,11 @@ header .back:hover { color: var(--fg); }
 <p class="hint" id="hint" hidden>Survolez un objet · cliquez pour l'ouvrir</p>
 <form class="pform" id="pform" novalidate>
   <button type="button" class="pf-back" id="pf-back">← Retour</button>
-  <h2>Demande d'impression 3D</h2>
-  <p class="pf-sub">Décrivez votre pièce : je vérifie le fichier et je vous réponds avec un devis.</p>
-  <div class="pf-row"><label>Nom<input name="nom" required autocomplete="name"></label><label>E-mail<input name="email" type="email" required autocomplete="email"></label></div>
-  <label>Lien vers le fichier <span>(STL, 3MF, STEP… via WeTransfer, Drive…)</span><input name="fichier" type="url" placeholder="https://"></label>
-  <div class="pf-row"><label>Matière<select name="matiere"><option>Je ne sais pas</option><option>PLA</option><option>PETG</option><option>TPU (souple)</option><option>ABS / ASA</option></select></label><label>Couleur<input name="couleur" placeholder="Noir, blanc…"></label></div>
-  <div class="pf-row"><label>Quantité<input name="quantite" type="number" min="1" value="1"></label><label>Taille approx.<input name="taille" placeholder="ex. 10 × 5 × 3 cm"></label></div>
-  <label>Délai souhaité<input name="delai" placeholder="ex. dans 2 semaines"></label>
-  <label>Message<textarea name="message" rows="3" placeholder="Usage de la pièce, contraintes…"></textarea></label>
+  <h2>HYPAR, imprimé à la demande</h2>
+  <p class="pf-sub">Le cale-porte HYPAR, imprimé chez moi en 3D, pièce par pièce. Il arrive bientôt : laissez votre e-mail pour être prévenu de sa sortie.</p>
+  <label>E-mail<input name="email" type="email" required autocomplete="email" placeholder="vous@exemple.com"></label>
   <input type="text" name="_honey" class="pf-hp" tabindex="-1" autocomplete="off">
-  <button type="submit" class="pf-send">Demander un devis</button>
+  <button type="submit" class="pf-send">Être informé de la sortie</button>
   <p class="pf-state" aria-live="polite"></p>
 </form>
 <div class="intro" id="intro"><b>Antoine Pruvost<br>designer d'objets</b><span id="intro-sub">Survolez un objet pour le découvrir, cliquez pour l'ouvrir</span></div>
@@ -110,7 +105,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { STLLoader } from "three/addons/loaders/STLLoader.js";
-import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import { mergeVertices, mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
@@ -599,7 +594,7 @@ async function loadParcels() {
 }
 
 /* ---------- L'imprimante 3D sur sa petite table blanche (façon IKEA Lack) : un clic mène au devis d'impression ---------- */
-const PRINTER = { id: "impression", name: "Impression 3D", kind: "Bambu Lab · demander un devis", year: "", href: "/#impression-3d", x: 1.68, z: 0.02, rot: -90 };
+const PRINTER = { id: "impression", name: "Impression 3D", kind: "HYPAR, imprimé à la demande", year: "", href: "/#impression-3d", x: 1.68, z: 0.02, rot: -90 };
 const printerGlow = { g: null, lights: [] };
 const printerRef = { g: null };
 /* L'imprimante Bambu Lab H2C, refaite proprement en 3D (le modèle d'origine était flou) :
@@ -665,6 +660,14 @@ function buildH2C() {
   g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
   return { g, W, D, BH };
 }
+/* HYPAR tel qu'il s'imprime : debout sur son grand bord, avec des supports sur les côtés (fichier STEP, en mm) */
+let hyparPrint = null;
+fetch("models/hypar-print.json?v=1").then((r) => r.json()).then((d) => {
+  const k = 0.001 / 100, part = new THREE.BufferGeometry();
+  part.setAttribute("position", new THREE.Float32BufferAttribute(d.p.map((v) => v * k), 3)); part.setIndex(d.i); part.computeVertexNormals();
+  const sup = d.b.map(([x, y, z, sx, sy, sz]) => { const b = new THREE.BoxGeometry(sx * 0.001, sy * 0.001, sz * 0.001); b.translate(x * 0.001, y * 0.001, z * 0.001); return b; });
+  hyparPrint = { part, sup: sup.length ? mergeGeometries(sup) : null };
+}).catch(() => {});
 async function loadPrinter() {
   const g = new THREE.Group();
   const white = new THREE.MeshStandardMaterial({ color: 0xf1f0ec, roughness: 0.55 });
@@ -1652,20 +1655,22 @@ function openPrinter() {
   zoom = { t: 0, dur: 1.4, p0: camera.position.clone(), l0: look.clone(), p1, l1, f0: camera.fov, f1: PFOV, n0: camera.near, n1: near, keep: true, done: () => { pview.doorT = 1; setTimeout(() => document.getElementById("pform").classList.add("on"), 650); } };
   if (printerGlow.front) printerGlow.front.visible = false;
   clipModelInterior(true);
-  // un petit ANI à imprimer sur le plateau, couche par couche, avec ses fines lignes de couches
-  const ani = exhibits.find((e) => e.def.id === "ani");
-  if (ani && !pview.mini) {
-    const m = ani.inner.clone(true), bb = new THREE.Box3().setFromObject(ani.inner), hgt = bb.max.y - bb.min.y, k = PRINT.h / hgt;
+  // HYPAR s'imprime sur le plateau, couche par couche, avec ses supports et ses fines lignes de couches
+  if (hyparPrint && !pview.mini) {
     pview.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0); pview.uBed = { value: 0 };
-    const pla = new THREE.MeshStandardMaterial({ color: 0xe9c46a, roughness: 0.6, clippingPlanes: [pview.clip], side: THREE.DoubleSide });
+    const pla = new THREE.MeshStandardMaterial({ color: 0xe4e2dc, roughness: 0.75, clippingPlanes: [pview.clip], side: THREE.DoubleSide });
     pla.onBeforeCompile = (sh) => {
       sh.uniforms.uBed = pview.uBed; sh.uniforms.uLh = { value: PRINT.h / PRINT.n };
       sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vWY;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWY = (modelMatrix * vec4(transformed, 1.0)).y;");
       sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vWY;\nuniform float uBed;\nuniform float uLh;")
-        .replace("#include <color_fragment>", "#include <color_fragment>\n{ float f = fract((vWY - uBed) / uLh); diffuseColor.rgb *= 0.9 + 0.1 * smoothstep(0.0, 0.35, f) * smoothstep(1.0, 0.65, f); }");
+        .replace("#include <color_fragment>", "#include <color_fragment>\n{ float f = fract((vWY - uBed) / uLh); diffuseColor.rgb *= 0.86 + 0.14 * smoothstep(0.0, 0.35, f) * smoothstep(1.0, 0.65, f); }")
+        // la LED est toute proche de la pièce : on adoucit les hautes lumières pour garder le modelé de la coque
+        .replace("#include <opaque_fragment>", "{ vec3 o = outgoingLight * 0.1; outgoingLight = 1.25 * o / (0.35 + o); }\n#include <opaque_fragment>");
     };
-    m.traverse((n) => { if (n.isMesh) { n.material = pla; n.castShadow = false; delete n.userData.exhibit; } });
-    m.updateMatrixWorld(true); m.scale.setScalar(k); m.position.set(0, 0.002, 0); m.rotation.set(0, 0.6, 0);
+    const m = new THREE.Group();
+    m.add(new THREE.Mesh(hyparPrint.part, pla));
+    if (hyparPrint.sup) m.add(new THREE.Mesh(hyparPrint.sup, pla));
+    m.position.set(0, 0.002, 0); m.rotation.set(0, -0.95, 0);   // de trois quarts : on voit la double courbure et la finesse de la coque
     printerRef.bed.add(m); pview.mini = m; renderer.localClippingEnabled = true;
   }
   pview.t = 0; return true;
@@ -1700,16 +1705,16 @@ function closePrinter(fromHistory) {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f).entries());
     if (d._honey) return;
-    if (!d.nom || !d.email || !/.+@.+\..+/.test(d.email)) { st.textContent = "Merci d'indiquer votre nom et un e-mail valide."; return; }
+    if (!d.email || !/.+@.+\..+/.test(d.email)) { st.textContent = "Merci d'indiquer un e-mail valide."; return; }
     bt.disabled = true; st.textContent = "Envoi…";
-    const body = Object.assign({ _subject: "Demande d'impression 3D — " + d.nom, _template: "table", _captcha: "false" }, d); delete body._honey;
+    const body = Object.assign({ _subject: "HYPAR imprimé — à prévenir : " + d.email, _template: "table", _captcha: "false" }, d); delete body._honey;
     fetch("https://formsubmit.co/ajax/antoine.pruvost.ap@gmail.com", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) })
-      .then((r) => r.json()).then((r) => { if (r && (r.success === "true" || r.success === true)) { st.textContent = "Merci ! Votre demande est partie, je vous réponds rapidement."; f.reset(); } else throw 0; })
+      .then((r) => r.json()).then((r) => { if (r && (r.success === "true" || r.success === true)) { st.textContent = "Merci ! Je vous écris dès que HYPAR est disponible."; f.reset(); } else throw 0; })
       .catch(() => { st.textContent = "L'envoi n'a pas fonctionné. Écrivez-moi à antoine.pruvost.ap@gmail.com"; })
       .finally(() => { bt.disabled = false; });
   });
 })();
-const PRINT = { h: 0.085, n: 70, layer: 1.7, hold: 5 };   // 8,5 cm, 70 couches d'environ 1,2 mm, 1,7 s par couche (≈ 2 min), puis 5 s de pause
+const PRINT = { h: 0.10, n: 80, layer: 1.5, hold: 6 };   // HYPAR debout : 10 cm, 80 couches, 1,5 s par couche (≈ 2 min), puis 6 s de pause
 /* devant l'imprimante, la caméra « coupe » ce qui est entre elle et l'imprimante (plan proche reculé) ;
    le sol, lui, est dessiné à part sans cette coupe, pour qu'il continue jusqu'au bas de l'écran */
 const GROUND_LAYER = 3; let groundLayerReady = false;
@@ -1749,10 +1754,10 @@ function updatePrinter(dt) {
   printerRef.bed.position.y = b.bed0 - z;
   // trajet de la tête : un tour de périmètre autour de la pièce, puis des allers-retours de remplissage ; elle se gare quand c'est fini
   let hx, hz;
-  const R = 0.034 * (0.75 + 0.25 * Math.cos(L * 0.15));
+  const R = 0.034 * (0.75 + 0.25 * Math.cos(L * 0.15)), RX = 0.072, RZ = 0.018;
   if (done) { const k = Math.min(1, (t - PRINT.n * PRINT.layer) / 1.2); hx = b.cx + (b.dx * 0.3) * k; hz = b.cz - 0.06 * k; }
-  else if (u < 0.5) { const a = u / 0.5 * Math.PI * 2 + L; hx = b.cx + Math.cos(a) * R; hz = b.cz + Math.sin(a) * R * 0.8; }
-  else { const v = (u - 0.5) / 0.5, rows = 6, row = Math.min(rows - 1, Math.floor(v * rows)), s2 = (v * rows) % 1; hz = b.cz + (row / (rows - 1) - 0.5) * R * 1.4; hx = b.cx + (row % 2 ? 1 - s2 : s2) * R * 1.6 - R * 0.8; }
+  else if (u < 0.6) { const a = u / 0.6 * Math.PI * 2; hx = b.cx + Math.cos(a) * RX; hz = b.cz + Math.sin(a) * RZ; }   // le contour de la coque
+  else { const v = (u - 0.6) / 0.4, k2 = Math.floor(v * 9), s2 = (v * 9) % 1, sx = -0.056 + 0.014 * k2; hx = b.cx + sx; hz = b.cz + (k2 % 2 ? 1 - s2 : s2) * RZ * 2.6 - RZ * 1.3; }   // les supports, un par un
   printerRef.head.position.set(hx, b.gy, hz); printerRef.xbar.position.set(b.cx, b.gy + 0.05, hz);
   if (pview.clip && pview.mini) {
     const bedW = printerRef.g.localToWorld(new THREE.Vector3(0, printerRef.bed.position.y + 0.002, 0)).y, s = printerRef.g.getWorldScale(new THREE.Vector3()).y;
