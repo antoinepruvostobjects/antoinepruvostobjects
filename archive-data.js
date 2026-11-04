@@ -115,7 +115,7 @@ window.ARCHIVE = [
         { h: "Manifeste",
           p: ["On ne reçoit pas dans le noir. La lumière est le premier geste que l'on offre : elle crée une présence, un centre, une chaleur. Dans un restaurant, retirer la lumière de la table change immédiatement la relation. La lumière ne sert pas seulement à voir, elle structure l'expérience.",
               "DUO est un bougeoir développé pour XLBOOM, autour de cette idée : la lumière comme geste d'hospitalité."],
-          media: { layout: "single", size: "80%", caption: "DUO posé sur une table ronde", items: [{ src: "duo-03.jpg", alt: "DUO posé sur une table ronde, sa lumière projetée sur le mur" }] } },
+          media: { layout: "single", size: "80%", caption: "Deux DUO sur des tables de bar", items: [{ src: "duo-bar.jpg", alt: "Deux DUO allumés sur des tables rondes, dans un bar aux murs en bois" }] } },
         { h: "Concept",
           p: ["Un même volume propose deux ambiances. La forme est elliptique, compacte, presque minérale. En retournant DUO, la lumière change de direction : diffuse et enveloppante, ou plus dirigée et structurante."],
           media: [
@@ -130,8 +130,7 @@ window.ARCHIVE = [
           p: ["Le verre est soufflé en moule, en une seule pièce. Dès le soufflage, la masse comporte deux zones, l'une opaque, l'autre transparente ; la partie transparente est ensuite sablée pour diffuser la lumière.",
               "La rencontre entre opacité, transparence et sablage crée un dégradé organique. Six teintes ont été explorées. La plus juste est le Pantone 432 C : un gris minéral froid qui révèle une chaleur inattendue au contact de la flamme."] },
         { h: "Mise en situation",
-          p: ["Sur une table de restaurant ou de bar, l'objet devient un centre. DUO ne propose pas une lumière de plus : il propose un choix. Parce que l'hospitalité n'est jamais fixe, elle s'adapte."],
-          media: { layout: "single", size: "85%", caption: "Deux DUO sur des tables de bar", items: [{ src: "duo-bar.jpg", alt: "Deux DUO allumés sur des tables rondes, dans un bar aux murs en bois" }] } }
+          p: ["Sur une table de restaurant ou de bar, l'objet devient un centre. DUO ne propose pas une lumière de plus : il propose un choix. Parce que l'hospitalité n'est jamais fixe, elle s'adapte."] }
       ],
       photos: [
         { src: "duo-mains.jpg", caption: "DUO allumé, tenu entre deux mains", alt: "DUO allumé, tenu dans une main, l'autre main au-dessus" },
