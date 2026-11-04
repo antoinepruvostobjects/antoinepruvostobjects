@@ -108,22 +108,33 @@ window.ARCHIVE = [
       ]
     },
     {
-      id: "duo", client: "XLBOOM", year: 2026, title: "DUO", kind: "Bougeoir", cover: "duo-00.jpg", pos: "50% 52%",
-      tagline: "Un geste, deux ambiances.",
-      specs: [["Pour", "XLBOOM"], ["Domaine", "Objet domestique, lumière, hospitalité"], ["Matériaux", "Verre soufflé sablé, aluminium tourné (pistes)"]],
+      id: "duo", client: "XLBOOM", year: 2026, title: "DUO", kind: "Bougeoir", cover: "duo-mains.jpg", pos: "50% 58%",
+      tagline: "Choisir comment accueillir, par la lumière.",
+      specs: [["Pour", "XLBOOM"], ["Domaine", "Lumière, hospitalité"], ["Matériaux", "Verre soufflé-moulé et sablé, aluminium tourné, joint caoutchouc"], ["Teinte", "Pantone 432 C"]],
       sections: [
-        { h: "Contexte",
-          p: ["DUO est un bougeoir développé pour XLBOOM, autour de l'hospitalité et du partage. La lumière peut rapprocher les convives ou ouvrir l'atmosphère d'une table."],
+        { h: "Manifeste",
+          p: ["On ne reçoit pas dans le noir. La lumière est le premier geste que l'on offre : elle crée une présence, un centre, une chaleur. Dans un restaurant, retirer la lumière de la table change immédiatement la relation. La lumière ne sert pas seulement à voir, elle structure l'expérience.",
+              "DUO est un bougeoir développé pour XLBOOM, autour de cette idée : la lumière comme geste d'hospitalité."],
           media: { layout: "single", size: "80%", caption: "DUO posé sur une table ronde", items: [{ src: "duo-03.jpg", alt: "DUO posé sur une table ronde, sa lumière projetée sur le mur" }] } },
         { h: "Concept",
-          p: ["Un même objet offre deux lumières : en le retournant, on change la diffusion, plus intime ou plus ouverte. Ce geste est le cœur du projet et lui donne son nom."],
+          p: ["Un même volume propose deux ambiances. La forme est elliptique, compacte, presque minérale. En retournant DUO, la lumière change de direction : diffuse et enveloppante, ou plus dirigée et structurante."],
           media: [
             { layout: "single", size: "85%", caption: "Recherches de profils", items: [{ src: "duo-04.jpg", alt: "Planche de croquis de profils de bougeoir" }] },
             { layout: "single", size: "85%", caption: "Carnet de recherche", items: [{ src: "duo-07.jpg", alt: "Pages du carnet de recherche" }] }
           ] },
-        { h: "Matériaux", p: ["Les pistes associent le verre soufflé sablé, qui adoucit la diffusion, et l'aluminium tourné pour la base."] }
+        { h: "Aluminium et joint",
+          p: ["Le module inférieur, en aluminium tourné, contient la bougie chauffe-plat et stabilise l'ensemble. Le tournage permet une grande précision dimensionnelle et une production en série maîtrisée.",
+              "Un joint en caoutchouc, positionné avec précision, assure l'ajustement entre le verre et l'aluminium : il garantit le maintien, absorbe les chocs et rend l'objet démontable."],
+          media: { layout: "pair", items: [{ src: "duo-alu.jpg", alt: "Le module en aluminium tourné de DUO, avec son joint en caoutchouc" }, { src: "duo-joint.jpg", alt: "Détail du profil du module aluminium et du joint" }] } },
+        { h: "Verre",
+          p: ["Le verre est soufflé en moule, en une seule pièce. Dès le soufflage, la masse comporte deux zones, l'une opaque, l'autre transparente ; la partie transparente est ensuite sablée pour diffuser la lumière.",
+              "La rencontre entre opacité, transparence et sablage crée un dégradé organique. Six teintes ont été explorées. La plus juste est le Pantone 432 C : un gris minéral froid qui révèle une chaleur inattendue au contact de la flamme."] },
+        { h: "Mise en situation",
+          p: ["Sur une table de restaurant ou de bar, l'objet devient un centre. DUO ne propose pas une lumière de plus : il propose un choix. Parce que l'hospitalité n'est jamais fixe, elle s'adapte."],
+          media: { layout: "single", size: "85%", caption: "Deux DUO sur des tables de bar", items: [{ src: "duo-bar.jpg", alt: "Deux DUO allumés sur des tables rondes, dans un bar aux murs en bois" }] } }
       ],
       photos: [
+        { src: "duo-mains.jpg", caption: "DUO allumé, tenu entre deux mains", alt: "DUO allumé, tenu dans une main, l'autre main au-dessus" },
         { src: "duo-00.jpg", caption: "DUO, verre sablé et base sombre, posé sur du papier froissé", alt: "DUO, verre sablé et base sombre, posé sur du papier froissé" },
         { src: "duo-01.jpg", caption: "Retourner DUO pour changer la diffusion de la lumière", alt: "Retourner DUO pour changer la diffusion de la lumière" },
         { src: "duo-02.jpg", caption: "Deux DUO allumés, l'un ouvert vers le haut, l'autre vers le bas", alt: "Deux DUO allumés, l'un ouvert vers le haut, l'autre vers le bas" },
