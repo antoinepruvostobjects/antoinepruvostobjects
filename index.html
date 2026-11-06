@@ -673,6 +673,13 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
 .cf-hp, .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .cf-bot { max-width: 1100px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: clamp(32px, 3.4vw, 52px); padding-top: 16px; border-top: 1px solid var(--cf-line); color: var(--cf-mut); font-size: .85em; }
 .cf-top-link { color: var(--cf-fg); letter-spacing: .04em; }
+.cf-legal { color: inherit; text-decoration: none; }
+.cf-legal:hover { color: var(--cf-fg); text-decoration: underline; text-underline-offset: 3px; }
+.legal { max-width: 680px; padding-bottom: clamp(40px, 6vw, 90px); }
+.legal h2 { font-size: 1em; font-weight: 500; margin: 2.2em 0 .6em; }
+.legal h2:first-child { margin-top: 0; }
+.legal p { margin: 0 0 .8em; line-height: 1.55; color: var(--mut, #555); text-align: left; hyphens: manual; }
+.legal a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 @media (min-width: 1300px) { .cf-in, .cf-bot { margin-inline: auto; } }
 @media (max-width: 800px) { .cf-in { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) { .cf-form { grid-template-columns: minmax(0, 1fr); } }
@@ -798,7 +805,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
         <div class="cf-act cf-wide"><p class="cf-state" role="status" aria-live="polite"></p><button type="submit" class="cf-send">Envoyer <span aria-hidden="true">→</span></button></div>
       </form>
     </div>
-    <div class="cf-bot"><span>© Antoine Pruvost, 2026</span><a href="#" class="cf-top-link" id="to-top">Retour en haut ↑</a></div>
+    <div class="cf-bot"><span>© Antoine Pruvost, 2026 · <a href="#mentions-legales" class="cf-legal">Mentions légales</a></span><a href="#" class="cf-top-link" id="to-top">Retour en haut ↑</a></div>
   </footer>
 </div>
 
@@ -1435,6 +1442,22 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     "Qu'il s'agisse de concevoir une assise pour un lieu patrimonial, d'exploiter une géométrie pour créer un mécanisme, de réduire la matière d'un objet ou de transformer une atmosphère par la lumière, je cherche à comprendre comment le design peut influencer notre manière d'interagir avec les objets et les espaces.",
     "J'accorde une importance particulière à la simplicité constructive, à la justesse des proportions, à la fabrication et à la durabilité. Mon objectif est de concevoir des objets où la forme, l'usage et la réalisation ne sont pas des éléments indépendants, mais les différentes expressions d'une même intention."
   ];
+  /* Mentions légales : page courte, sans fioritures */
+  function renderLegal() {
+    document.title = "Mentions légales | Antoinepruvostobjects";
+    var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Mentions légales")); view.appendChild(head);
+    var box = mk("div", "svc"), lg = mk("div", "legal");
+    var add = function (h, ps) { lg.appendChild(mk("h2", "", h)); ps.forEach(function (t) { var p = mk("p"); p.innerHTML = t; lg.appendChild(p); }); };
+    add("Éditeur du site", ["Ce site est édité par Antoine Pruvost, designer, à titre personnel.", "Contact : <a href=\"mailto:" + MAIL + "\">" + MAIL + "</a>"]);
+    add("Hébergement", ["Cloudflare, Inc.<br>101 Townsend Street, San Francisco, CA 94107, États-Unis<br><a href=\"https://www.cloudflare.com\" target=\"_blank\" rel=\"noopener\">cloudflare.com</a>"]);
+    add("Données personnelles", [
+      "Les informations envoyées par les formulaires du site (nom, e-mail, message, demande pour être informé de la sortie d'un objet) servent uniquement à vous répondre ou à vous prévenir de cette sortie. Elles ne sont ni vendues ni transmises à des tiers à d'autres fins.",
+      "Les formulaires sont acheminés par les services FormSubmit et Tally, qui me transmettent votre message par e-mail.",
+      "Vous pouvez à tout moment demander l'accès à vos données, leur correction ou leur suppression en écrivant à " + MAIL + ".",
+      "Ce site ne dépose aucun cookie publicitaire et n'utilise aucun outil de mesure d'audience."]);
+    add("Propriété intellectuelle", ["L'ensemble des contenus de ce site (textes, photographies, dessins, modèles 3D et objets présentés) est protégé par le droit d'auteur. Toute reproduction ou utilisation sans autorisation préalable est interdite."]);
+    box.appendChild(reveal(lg)); view.appendChild(box);
+  }
   function renderAbout() {
     document.title = "À propos | Antoinepruvostobjects";
     var head = mk("div", "pagehead"); head.appendChild(mk("h1", "", "Antoine Pruvost")); head.appendChild(mk("span", "k", "Designer")); view.appendChild(head);
@@ -1484,7 +1507,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     view.textContent = "";
     var isObj = id === "ani" || id === "hypar";
     document.body.classList.toggle("fichepage", isObj);
-    var known = /^(ani|hypar|archive|ordinateur|impression-3d|a-propos)$/.test(id) || id.indexOf("projet-") === 0;
+    var known = /^(ani|hypar|archive|ordinateur|impression-3d|a-propos|mentions-legales)$/.test(id) || id.indexOf("projet-") === 0;
     document.body.classList.toggle("homepage", !known);
     document.body.classList.toggle("pcpage", id === "ordinateur");
     closeMenu(); closeMob();
@@ -1497,6 +1520,7 @@ footer.cfoot { display: block; margin: clamp(96px, 11vw, 180px) calc(-1 * var(--
     else if (id === "ordinateur") renderComputer();
     else if (id === "impression-3d") renderPrint();
     else if (id === "a-propos") renderAbout();
+    else if (id === "mentions-legales") renderLegal();
     else if (id.indexOf("projet-") === 0 && ARCHIVE.some(function (p) { return "projet-" + p.id === id; })) renderArchiveProject(ARCHIVE.filter(function (p) { return "projet-" + p.id === id; })[0]);
     else renderHome3D();
     window.scrollTo(0, 0);
